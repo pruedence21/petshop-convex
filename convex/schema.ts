@@ -151,6 +151,8 @@ export default defineSchema({
     minStock: v.number(),
     maxStock: v.number(),
     hasVariants: v.boolean(),
+    type: v.optional(v.string()), // "product" (default), "medicine" (obat), "procedure" (tindakan), "service" (layanan)
+    serviceDuration: v.optional(v.number()), // Duration in minutes for services/procedures
     isActive: v.boolean(),
     createdBy: v.optional(v.id("users")),
     updatedBy: v.optional(v.id("users")),
@@ -159,7 +161,8 @@ export default defineSchema({
     .index("by_sku", ["sku"])
     .index("by_name", ["name"])
     .index("by_category", ["categoryId"])
-    .index("by_brand", ["brandId"]),
+    .index("by_brand", ["brandId"])
+    .index("by_type", ["type"]),
 
   // Product Variants
   productVariants: defineTable({
@@ -362,6 +365,198 @@ export default defineSchema({
   })
     .index("by_pet", ["petId"])
     .index("by_record_date", ["recordDate"]),
+
+  // ==================== VETERINARY CLINIC ====================
+
+  // Clinic Service Categories (Medical, Grooming, Boarding)
+  clinicServiceCategories: defineTable({
+    code: v.string(),
+    name: v.string(),
+    description: v.optional(v.string()),
+    icon: v.optional(v.string()),
+    color: v.optional(v.string()), // For UI categorization
+    isActive: v.boolean(),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_code", ["code"])
+    .index("by_name", ["name"]),
+
+  // Clinic Services Catalog
+  clinicServices: defineTable({
+    code: v.string(),
+    name: v.string(),
+    description: v.optional(v.string()),
+    categoryId: v.id("clinicServiceCategories"),
+    basePrice: v.number(),
+    duration: v.number(), // in minutes (30, 60, 120)
+    requiresInventory: v.boolean(), // If true, service consumes products
+    isActive: v.boolean(),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_code", ["code"])
+    .index("by_name", ["name"])
+    .index("by_category", ["categoryId"]),
+
+  // Clinic Staff (Veterinarians, Groomers, Nurses)
+  clinicStaff: defineTable({
+    code: v.string(),
+    name: v.string(),
+    role: v.string(), // Veterinarian, Groomer, Nurse
+    specialization: v.optional(v.string()), // e.g., "Small Animals", "Large Animals", "Exotic"
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
+    branchId: v.id("branches"),
+    isActive: v.boolean(),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_code", ["code"])
+    .index("by_name", ["name"])
+    .index("by_branch", ["branchId"])
+    .index("by_role", ["role"]),
+
+  // Clinic Appointments (Transaction Header)
+  clinicAppointments: defineTable({
+    appointmentNumber: v.string(), // APT-YYYYMMDD-001
+    branchId: v.id("branches"),
+    petId: v.id("customerPets"),
+    customerId: v.id("customers"), // Denormalized for easy access
+    staffId: v.id("clinicStaff"), // Assigned veterinarian/groomer
+    appointmentDate: v.number(), // Date only (timestamp at 00:00)
+    appointmentTime: v.string(), // Time slot "09:00", "09:30", etc.
+    status: v.string(), // Scheduled, InProgress, Completed, Cancelled
+    
+    // Clinical Examination Data
+    chiefComplaint: v.optional(v.string()), // Keluhan utama
+    temperature: v.optional(v.number()), // Suhu tubuh (Celsius)
+    weight: v.optional(v.number()), // Berat badan (kg)
+    heartRate: v.optional(v.number()), // Detak jantung (bpm)
+    respiratoryRate: v.optional(v.number()), // Laju pernapasan (per menit)
+    bloodPressureSystolic: v.optional(v.number()), // Tekanan darah sistolik (mmHg)
+    bloodPressureDiastolic: v.optional(v.number()), // Tekanan darah diastolik (mmHg)
+    physicalExamination: v.optional(v.string()), // Hasil pemeriksaan fisik
+    diagnosis: v.optional(v.string()), // Diagnosis penyakit
+    treatmentPlan: v.optional(v.string()), // Rencana pengobatan
+    
+    // Financial
+    subtotal: v.number(), // Sum of service subtotals
+    discountAmount: v.number(),
+    discountType: v.string(), // percent or nominal
+    taxAmount: v.number(),
+    taxRate: v.number(),
+    totalAmount: v.number(),
+    paidAmount: v.number(),
+    outstandingAmount: v.number(),
+    notes: v.optional(v.string()), // General notes
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_appointment_number", ["appointmentNumber"])
+    .index("by_branch", ["branchId"])
+    .index("by_pet", ["petId"])
+    .index("by_customer", ["customerId"])
+    .index("by_staff", ["staffId"])
+    .index("by_status", ["status"])
+    .index("by_appointment_date", ["appointmentDate"])
+    .index("by_date_and_time", ["appointmentDate", "appointmentTime"]),
+
+  // Clinic Appointment Services (Line Items)
+  clinicAppointmentServices: defineTable({
+    appointmentId: v.id("clinicAppointments"),
+    serviceId: v.id("products"), // Now using products table (type="service")
+    productId: v.optional(v.id("products")), // For prescriptions/inventory items
+    variantId: v.optional(v.id("productVariants")),
+    quantity: v.number(),
+    unitPrice: v.number(),
+    discountAmount: v.number(),
+    discountType: v.string(),
+    subtotal: v.number(),
+    isPrescription: v.boolean(), // If true, stock reduced on pickup, not on completion
+    prescriptionDosage: v.optional(v.string()), // e.g., "2x sehari, 5 hari"
+    prescriptionPickedUp: v.optional(v.boolean()), // Track pickup status
+    prescriptionPickupDate: v.optional(v.number()),
+    notes: v.optional(v.string()), // Diagnosis, treatment notes
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_appointment", ["appointmentId"])
+    .index("by_service", ["serviceId"])
+    .index("by_product", ["productId"]),
+
+  // Clinic Payments
+  clinicPayments: defineTable({
+    appointmentId: v.id("clinicAppointments"),
+    amount: v.number(),
+    paymentMethod: v.string(), // CASH, QRIS, CREDIT, BANK_TRANSFER, DEBIT_CARD
+    referenceNumber: v.optional(v.string()),
+    paymentDate: v.number(),
+    notes: v.optional(v.string()),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_appointment", ["appointmentId"])
+    .index("by_payment_method", ["paymentMethod"])
+    .index("by_payment_date", ["paymentDate"]),
+
+  // Clinic Service Packages
+  clinicServicePackages: defineTable({
+    code: v.string(),
+    name: v.string(),
+    description: v.optional(v.string()),
+    packageServices: v.array(
+      v.object({
+        serviceId: v.id("clinicServices"),
+        quantity: v.number(),
+      })
+    ),
+    packagePrice: v.number(), // Discounted price vs individual services
+    validityDays: v.number(), // Package valid for X days after purchase
+    isActive: v.boolean(),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_code", ["code"])
+    .index("by_name", ["name"]),
+
+  // Clinic Package Subscriptions (Customer purchases)
+  clinicPackageSubscriptions: defineTable({
+    customerId: v.id("customers"),
+    packageId: v.id("clinicServicePackages"),
+    purchaseDate: v.number(),
+    expiresAt: v.number(),
+    remainingServices: v.array(
+      v.object({
+        serviceId: v.id("clinicServices"),
+        remainingQuantity: v.number(),
+      })
+    ),
+    usageHistory: v.array(
+      v.object({
+        appointmentId: v.id("clinicAppointments"),
+        serviceId: v.id("clinicServices"),
+        usedQuantity: v.number(),
+        usedDate: v.number(),
+        branchId: v.id("branches"),
+      })
+    ),
+    status: v.string(), // Active, Expired, FullyUsed
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_customer", ["customerId"])
+    .index("by_package", ["packageId"])
+    .index("by_status", ["status"])
+    .index("by_expires_at", ["expiresAt"]),
 
   // ==================== SALES & TRANSACTIONS ====================
   

@@ -20,6 +20,12 @@ import {
   PackageSearch,
   History,
   Receipt,
+  Stethoscope,
+  Calendar,
+  UserCog,
+  Scissors,
+  FileText,
+  PackagePlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -33,6 +39,15 @@ const navigation = [
   { name: "Hewan", href: "/dashboard/pets", icon: Heart },
   { name: "Pelanggan", href: "/dashboard/customers", icon: Users },
   { name: "Supplier", href: "/dashboard/suppliers", icon: TruckIcon },
+  {
+    name: "Klinik",
+    icon: Stethoscope,
+    children: [
+      { name: "Appointment", href: "/dashboard/clinic/appointments", icon: Calendar },
+      { name: "Rekam Medis", href: "/dashboard/clinic/medical-records", icon: FileText },
+      { name: "Staff/Dokter", href: "/dashboard/clinic/staff", icon: UserCog },
+    ],
+  },
   {
     name: "Master Data",
     icon: Settings,

@@ -16,6 +16,8 @@ export const create = mutation({
     minStock: v.number(),
     maxStock: v.number(),
     hasVariants: v.boolean(),
+    type: v.optional(v.string()), // "product" or "service"
+    serviceDuration: v.optional(v.number()), // For services
   },
   handler: async (ctx, args) => {
     const productId = await ctx.db.insert("products", {
@@ -31,6 +33,8 @@ export const create = mutation({
       minStock: args.minStock,
       maxStock: args.maxStock,
       hasVariants: args.hasVariants,
+      type: args.type || "product",
+      serviceDuration: args.serviceDuration,
       isActive: true,
       createdBy: undefined,
     });
@@ -43,12 +47,18 @@ export const list = query({
   args: {
     categoryId: v.optional(v.id("productCategories")),
     brandId: v.optional(v.id("brands")),
+    type: v.optional(v.string()), // Filter by "product" or "service"
     includeInactive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     let products;
     
-    if (args.categoryId) {
+    if (args.type) {
+      products = await ctx.db
+        .query("products")
+        .withIndex("by_type", (q) => q.eq("type", args.type!))
+        .collect();
+    } else if (args.categoryId) {
       products = await ctx.db
         .query("products")
         .withIndex("by_category", (q) => 
@@ -116,6 +126,8 @@ export const update = mutation({
     minStock: v.optional(v.number()),
     maxStock: v.optional(v.number()),
     hasVariants: v.optional(v.boolean()),
+    type: v.optional(v.string()),
+    serviceDuration: v.optional(v.number()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {

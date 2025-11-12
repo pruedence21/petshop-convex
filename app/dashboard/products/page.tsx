@@ -72,6 +72,7 @@ export default function ProductsPage() {
   const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Id<"productCategories"> | "all">("all");
+  const [selectedType, setSelectedType] = useState<string>("all");
   const [formData, setFormData] = useState({
     sku: "",
     name: "",
@@ -85,6 +86,8 @@ export default function ProductsPage() {
     minStock: "",
     maxStock: "",
     hasVariants: false,
+    type: "product",
+    serviceDuration: "",
   });
 
   const [variantFormData, setVariantFormData] = useState({
@@ -97,6 +100,7 @@ export default function ProductsPage() {
 
   const products = useQuery(api.products.list, {
     categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
+    type: selectedType !== "all" ? selectedType : undefined,
     includeInactive: false,
   });
   const categories = useQuery(api.productCategories.list, { includeInactive: false });
@@ -126,6 +130,19 @@ export default function ProductsPage() {
     product.sku.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const getTypeBadge = (type?: string) => {
+    switch (type) {
+      case "medicine":
+        return <Badge className="bg-green-500">Obat</Badge>;
+      case "procedure":
+        return <Badge className="bg-purple-500">Tindakan</Badge>;
+      case "service":
+        return <Badge className="bg-blue-500">Layanan</Badge>;
+      default:
+        return <Badge variant="outline">Produk</Badge>;
+    }
+  };
+
   const handleOpenDialog = (product?: Product) => {
     if (product) {
       setEditingProduct(product);
@@ -142,6 +159,8 @@ export default function ProductsPage() {
         minStock: product.minStock.toString(),
         maxStock: product.maxStock.toString(),
         hasVariants: product.hasVariants,
+        type: (product as any).type || "product",
+        serviceDuration: (product as any).serviceDuration?.toString() || "",
       });
     } else {
       setEditingProduct(null);
@@ -158,6 +177,8 @@ export default function ProductsPage() {
         minStock: "10",
         maxStock: "100",
         hasVariants: false,
+        type: "product",
+        serviceDuration: "",
       });
     }
     setIsDialogOpen(true);
@@ -192,6 +213,8 @@ export default function ProductsPage() {
         minStock: parseFloat(formData.minStock),
         maxStock: parseFloat(formData.maxStock),
         hasVariants: formData.hasVariants,
+        type: formData.type || "product",
+        serviceDuration: formData.serviceDuration ? parseFloat(formData.serviceDuration) : undefined,
       };
 
       if (editingProduct) {
@@ -344,9 +367,21 @@ export default function ProductsPage() {
                   <SelectItem value="all">Semua Kategori</SelectItem>
                   {categories?.map((category) => (
                     <SelectItem key={category._id} value={category._id}>
-                      {category.icon} {category.name}
+                      {category.name}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Semua Tipe" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Tipe</SelectItem>
+                  <SelectItem value="product">Produk</SelectItem>
+                  <SelectItem value="medicine">Obat</SelectItem>
+                  <SelectItem value="procedure">Tindakan</SelectItem>
+                  <SelectItem value="service">Layanan</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -362,6 +397,7 @@ export default function ProductsPage() {
             <TableRow>
               <TableHead>SKU</TableHead>
               <TableHead>Nama Produk</TableHead>
+              <TableHead>Tipe</TableHead>
               <TableHead>Kategori</TableHead>
               <TableHead>Merek</TableHead>
               <TableHead>Harga Jual</TableHead>
@@ -373,13 +409,13 @@ export default function ProductsPage() {
           <TableBody>
             {!filteredProducts ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={9} className="text-center py-8 text-slate-500">
                   Memuat data...
                 </TableCell>
               </TableRow>
             ) : filteredProducts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={9} className="text-center py-8 text-slate-500">
                   Belum ada data produk
                 </TableCell>
               </TableRow>
@@ -392,6 +428,9 @@ export default function ProductsPage() {
                       <Package className="h-4 w-4 text-slate-400" />
                       {product.name}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {getTypeBadge((product as any).type)}
                   </TableCell>
                   <TableCell className="text-slate-600">
                     {getCategoryName(product.categoryId)}
@@ -512,6 +551,27 @@ export default function ProductsPage() {
                 />
               </div>
               <div className="grid grid-cols-3 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="type">
+                    Tipe Produk <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, type: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="product">Produk</SelectItem>
+                      <SelectItem value="medicine">Obat</SelectItem>
+                      <SelectItem value="procedure">Tindakan</SelectItem>
+                      <SelectItem value="service">Layanan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="grid gap-2">
                   <Label htmlFor="categoryId">
                     Kategori <span className="text-red-500">*</span>
@@ -684,6 +744,25 @@ export default function ProductsPage() {
                   </div>
                 </div>
               </div>
+              {(formData.type === "service" || formData.type === "procedure") && (
+                <div className="grid gap-2">
+                  <Label htmlFor="serviceDuration">
+                    Durasi (Menit) {formData.type === "service" || formData.type === "procedure" ? <span className="text-red-500">*</span> : ""}
+                  </Label>
+                  <Input
+                    id="serviceDuration"
+                    type="number"
+                    value={formData.serviceDuration}
+                    onChange={(e) =>
+                      setFormData({ ...formData, serviceDuration: e.target.value })
+                    }
+                    placeholder="30"
+                  />
+                  <p className="text-xs text-slate-500">
+                    Durasi waktu untuk layanan/tindakan dalam menit
+                  </p>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button
