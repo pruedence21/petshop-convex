@@ -19,12 +19,14 @@ import {
   ShoppingCart,
   PackageSearch,
   History,
+  Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthActions } from "@convex-dev/auth/react";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Penjualan", href: "/dashboard/sales", icon: Receipt },
   { name: "Produk", href: "/dashboard/products", icon: Package },
   { name: "Pembelian", href: "/dashboard/purchase-orders", icon: ShoppingCart },
   { name: "Stok", href: "/dashboard/stock", icon: PackageSearch },

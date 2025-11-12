@@ -423,3 +423,82 @@ export const updateStockFromPurchase = mutation({
     return await updateStockFromPurchaseHelper(ctx, args);
   },
 });
+
+// Helper function for sale stock reduction (not exported as mutation)
+export async function reduceStockForSaleHelper(
+  ctx: any,
+  args: {
+    branchId: Id<"branches">;
+    productId: Id<"products">;
+    variantId?: Id<"productVariants">;
+    quantity: number;
+    saleId: Id<"sales">;
+  }
+): Promise<{ cogs: number; avgCost: number }> {
+  const now = Date.now();
+
+  // Find existing stock
+  const existingStocks = await ctx.db
+    .query("productStock")
+    .withIndex("by_branch_product", (q: any) =>
+      q.eq("branchId", args.branchId).eq("productId", args.productId)
+    )
+    .collect();
+
+  const existingStock = existingStocks.find((s: any) =>
+    args.variantId ? s.variantId === args.variantId : !s.variantId
+  );
+
+  if (!existingStock) {
+    throw new Error("Stock not found for this product/variant at this branch");
+  }
+
+  if (existingStock.quantity < args.quantity) {
+    throw new Error(
+      `Insufficient stock. Available: ${existingStock.quantity}, Required: ${args.quantity}`
+    );
+  }
+
+  // Calculate COGS (Cost of Goods Sold)
+  const cogs = existingStock.averageCost * args.quantity;
+  const avgCost = existingStock.averageCost;
+
+  // Reduce stock quantity
+  const newQty = existingStock.quantity - args.quantity;
+
+  await ctx.db.patch(existingStock._id, {
+    quantity: newQty,
+    lastUpdated: now,
+    updatedBy: undefined,
+  });
+
+  // Log stock movement (SALE_OUT)
+  await ctx.db.insert("stockMovements", {
+    branchId: args.branchId,
+    productId: args.productId,
+    variantId: args.variantId,
+    movementType: "SALE_OUT",
+    quantity: -args.quantity, // Negative for OUT
+    referenceType: "Sale",
+    referenceId: args.saleId,
+    movementDate: now,
+    notes: `Sale transaction`,
+    createdBy: undefined,
+  });
+
+  return { cogs, avgCost };
+}
+
+// Reduce stock for sale (mutation wrapper)
+export const reduceStockForSale = mutation({
+  args: {
+    branchId: v.id("branches"),
+    productId: v.id("products"),
+    variantId: v.optional(v.id("productVariants")),
+    quantity: v.number(),
+    saleId: v.id("sales"),
+  },
+  handler: async (ctx, args) => {
+    return await reduceStockForSaleHelper(ctx, args);
+  },
+});

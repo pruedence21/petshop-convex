@@ -25,6 +25,8 @@ import type * as products from "../products.js";
 import type * as purchaseOrderItems from "../purchaseOrderItems.js";
 import type * as purchaseOrders from "../purchaseOrders.js";
 import type * as roles from "../roles.js";
+import type * as salePayments from "../salePayments.js";
+import type * as sales from "../sales.js";
 import type * as stockMovements from "../stockMovements.js";
 import type * as suppliers from "../suppliers.js";
 import type * as unitConversions from "../unitConversions.js";
@@ -54,6 +56,8 @@ declare const fullApi: ApiFromModules<{
   purchaseOrderItems: typeof purchaseOrderItems;
   purchaseOrders: typeof purchaseOrders;
   roles: typeof roles;
+  salePayments: typeof salePayments;
+  sales: typeof sales;
   stockMovements: typeof stockMovements;
   suppliers: typeof suppliers;
   unitConversions: typeof unitConversions;

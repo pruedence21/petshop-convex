@@ -363,6 +363,69 @@ export default defineSchema({
     .index("by_pet", ["petId"])
     .index("by_record_date", ["recordDate"]),
 
+  // ==================== SALES & TRANSACTIONS ====================
+  
+  // Sales (Transaction Header)
+  sales: defineTable({
+    saleNumber: v.string(), // INV-YYYYMMDD-001
+    branchId: v.id("branches"),
+    customerId: v.id("customers"),
+    saleDate: v.number(),
+    status: v.string(), // Draft, Completed, Cancelled
+    subtotal: v.number(), // Sum of item subtotals before transaction discount
+    discountAmount: v.number(), // Transaction-level discount
+    discountType: v.string(), // percent or nominal
+    taxAmount: v.number(), // Tax amount applied
+    taxRate: v.number(), // Tax rate percentage (e.g., 11 for PPN 11%)
+    totalAmount: v.number(), // Final amount after discount and tax
+    paidAmount: v.number(), // Sum of payments received
+    outstandingAmount: v.number(), // Remaining balance (for credit)
+    notes: v.optional(v.string()),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_sale_number", ["saleNumber"])
+    .index("by_branch", ["branchId"])
+    .index("by_customer", ["customerId"])
+    .index("by_status", ["status"])
+    .index("by_sale_date", ["saleDate"]),
+
+  // Sale Items (Line Items)
+  saleItems: defineTable({
+    saleId: v.id("sales"),
+    productId: v.id("products"),
+    variantId: v.optional(v.id("productVariants")),
+    quantity: v.number(),
+    unitPrice: v.number(), // Price at time of sale
+    discountAmount: v.number(), // Item-level discount
+    discountType: v.string(), // percent or nominal
+    subtotal: v.number(), // qty * price - discount
+    cogs: v.number(), // Cost of goods sold (from avgCost)
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_sale", ["saleId"])
+    .index("by_product", ["productId"])
+    .index("by_variant", ["variantId"]),
+
+  // Sale Payments (Multiple payments per sale)
+  salePayments: defineTable({
+    saleId: v.id("sales"),
+    amount: v.number(),
+    paymentMethod: v.string(), // CASH, QRIS, CREDIT, BANK_TRANSFER, DEBIT_CARD
+    referenceNumber: v.optional(v.string()), // For QRIS/bank transfers
+    paymentDate: v.number(),
+    notes: v.optional(v.string()),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_sale", ["saleId"])
+    .index("by_payment_method", ["paymentMethod"])
+    .index("by_payment_date", ["paymentDate"]),
+
   // Legacy table - keep for backward compatibility
   numbers: defineTable({
     value: v.number(),

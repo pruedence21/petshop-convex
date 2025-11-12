@@ -103,3 +103,74 @@ export const remove = mutation({
     return args.id;
   },
 });
+
+// Get or create default "UMUM" customer for walk-in sales
+export const getOrCreateDefault = query({
+  args: {},
+  handler: async (ctx) => {
+    // Look for customer with code "UMUM"
+    const customers = await ctx.db
+      .query("customers")
+      .collect();
+    
+    const umumCustomer = customers.find(
+      c => c.code === "UMUM" && !c.deletedAt
+    );
+    
+    return umumCustomer || null;
+  },
+});
+
+// Search customers by name or phone
+export const search = query({
+  args: {
+    query: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const customers = await ctx.db.query("customers").collect();
+    
+    const searchLower = args.query.toLowerCase();
+    
+    return customers.filter(
+      c => !c.deletedAt && 
+      c.isActive && 
+      (c.name.toLowerCase().includes(searchLower) || 
+       c.phone.includes(args.query) ||
+       c.code.toLowerCase().includes(searchLower))
+    );
+  },
+});
+
+// Create default UMUM customer (for initial setup)
+export const createDefaultCustomer = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // Check if UMUM customer already exists
+    const customers = await ctx.db.query("customers").collect();
+    const existing = customers.find(c => c.code === "UMUM" && !c.deletedAt);
+    
+    if (existing) {
+      return { id: existing._id, message: "UMUM customer already exists" };
+    }
+
+    // Create UMUM customer
+    const customerId = await ctx.db.insert("customers", {
+      code: "UMUM",
+      name: "UMUM (Walk-in Customer)",
+      phone: "-",
+      email: undefined,
+      address: undefined,
+      city: undefined,
+      province: undefined,
+      postalCode: undefined,
+      dateOfBirth: undefined,
+      gender: undefined,
+      idNumber: undefined,
+      notes: "Default customer untuk penjualan tanpa identitas pelanggan",
+      isActive: true,
+      createdBy: undefined,
+    });
+
+    return { id: customerId, message: "UMUM customer created successfully" };
+  },
+});
