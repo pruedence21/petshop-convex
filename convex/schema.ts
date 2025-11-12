@@ -558,6 +558,138 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_expires_at", ["expiresAt"]),
 
+  // ==================== PET HOTEL / BOARDING ====================
+
+  // Hotel Rooms/Cages Inventory
+  hotelRooms: defineTable({
+    code: v.string(), // ROOM-A1, CAGE-C01
+    name: v.string(), // "Room A1 - Large Dog", "Cage C01 - Small Cat"
+    branchId: v.id("branches"),
+    roomType: v.string(), // "Cage", "Room", "Suite"
+    animalCategory: v.string(), // "Anjing", "Kucing", "Burung", etc.
+    size: v.string(), // "Small", "Medium", "Large"
+    dailyRate: v.number(), // Base price per day
+    capacity: v.number(), // Max pets (1 for standard, 2+ for suite)
+    amenities: v.array(v.string()), // ["AC", "CCTV", "Outdoor Access"]
+    description: v.optional(v.string()),
+    status: v.string(), // "Available", "Occupied", "Reserved", "Maintenance"
+    isActive: v.boolean(),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_code", ["code"])
+    .index("by_branch", ["branchId"])
+    .index("by_room_type", ["roomType"])
+    .index("by_status", ["status"])
+    .index("by_animal_category", ["animalCategory"]),
+
+  // Hotel Bookings (Transaction Header)
+  hotelBookings: defineTable({
+    bookingNumber: v.string(), // HTL-YYYYMMDD-001
+    branchId: v.id("branches"),
+    customerId: v.id("customers"),
+    petId: v.id("customerPets"),
+    roomId: v.id("hotelRooms"),
+
+    // Dates
+    checkInDate: v.number(), // Planned check-in date (timestamp)
+    checkOutDate: v.number(), // Planned check-out date (timestamp)
+    actualCheckInDate: v.optional(v.number()), // Actual check-in timestamp
+    actualCheckOutDate: v.optional(v.number()), // Actual check-out timestamp
+
+    // Status
+    status: v.string(), // "Reserved", "CheckedIn", "CheckedOut", "Cancelled"
+
+    // Pricing
+    numberOfDays: v.number(), // Calculated: ceil((checkOut - checkIn) / day)
+    dailyRate: v.number(), // Rate at booking time (for price lock)
+    roomTotal: v.number(), // numberOfDays × dailyRate
+    servicesTotal: v.number(), // Sum of additional services
+    consumablesTotal: v.number(), // Sum of food/supplies
+    subtotal: v.number(), // roomTotal + servicesTotal + consumablesTotal
+    discountAmount: v.number(), // Transaction-level discount
+    discountType: v.string(), // "percent" or "nominal"
+    taxAmount: v.number(), // Tax amount
+    taxRate: v.number(), // Tax rate percentage
+    totalAmount: v.number(), // Final amount after discount and tax
+    paidAmount: v.number(), // Sum of payments (deposit + partial + final)
+    outstandingAmount: v.number(), // Remaining balance
+
+    // Additional info
+    specialRequests: v.optional(v.string()), // "Alergi makanan ayam", etc.
+    emergencyContact: v.optional(v.string()), // Emergency phone number
+    ownFood: v.boolean(), // Customer brings own food (no charges)
+    notes: v.optional(v.string()),
+
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_booking_number", ["bookingNumber"])
+    .index("by_branch", ["branchId"])
+    .index("by_customer", ["customerId"])
+    .index("by_pet", ["petId"])
+    .index("by_room", ["roomId"])
+    .index("by_status", ["status"])
+    .index("by_check_in_date", ["checkInDate"])
+    .index("by_check_out_date", ["checkOutDate"]),
+
+  // Hotel Booking Services (Per-booking services like grooming, vet checkup)
+  hotelBookingServices: defineTable({
+    bookingId: v.id("hotelBookings"),
+    serviceId: v.id("products"), // From products (type="service")
+    serviceDate: v.number(), // When service was/will be performed
+    quantity: v.number(),
+    unitPrice: v.number(),
+    discountAmount: v.number(),
+    discountType: v.string(), // "percent" or "nominal"
+    subtotal: v.number(),
+    notes: v.optional(v.string()),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_booking", ["bookingId"])
+    .index("by_service", ["serviceId"])
+    .index("by_service_date", ["serviceDate"]),
+
+  // Hotel Consumables (Daily food & supplies usage)
+  hotelConsumables: defineTable({
+    bookingId: v.id("hotelBookings"),
+    productId: v.id("products"), // From products (type="product")
+    variantId: v.optional(v.id("productVariants")),
+    consumptionDate: v.number(), // Daily tracking
+    quantity: v.number(), // e.g., 0.5 kg of dog food
+    unitPrice: v.number(), // Stock unit price (from averageCost)
+    subtotal: v.number(), // quantity × unitPrice
+    notes: v.optional(v.string()), // "Makanan pagi", "Tambahan snack"
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_booking", ["bookingId"])
+    .index("by_product", ["productId"])
+    .index("by_consumption_date", ["consumptionDate"]),
+
+  // Hotel Payments (Deposit, partial, final payment)
+  hotelPayments: defineTable({
+    bookingId: v.id("hotelBookings"),
+    paymentType: v.string(), // "Deposit", "Partial", "FullPayment", "Refund"
+    amount: v.number(),
+    paymentMethod: v.string(), // CASH, QRIS, CREDIT, BANK_TRANSFER, DEBIT_CARD
+    referenceNumber: v.optional(v.string()), // For QRIS/bank transfers
+    paymentDate: v.number(),
+    notes: v.optional(v.string()),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_booking", ["bookingId"])
+    .index("by_payment_type", ["paymentType"])
+    .index("by_payment_method", ["paymentMethod"])
+    .index("by_payment_date", ["paymentDate"]),
+
   // ==================== SALES & TRANSACTIONS ====================
   
   // Sales (Transaction Header)

@@ -27,6 +27,7 @@ import {
   FileText,
   PackagePlus,
   Zap,
+  Hotel,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -48,6 +49,14 @@ const navigation = [
       { name: "Appointment", href: "/dashboard/clinic/appointments", icon: Calendar },
       { name: "Rekam Medis", href: "/dashboard/clinic/medical-records", icon: FileText },
       { name: "Staff/Dokter", href: "/dashboard/clinic/staff", icon: UserCog },
+    ],
+  },
+  {
+    name: "Pet Hotel",
+    icon: Hotel,
+    children: [
+      { name: "Booking", href: "/dashboard/hotel/bookings", icon: Calendar },
+      { name: "Kandang", href: "/dashboard/hotel/rooms", icon: Hotel },
     ],
   },
   {
