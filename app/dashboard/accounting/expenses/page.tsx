@@ -8,6 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
+import { TableSkeleton, StatCardSkeleton } from "@/components/ui/loading-skeletons";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { withRetry, formatErrorMessage } from "@/lib/error-handling";
 import {
   Dialog,
   DialogContent,
@@ -41,11 +45,20 @@ import {
   Clock,
   Filter,
   Upload,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Id } from "@/convex/_generated/dataModel";
 
 export default function ExpenseManagementPage() {
+  return (
+    <ErrorBoundary>
+      <ExpenseContent />
+    </ErrorBoundary>
+  );
+}
+
+function ExpenseContent() {
   const expenses = useQuery(api.expenses.list, {});
   const categories = useQuery(api.expenseCategories.list, {});
   const branches = useQuery(api.branches.list, {});
@@ -56,10 +69,16 @@ export default function ExpenseManagementPage() {
   const rejectExpense = useMutation(api.expenses.reject);
   const payExpense = useMutation(api.expenses.pay);
 
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [showDialog, setShowDialog] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showPayDialog, setShowPayDialog] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("CASH");
 
   const [formData, setFormData] = useState({
     branchId: "",
@@ -130,7 +149,7 @@ export default function ExpenseManagementPage() {
 
   const handleSubmit = async () => {
     try {
-      const expenseId = await createExpense({
+      const result = await createExpense({
         branchId: formData.branchId as Id<"branches">,
         categoryId: formData.categoryId as Id<"expenseCategories">,
         expenseDate: new Date(formData.expenseDate).getTime(),
@@ -140,7 +159,7 @@ export default function ExpenseManagementPage() {
       });
 
       // Auto-submit for approval
-      await submitExpense({ expenseId: expenseId as Id<"expenses"> });
+      await submitExpense({ id: result.expenseId });
       
       toast.success("Expense berhasil dibuat dan disubmit untuk approval");
       setShowDialog(false);
@@ -151,7 +170,7 @@ export default function ExpenseManagementPage() {
 
   const handleApprove = async (id: Id<"expenses">) => {
     try {
-      await approveExpense({ expenseId: id });
+      await approveExpense({ id });
       toast.success("Expense berhasil diapprove");
     } catch (error: any) {
       toast.error(error.message || "Gagal approve expense");
@@ -163,7 +182,7 @@ export default function ExpenseManagementPage() {
     if (!reason) return;
 
     try {
-      await rejectExpense({ expenseId: id, rejectionReason: reason });
+      await rejectExpense({ id, rejectionReason: reason });
       toast.success("Expense berhasil ditolak");
     } catch (error: any) {
       toast.error(error.message || "Gagal reject expense");
@@ -175,7 +194,7 @@ export default function ExpenseManagementPage() {
     if (!paymentMethod) return;
 
     try {
-      await payExpense({ expenseId: id, paymentMethod });
+      await payExpense({ id, paymentMethod });
       toast.success("Expense berhasil dibayar");
     } catch (error: any) {
       toast.error(error.message || "Gagal membayar expense");
@@ -189,11 +208,20 @@ export default function ExpenseManagementPage() {
 
   if (expenses === undefined || categories === undefined || branches === undefined) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading expenses...</p>
+      <div className="p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <div className="h-8 w-64 bg-slate-200 animate-pulse rounded" />
+            <div className="h-4 w-96 bg-slate-200 animate-pulse rounded" />
+          </div>
+          <div className="h-10 w-40 bg-slate-200 animate-pulse rounded" />
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {[...Array(5)].map((_, i) => (
+            <StatCardSkeleton key={i} />
+          ))}
+        </div>
+        <TableSkeleton rows={8} columns={7} />
       </div>
     );
   }
@@ -213,17 +241,18 @@ export default function ExpenseManagementPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
+      {confirmDialog}
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Manajemen Expense</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Manajemen Expense</h1>
           <p className="text-slate-600 mt-1">
             Kelola pengeluaran dengan approval workflow
           </p>
         </div>
-        <Button onClick={handleCreate}>
-          <Plus className="w-4 h-4 mr-2" />
+        <Button onClick={handleCreate} className="w-full sm:w-auto">
+          <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
           Buat Expense Baru
         </Button>
       </div>
@@ -448,7 +477,7 @@ export default function ExpenseManagementPage() {
                   <SelectContent>
                     {categories.map((category) => (
                       <SelectItem key={category._id} value={category._id}>
-                        {category.name}
+                        {category.categoryName}
                       </SelectItem>
                     ))}
                   </SelectContent>
