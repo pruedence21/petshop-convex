@@ -28,6 +28,13 @@ import {
   PackagePlus,
   Zap,
   Hotel,
+  Wallet,
+  BookOpen,
+  DollarSign,
+  CreditCard,
+  TrendingUp,
+  BarChart3,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -41,7 +48,20 @@ const navigation = [
   { name: "Hewan", href: "/dashboard/pets", icon: Heart },
   { name: "Pelanggan", href: "/dashboard/customers", icon: Users },
   { name: "Supplier", href: "/dashboard/suppliers", icon: TruckIcon },
-  { name: "Akuntansi", href: "/dashboard/accounting", icon: FileText },
+  {
+    name: "Akuntansi",
+    icon: FileText,
+    children: [
+      { name: "Dashboard", href: "/dashboard/accounting", icon: LayoutDashboard },
+      { name: "Chart of Accounts", href: "/dashboard/accounting/chart-of-accounts", icon: BookOpen },
+      { name: "Journal Entries", href: "/dashboard/accounting/journal-entries", icon: FileText },
+      { name: "General Ledger", href: "/dashboard/accounting/ledger", icon: BookOpen },
+      { name: "Expenses", href: "/dashboard/accounting/expenses", icon: DollarSign },
+      { name: "Bank", href: "/dashboard/accounting/bank", icon: Wallet },
+      { name: "AR Aging", href: "/dashboard/accounting/ar-aging", icon: CreditCard },
+      { name: "Reports", href: "/dashboard/accounting/reports", icon: BarChart3 },
+    ],
+  },
   {
     name: "Klinik",
     icon: Stethoscope,

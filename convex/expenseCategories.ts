@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 
 // Create expense category
-export const createCategory = mutation({
+export const create = mutation({
   args: {
     categoryName: v.string(),
     linkedAccountId: v.id("accounts"), // Link to expense account in CoA
@@ -46,7 +46,7 @@ export const createCategory = mutation({
 });
 
 // List expense categories
-export const listCategories = query({
+export const list = query({
   args: {
     includeInactive: v.optional(v.boolean()),
   },
@@ -91,7 +91,7 @@ export const listCategories = query({
 });
 
 // Update expense category
-export const updateCategory = mutation({
+export const update = mutation({
   args: {
     id: v.id("expenseCategories"),
     categoryName: v.optional(v.string()),
@@ -119,7 +119,7 @@ export const updateCategory = mutation({
 });
 
 // Soft delete expense category
-export const removeCategory = mutation({
+export const remove = mutation({
   args: { id: v.id("expenseCategories") },
   returns: v.null(),
   handler: async (ctx, args) => {
