@@ -26,6 +26,7 @@ import {
   Scissors,
   FileText,
   PackagePlus,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -43,6 +44,7 @@ const navigation = [
     name: "Klinik",
     icon: Stethoscope,
     children: [
+      { name: "Transaksi Cepat", href: "/dashboard/clinic/transactions", icon: Zap },
       { name: "Appointment", href: "/dashboard/clinic/appointments", icon: Calendar },
       { name: "Rekam Medis", href: "/dashboard/clinic/medical-records", icon: FileText },
       { name: "Staff/Dokter", href: "/dashboard/clinic/staff", icon: UserCog },
