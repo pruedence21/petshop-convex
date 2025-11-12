@@ -16,6 +16,9 @@ import {
   Settings,
   LogOut,
   Heart,
+  ShoppingCart,
+  PackageSearch,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -23,6 +26,8 @@ import { useAuthActions } from "@convex-dev/auth/react";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Produk", href: "/dashboard/products", icon: Package },
+  { name: "Pembelian", href: "/dashboard/purchase-orders", icon: ShoppingCart },
+  { name: "Stok", href: "/dashboard/stock", icon: PackageSearch },
   { name: "Hewan", href: "/dashboard/pets", icon: Heart },
   { name: "Pelanggan", href: "/dashboard/customers", icon: Users },
   { name: "Supplier", href: "/dashboard/suppliers", icon: TruckIcon },

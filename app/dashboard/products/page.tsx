@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Search, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
 
@@ -53,9 +53,23 @@ type Product = {
   isActive: boolean;
 };
 
+type ProductVariant = {
+  _id: Id<"productVariants">;
+  productId: Id<"products">;
+  variantName: string;
+  variantValue: string;
+  sku: string;
+  purchasePrice: number;
+  sellingPrice: number;
+  isActive: boolean;
+};
+
 export default function ProductsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isVariantDialogOpen, setIsVariantDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [selectedProductForVariants, setSelectedProductForVariants] = useState<Product | null>(null);
+  const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Id<"productCategories"> | "all">("all");
   const [formData, setFormData] = useState({
@@ -71,6 +85,14 @@ export default function ProductsPage() {
     minStock: "",
     maxStock: "",
     hasVariants: false,
+  });
+
+  const [variantFormData, setVariantFormData] = useState({
+    variantName: "",
+    variantValue: "",
+    sku: "",
+    purchasePrice: "",
+    sellingPrice: "",
   });
 
   const products = useQuery(api.products.list, {
@@ -90,6 +112,14 @@ export default function ProductsPage() {
   const createProduct = useMutation(api.products.create);
   const updateProduct = useMutation(api.products.update);
   const deleteProduct = useMutation(api.products.remove);
+
+  const variants = useQuery(
+    api.productVariants.listByProduct,
+    selectedProductForVariants ? { productId: selectedProductForVariants._id } : "skip"
+  );
+  const createVariant = useMutation(api.productVariants.create);
+  const updateVariant = useMutation(api.productVariants.update);
+  const deleteVariant = useMutation(api.productVariants.remove);
 
   const filteredProducts = products?.filter((product) =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -205,6 +235,82 @@ export default function ProductsPage() {
     return units?.find((u) => u._id === unitId)?.code || "-";
   };
 
+  const handleOpenVariantDialog = (product: Product, variant?: ProductVariant) => {
+    setSelectedProductForVariants(product);
+    if (variant) {
+      setEditingVariant(variant);
+      setVariantFormData({
+        variantName: variant.variantName,
+        variantValue: variant.variantValue,
+        sku: variant.sku,
+        purchasePrice: variant.purchasePrice.toString(),
+        sellingPrice: variant.sellingPrice.toString(),
+      });
+    } else {
+      setEditingVariant(null);
+      setVariantFormData({
+        variantName: "",
+        variantValue: "",
+        sku: "",
+        purchasePrice: product.purchasePrice.toString(),
+        sellingPrice: product.sellingPrice.toString(),
+      });
+    }
+    setIsVariantDialogOpen(true);
+  };
+
+  const handleCloseVariantDialog = () => {
+    setIsVariantDialogOpen(false);
+    setEditingVariant(null);
+    setSelectedProductForVariants(null);
+  };
+
+  const handleSubmitVariant = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedProductForVariants) return;
+
+    try {
+      const payload = {
+        variantName: variantFormData.variantName,
+        variantValue: variantFormData.variantValue,
+        sku: variantFormData.sku,
+        purchasePrice: parseFloat(variantFormData.purchasePrice),
+        sellingPrice: parseFloat(variantFormData.sellingPrice),
+      };
+
+      if (editingVariant) {
+        await updateVariant({
+          id: editingVariant._id,
+          ...payload,
+        });
+        toast.success("Varian berhasil diperbarui");
+      } else {
+        await createVariant({
+          productId: selectedProductForVariants._id,
+          ...payload,
+        });
+        toast.success("Varian berhasil ditambahkan");
+      }
+      handleCloseVariantDialog();
+    } catch (error: any) {
+      toast.error(error.message || "Terjadi kesalahan");
+      console.error(error);
+    }
+  };
+
+  const handleDeleteVariant = async (id: Id<"productVariants">) => {
+    if (confirm("Apakah Anda yakin ingin menghapus varian ini?")) {
+      try {
+        await deleteVariant({ id });
+        toast.success("Varian berhasil dihapus");
+      } catch (error) {
+        toast.error("Terjadi kesalahan");
+        console.error(error);
+      }
+    }
+  };
+
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -300,12 +406,32 @@ export default function ProductsPage() {
                     {getUnitName(product.unitId)}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={product.isActive ? "default" : "secondary"}>
-                      {product.isActive ? "Aktif" : "Nonaktif"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={product.isActive ? "default" : "secondary"}>
+                        {product.isActive ? "Aktif" : "Nonaktif"}
+                      </Badge>
+                      {product.hasVariants && (
+                        <Badge variant="outline" className="text-xs">
+                          Varian
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {product.hasVariants && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedProductForVariants(product);
+                            setIsVariantDialogOpen(true);
+                          }}
+                          title="Kelola Varian"
+                        >
+                          <Settings className="h-4 w-4 text-blue-500" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -572,6 +698,205 @@ export default function ProductsPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Kelola Varian */}
+      <Dialog open={isVariantDialogOpen} onOpenChange={setIsVariantDialogOpen}>
+        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Kelola Varian Produk
+              {selectedProductForVariants && (
+                <span className="text-sm font-normal text-slate-500 ml-2">
+                  {selectedProductForVariants.name}
+                </span>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              Tambah dan kelola varian produk (ukuran, warna, berat, dll)
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            {/* Form Tambah/Edit Varian */}
+            <form onSubmit={handleSubmitVariant} className="border rounded-lg p-4 mb-4 bg-slate-50">
+              <h3 className="font-semibold mb-3">
+                {editingVariant ? "Edit Varian" : "Tambah Varian Baru"}
+              </h3>
+              <div className="grid grid-cols-5 gap-3">
+                <div className="grid gap-2">
+                  <Label htmlFor="variantName">
+                    Nama Varian <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="variantName"
+                    value={variantFormData.variantName}
+                    onChange={(e) =>
+                      setVariantFormData({ ...variantFormData, variantName: e.target.value })
+                    }
+                    placeholder="Berat/Ukuran/Warna"
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="variantValue">
+                    Nilai Varian <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="variantValue"
+                    value={variantFormData.variantValue}
+                    onChange={(e) =>
+                      setVariantFormData({ ...variantFormData, variantValue: e.target.value })
+                    }
+                    placeholder="1kg/Merah/S"
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="variantSku">
+                    SKU <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="variantSku"
+                    value={variantFormData.sku}
+                    onChange={(e) =>
+                      setVariantFormData({ ...variantFormData, sku: e.target.value.toUpperCase() })
+                    }
+                    placeholder="PRD-001-1KG"
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="variantPurchasePrice">Harga Beli</Label>
+                  <Input
+                    id="variantPurchasePrice"
+                    type="number"
+                    value={variantFormData.purchasePrice}
+                    onChange={(e) =>
+                      setVariantFormData({ ...variantFormData, purchasePrice: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="variantSellingPrice">Harga Jual</Label>
+                  <Input
+                    id="variantSellingPrice"
+                    type="number"
+                    value={variantFormData.sellingPrice}
+                    onChange={(e) =>
+                      setVariantFormData({ ...variantFormData, sellingPrice: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <Button type="submit" size="sm">
+                  {editingVariant ? "Update Varian" : "Tambah Varian"}
+                </Button>
+                {editingVariant && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingVariant(null);
+                      setVariantFormData({
+                        variantName: "",
+                        variantValue: "",
+                        sku: "",
+                        purchasePrice: selectedProductForVariants?.purchasePrice.toString() || "",
+                        sellingPrice: selectedProductForVariants?.sellingPrice.toString() || "",
+                      });
+                    }}
+                  >
+                    Batal Edit
+                  </Button>
+                )}
+              </div>
+            </form>
+
+            {/* Daftar Varian */}
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nama Varian</TableHead>
+                    <TableHead>Nilai</TableHead>
+                    <TableHead>SKU</TableHead>
+                    <TableHead>Harga Beli</TableHead>
+                    <TableHead>Harga Jual</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {!variants ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                        Memuat varian...
+                      </TableCell>
+                    </TableRow>
+                  ) : variants.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                        Belum ada varian. Tambahkan varian di form di atas.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    variants.map((variant) => (
+                      <TableRow key={variant._id}>
+                        <TableCell className="font-medium">{variant.variantName}</TableCell>
+                        <TableCell>{variant.variantValue}</TableCell>
+                        <TableCell className="font-mono text-sm">{variant.sku}</TableCell>
+                        <TableCell className="text-slate-600">
+                          {formatCurrency(variant.purchasePrice)}
+                        </TableCell>
+                        <TableCell className="font-medium text-green-600">
+                          {formatCurrency(variant.sellingPrice)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={variant.isActive ? "default" : "secondary"}>
+                            {variant.isActive ? "Aktif" : "Nonaktif"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenVariantDialog(selectedProductForVariants!, variant)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteVariant(variant._id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCloseVariantDialog}
+            >
+              Tutup
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

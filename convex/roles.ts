@@ -56,6 +56,21 @@ export const PERMISSIONS = {
   BRANCHES_READ: "branches.read",
   BRANCHES_UPDATE: "branches.update",
   BRANCHES_DELETE: "branches.delete",
+  
+  // Purchase Orders
+  PURCHASE_ORDERS_CREATE: "purchase_orders.create",
+  PURCHASE_ORDERS_READ: "purchase_orders.read",
+  PURCHASE_ORDERS_UPDATE: "purchase_orders.update",
+  PURCHASE_ORDERS_DELETE: "purchase_orders.delete",
+  PURCHASE_ORDERS_SUBMIT: "purchase_orders.submit",
+  PURCHASE_ORDERS_RECEIVE: "purchase_orders.receive",
+  PURCHASE_ORDERS_CANCEL: "purchase_orders.cancel",
+  
+  // Stock Management
+  STOCK_READ: "stock.read",
+  STOCK_ADJUST: "stock.adjust",
+  STOCK_TRANSFER: "stock.transfer",
+  STOCK_REPORT: "stock.report",
 } as const;
 
 // Default roles configuration
@@ -90,6 +105,15 @@ export const DEFAULT_ROLES = {
       PERMISSIONS.CUSTOMERS_READ,
       PERMISSIONS.CUSTOMERS_UPDATE,
       PERMISSIONS.BRANCHES_READ,
+      PERMISSIONS.PURCHASE_ORDERS_CREATE,
+      PERMISSIONS.PURCHASE_ORDERS_READ,
+      PERMISSIONS.PURCHASE_ORDERS_UPDATE,
+      PERMISSIONS.PURCHASE_ORDERS_SUBMIT,
+      PERMISSIONS.PURCHASE_ORDERS_RECEIVE,
+      PERMISSIONS.STOCK_READ,
+      PERMISSIONS.STOCK_ADJUST,
+      PERMISSIONS.STOCK_TRANSFER,
+      PERMISSIONS.STOCK_REPORT,
     ],
   },
   STAFF: {
@@ -106,6 +130,9 @@ export const DEFAULT_ROLES = {
       PERMISSIONS.CUSTOMERS_READ,
       PERMISSIONS.CUSTOMERS_UPDATE,
       PERMISSIONS.BRANCHES_READ,
+      PERMISSIONS.PURCHASE_ORDERS_READ,
+      PERMISSIONS.STOCK_READ,
+      PERMISSIONS.STOCK_ADJUST,
     ],
   },
   KASIR: {
@@ -117,6 +144,7 @@ export const DEFAULT_ROLES = {
       PERMISSIONS.CUSTOMERS_READ,
       PERMISSIONS.CUSTOMERS_UPDATE,
       PERMISSIONS.BRANCHES_READ,
+      PERMISSIONS.STOCK_READ,
     ],
   },
 } as const;

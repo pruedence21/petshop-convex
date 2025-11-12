@@ -196,6 +196,7 @@ export default defineSchema({
     productId: v.id("products"),
     variantId: v.optional(v.id("productVariants")),
     quantity: v.number(),
+    averageCost: v.number(), // Weighted average cost for valuation
     batchNumber: v.optional(v.string()),
     expiredDate: v.optional(v.number()),
     lastUpdated: v.number(),
@@ -205,6 +206,64 @@ export default defineSchema({
     .index("by_product", ["productId"])
     .index("by_variant", ["variantId"])
     .index("by_branch_product", ["branchId", "productId"]),
+
+  // ==================== PURCHASE & INVENTORY ====================
+  
+  // Purchase Orders
+  purchaseOrders: defineTable({
+    poNumber: v.string(), // PO-YYYYMMDD-001
+    supplierId: v.id("suppliers"),
+    branchId: v.id("branches"), // Destination branch
+    orderDate: v.number(),
+    expectedDeliveryDate: v.optional(v.number()),
+    status: v.string(), // Draft, Submitted, Received, Cancelled
+    totalAmount: v.number(),
+    notes: v.optional(v.string()),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_po_number", ["poNumber"])
+    .index("by_supplier", ["supplierId"])
+    .index("by_branch", ["branchId"])
+    .index("by_status", ["status"])
+    .index("by_order_date", ["orderDate"]),
+
+  // Purchase Order Items
+  purchaseOrderItems: defineTable({
+    purchaseOrderId: v.id("purchaseOrders"),
+    productId: v.id("products"),
+    variantId: v.optional(v.id("productVariants")),
+    quantity: v.number(), // Ordered quantity
+    receivedQuantity: v.number(), // Actually received (for partial receiving)
+    unitPrice: v.number(),
+    discount: v.optional(v.number()),
+    tax: v.optional(v.number()),
+    subtotal: v.number(),
+    notes: v.optional(v.string()),
+  })
+    .index("by_purchase_order", ["purchaseOrderId"])
+    .index("by_product", ["productId"])
+    .index("by_variant", ["variantId"]),
+
+  // Stock Movements (Audit Log)
+  stockMovements: defineTable({
+    branchId: v.id("branches"),
+    productId: v.id("products"),
+    variantId: v.optional(v.id("productVariants")),
+    movementType: v.string(), // PURCHASE_IN, ADJUSTMENT_IN, ADJUSTMENT_OUT, SALE_OUT, TRANSFER_IN, TRANSFER_OUT, RETURN_IN, DAMAGE_OUT
+    quantity: v.number(), // Positive for IN, negative for OUT
+    referenceType: v.string(), // PurchaseOrder, Adjustment, Transfer, Sale, etc
+    referenceId: v.string(), // ID of related document
+    movementDate: v.number(),
+    notes: v.optional(v.string()),
+    createdBy: v.optional(v.id("users")),
+  })
+    .index("by_branch", ["branchId"])
+    .index("by_product", ["productId"])
+    .index("by_movement_date", ["movementDate"])
+    .index("by_reference", ["referenceType", "referenceId"])
+    .index("by_movement_type", ["movementType"]),
 
   // 6. Supplier
   suppliers: defineTable({

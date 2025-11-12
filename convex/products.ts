@@ -141,3 +141,16 @@ export const remove = mutation({
     return args.id;
   },
 });
+
+// Get product variants by product ID
+export const getVariants = query({
+  args: { productId: v.id("products") },
+  handler: async (ctx, args) => {
+    const variants = await ctx.db
+      .query("productVariants")
+      .withIndex("by_product", (q) => q.eq("productId", args.productId))
+      .collect();
+    
+    return variants.filter(v => v.isActive && !v.deletedAt);
+  },
+});
