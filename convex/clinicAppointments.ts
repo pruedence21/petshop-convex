@@ -504,20 +504,17 @@ export const submitAppointment = mutation({
 
     // Auto-create medical record with clinical data
     let medicalRecordId = null;
-    if (appointment.diagnosis || appointment.chiefComplaint) {
-      // Get appointment services
-      const services = await ctx.db
-        .query("clinicAppointmentServices")
-        .withIndex("by_appointment", (q: any) => q.eq("appointmentId", args.appointmentId))
-        .collect();
+    
+    // Reuse services already fetched above
+    const activeServicesForRecord = services.filter((s: any) => !s.deletedAt);
 
-      const activeServices = services.filter((s: any) => !s.deletedAt);
-
+    // Create medical record if there are services OR clinical data
+    if (activeServicesForRecord.length > 0 || appointment.diagnosis || appointment.chiefComplaint) {
       // Aggregate treatment and prescription
       const treatmentList: string[] = [];
       const prescriptionList: string[] = [];
 
-      for (const service of activeServices) {
+      for (const service of activeServicesForRecord) {
         const serviceData = await ctx.db.get(service.serviceId);
         if (serviceData) {
           treatmentList.push(`${serviceData.name} (${service.quantity}x)`);

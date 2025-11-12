@@ -11,6 +11,7 @@
 import type * as animalCategories from "../animalCategories.js";
 import type * as animalSubcategories from "../animalSubcategories.js";
 import type * as auth from "../auth.js";
+import type * as backfillMedicalRecords from "../backfillMedicalRecords.js";
 import type * as branches from "../branches.js";
 import type * as brands from "../brands.js";
 import type * as clinicAppointmentServices from "../clinicAppointmentServices.js";
@@ -50,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   animalCategories: typeof animalCategories;
   animalSubcategories: typeof animalSubcategories;
   auth: typeof auth;
+  backfillMedicalRecords: typeof backfillMedicalRecords;
   branches: typeof branches;
   brands: typeof brands;
   clinicAppointmentServices: typeof clinicAppointmentServices;
