@@ -41,6 +41,7 @@ const navigation = [
   { name: "Hewan", href: "/dashboard/pets", icon: Heart },
   { name: "Pelanggan", href: "/dashboard/customers", icon: Users },
   { name: "Supplier", href: "/dashboard/suppliers", icon: TruckIcon },
+  { name: "Akuntansi", href: "/dashboard/accounting", icon: FileText },
   {
     name: "Klinik",
     icon: Stethoscope,

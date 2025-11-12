@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { reduceStockForSaleHelper } from "./productStock";
+import { createClinicJournalEntry } from "./accountingHelpers";
 
 // Generate Appointment Number (APT-YYYYMMDD-001)
 async function generateAppointmentNumber(ctx: any): Promise<string> {
@@ -579,6 +580,75 @@ export const submitAppointment = mutation({
         notes: recordNotes || undefined,
         createdBy: undefined,
       });
+    }
+
+    // Create journal entry for accounting integration
+    try {
+      const servicesData = await Promise.all(
+        activeServicesForRecord.map(async (service) => {
+          const serviceProduct = await ctx.db.get(service.serviceId);
+          
+          // Get category name
+          let categoryName = "Medical"; // Default
+          if (serviceProduct?.categoryId) {
+            const category = await ctx.db.get(serviceProduct.categoryId);
+            categoryName = category?.name || "Medical";
+          }
+          
+          // Calculate COGS for non-prescription items that used inventory
+          let cogs = 0;
+          if (!service.isPrescription && service.productId) {
+            // Type guard to ensure productId is not undefined
+            const productId = service.productId;
+            
+            // Get stock info to calculate COGS
+            const allStockRecords = await ctx.db
+              .query("productStock")
+              .withIndex("by_branch_product", (q) =>
+                q
+                  .eq("branchId", appointment.branchId)
+                  .eq("productId", productId)
+              )
+              .collect();
+            
+            // Find matching stock record (with or without variant)
+            let stockInfo = null;
+            if (service.variantId) {
+              // Find stock with matching variant
+              stockInfo = allStockRecords.find(s => s.variantId === service.variantId);
+            } else {
+              // Find stock without variant
+              stockInfo = allStockRecords.find(s => !s.variantId);
+            }
+            
+            if (stockInfo) {
+              cogs = stockInfo.averageCost * service.quantity;
+            }
+          }
+
+          return {
+            serviceName: serviceProduct?.name || "Unknown Service",
+            subtotal: service.subtotal,
+            cogs,
+            category: categoryName,
+          };
+        })
+      );
+
+      await createClinicJournalEntry(ctx, {
+        appointmentId: args.appointmentId,
+        appointmentNumber: appointment.appointmentNumber,
+        appointmentDate: appointment.appointmentDate,
+        branchId: appointment.branchId,
+        totalAmount: appointment.totalAmount,
+        paidAmount: actualPaidAmount,
+        outstandingAmount,
+        services: servicesData,
+        taxAmount: appointment.taxAmount,
+      });
+    } catch (error: any) {
+      // Log error but don't fail the appointment completion
+      console.error("Failed to create journal entry:", error.message);
     }
 
     return {

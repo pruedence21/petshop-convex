@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { updateStockFromPurchaseHelper } from "./productStock";
+import { createPurchaseJournalEntry } from "./accountingHelpers";
 
 // Generate PO Number (PO-YYYYMMDD-001)
 async function generatePONumber(ctx: any): Promise<string> {
@@ -294,6 +295,53 @@ export const receive = mutation({
       status: newStatus,
       updatedBy: undefined,
     });
+
+    // Create journal entry for accounting integration (only when fully received)
+    if (allItemsFullyReceived) {
+      try {
+        // Get all items for journal entry
+        const allItems = await ctx.db
+          .query("purchaseOrderItems")
+          .withIndex("by_purchase_order", (q) =>
+            q.eq("purchaseOrderId", args.purchaseOrderId)
+          )
+          .collect();
+
+        const itemsData = await Promise.all(
+          allItems.map(async (item) => {
+            const product = await ctx.db.get(item.productId);
+            
+            // Get category name
+            let categoryName = "Pet Food"; // Default
+            if (product?.categoryId) {
+              const category = await ctx.db.get(product.categoryId);
+              categoryName = category?.name || "Pet Food";
+            }
+            
+            return {
+              productName: product?.name || "Unknown Product",
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              category: categoryName,
+            };
+          })
+        );
+
+        await createPurchaseJournalEntry(ctx, {
+          purchaseOrderId: args.purchaseOrderId,
+          poNumber: po.poNumber,
+          orderDate: po.orderDate,
+          branchId: po.branchId,
+          totalAmount: po.totalAmount,
+          items: itemsData,
+          taxAmount: 0, // TODO: Calculate if needed
+          paid: false, // Default to accounts payable
+        });
+      } catch (error: any) {
+        // Log error but don't fail the receiving process
+        console.error("Failed to create journal entry:", error.message);
+      }
+    }
 
     return { purchaseOrderId: args.purchaseOrderId, status: newStatus };
   },

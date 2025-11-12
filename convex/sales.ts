@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { reduceStockForSaleHelper } from "./productStock";
+import { createSaleJournalEntry } from "./accountingHelpers";
 
 // Generate Sale Number (INV-YYYYMMDD-001)
 async function generateSaleNumber(ctx: any): Promise<string> {
@@ -566,6 +567,48 @@ export const submitSale = mutation({
       outstandingAmount,
       updatedBy: undefined,
     });
+
+    // Create journal entry for accounting integration
+    try {
+      // Prepare items data with product details
+      const itemsData = await Promise.all(
+        items.map(async (item) => {
+          const product = await ctx.db.get(item.productId);
+          
+          // Get category name
+          let categoryName = "Pet Food"; // Default
+          if (product?.categoryId) {
+            const category = await ctx.db.get(product.categoryId);
+            categoryName = category?.name || "Pet Food";
+          }
+          
+          return {
+            productName: product?.name || "Unknown Product",
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            cogs: item.cogs,
+            subtotal: item.subtotal,
+            category: categoryName,
+          };
+        })
+      );
+
+      await createSaleJournalEntry(ctx, {
+        saleId: args.saleId,
+        saleNumber: sale.saleNumber,
+        saleDate: sale.saleDate,
+        branchId: sale.branchId,
+        totalAmount: sale.totalAmount,
+        paidAmount: actualPaidAmount,
+        outstandingAmount,
+        items: itemsData,
+        discountAmount: sale.discountAmount,
+        taxAmount: sale.taxAmount,
+      });
+    } catch (error: any) {
+      // Log error but don't fail the sale
+      console.error("Failed to create journal entry:", error.message);
+    }
 
     return {
       saleId: args.saleId,

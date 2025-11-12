@@ -8,10 +8,18 @@
  * @module
  */
 
+import type * as accountingHelpers from "../accountingHelpers.js";
+import type * as accountingPeriods from "../accountingPeriods.js";
+import type * as accountingSeed from "../accountingSeed.js";
+import type * as accounts from "../accounts.js";
+import type * as accountsReceivable from "../accountsReceivable.js";
 import type * as animalCategories from "../animalCategories.js";
 import type * as animalSubcategories from "../animalSubcategories.js";
 import type * as auth from "../auth.js";
 import type * as backfillMedicalRecords from "../backfillMedicalRecords.js";
+import type * as bankAccounts from "../bankAccounts.js";
+import type * as bankSeed from "../bankSeed.js";
+import type * as bankTransactions from "../bankTransactions.js";
 import type * as branches from "../branches.js";
 import type * as brands from "../brands.js";
 import type * as clinicAppointmentServices from "../clinicAppointmentServices.js";
@@ -23,12 +31,18 @@ import type * as clinicServices from "../clinicServices.js";
 import type * as clinicStaff from "../clinicStaff.js";
 import type * as customerPets from "../customerPets.js";
 import type * as customers from "../customers.js";
+import type * as expenseCategories from "../expenseCategories.js";
+import type * as expenseSeed from "../expenseSeed.js";
+import type * as expenses from "../expenses.js";
+import type * as financialReports from "../financialReports.js";
+import type * as generalLedger from "../generalLedger.js";
 import type * as hotelBookingServices from "../hotelBookingServices.js";
 import type * as hotelBookings from "../hotelBookings.js";
 import type * as hotelConsumables from "../hotelConsumables.js";
 import type * as hotelPayments from "../hotelPayments.js";
 import type * as hotelRooms from "../hotelRooms.js";
 import type * as http from "../http.js";
+import type * as journalEntries from "../journalEntries.js";
 import type * as myFunctions from "../myFunctions.js";
 import type * as petMedicalRecords from "../petMedicalRecords.js";
 import type * as productCategories from "../productCategories.js";
@@ -53,10 +67,18 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accountingHelpers: typeof accountingHelpers;
+  accountingPeriods: typeof accountingPeriods;
+  accountingSeed: typeof accountingSeed;
+  accounts: typeof accounts;
+  accountsReceivable: typeof accountsReceivable;
   animalCategories: typeof animalCategories;
   animalSubcategories: typeof animalSubcategories;
   auth: typeof auth;
   backfillMedicalRecords: typeof backfillMedicalRecords;
+  bankAccounts: typeof bankAccounts;
+  bankSeed: typeof bankSeed;
+  bankTransactions: typeof bankTransactions;
   branches: typeof branches;
   brands: typeof brands;
   clinicAppointmentServices: typeof clinicAppointmentServices;
@@ -68,12 +90,18 @@ declare const fullApi: ApiFromModules<{
   clinicStaff: typeof clinicStaff;
   customerPets: typeof customerPets;
   customers: typeof customers;
+  expenseCategories: typeof expenseCategories;
+  expenseSeed: typeof expenseSeed;
+  expenses: typeof expenses;
+  financialReports: typeof financialReports;
+  generalLedger: typeof generalLedger;
   hotelBookingServices: typeof hotelBookingServices;
   hotelBookings: typeof hotelBookings;
   hotelConsumables: typeof hotelConsumables;
   hotelPayments: typeof hotelPayments;
   hotelRooms: typeof hotelRooms;
   http: typeof http;
+  journalEntries: typeof journalEntries;
   myFunctions: typeof myFunctions;
   petMedicalRecords: typeof petMedicalRecords;
   productCategories: typeof productCategories;

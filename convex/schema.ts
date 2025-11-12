@@ -753,6 +753,234 @@ export default defineSchema({
     .index("by_payment_method", ["paymentMethod"])
     .index("by_payment_date", ["paymentDate"]),
 
+  // ==================== ACCOUNTING MODULE ====================
+
+  // Chart of Accounts
+  accounts: defineTable({
+    accountCode: v.string(), // 1-101, 4-401-001 (hierarchical numbering)
+    accountName: v.string(), // Kas Besar, Piutang Usaha, Penjualan Retail
+    accountType: v.string(), // ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE
+    category: v.string(), // Current Asset, Fixed Asset, Operating Revenue, etc.
+    parentAccountId: v.optional(v.id("accounts")), // For sub-accounts
+    normalBalance: v.string(), // DEBIT or CREDIT
+    description: v.optional(v.string()),
+    isHeader: v.boolean(), // true = parent/group account (can't post transactions)
+    isActive: v.boolean(),
+    level: v.number(), // Hierarchy level (1=main, 2=sub, 3=detail)
+    taxable: v.optional(v.boolean()), // For tax reporting
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_account_code", ["accountCode"])
+    .index("by_account_type", ["accountType"])
+    .index("by_parent", ["parentAccountId"])
+    .index("by_category", ["category"]),
+
+  // Journal Entries (Transaction Header)
+  journalEntries: defineTable({
+    journalNumber: v.string(), // JE-YYYYMMDD-001
+    journalDate: v.number(), // Transaction date
+    description: v.string(), // Transaction description
+    sourceType: v.string(), // SALE, PURCHASE, EXPENSE, PAYMENT, CLINIC, HOTEL, MANUAL, ADJUSTMENT
+    sourceId: v.optional(v.string()), // Reference ID (saleId, poId, etc.)
+    status: v.string(), // Draft, Posted, Voided
+    totalDebit: v.number(), // Must equal totalCredit
+    totalCredit: v.number(),
+    postedBy: v.optional(v.id("users")),
+    postedAt: v.optional(v.number()),
+    voidedBy: v.optional(v.id("users")),
+    voidedAt: v.optional(v.number()),
+    voidReason: v.optional(v.string()),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_journal_number", ["journalNumber"])
+    .index("by_journal_date", ["journalDate"])
+    .index("by_source", ["sourceType", "sourceId"])
+    .index("by_status", ["status"]),
+
+  // Journal Entry Lines (Double-entry details)
+  journalEntryLines: defineTable({
+    journalEntryId: v.id("journalEntries"),
+    accountId: v.id("accounts"),
+    branchId: v.optional(v.id("branches")), // For branch-level reporting
+    description: v.optional(v.string()), // Line-level description
+    debitAmount: v.number(), // 0 if credit entry
+    creditAmount: v.number(), // 0 if debit entry
+    sortOrder: v.number(), // Display order in journal entry
+  })
+    .index("by_journal_entry", ["journalEntryId"])
+    .index("by_account", ["accountId"])
+    .index("by_branch", ["branchId"])
+    .index("by_account_date", ["accountId", "journalEntryId"]), // For ledger queries
+
+  // Bank Accounts
+  bankAccounts: defineTable({
+    accountName: v.string(), // BCA - Checking, Mandiri - Savings
+    bankName: v.string(), // BCA, Mandiri, BRI, BNI
+    accountNumber: v.string(),
+    branchName: v.optional(v.string()), // Bank branch
+    linkedAccountId: v.id("accounts"), // Link to CoA (e.g., 1-102-001 Bank BCA)
+    initialBalance: v.number(), // Opening balance
+    currentBalance: v.number(), // Real-time balance
+    currency: v.string(), // IDR, USD (default IDR)
+    isActive: v.boolean(),
+    notes: v.optional(v.string()),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_account_number", ["accountNumber"])
+    .index("by_bank_name", ["bankName"])
+    .index("by_linked_account", ["linkedAccountId"]),
+
+  // Bank Transactions (with reconciliation)
+  bankTransactions: defineTable({
+    bankAccountId: v.id("bankAccounts"),
+    transactionDate: v.number(),
+    transactionType: v.string(), // DEPOSIT, WITHDRAWAL, TRANSFER_IN, TRANSFER_OUT, FEE, INTEREST
+    amount: v.number(),
+    referenceNumber: v.optional(v.string()), // Check number, transfer ref, etc.
+    description: v.string(),
+    journalEntryId: v.optional(v.id("journalEntries")), // Link to auto-generated JE
+    reconciliationStatus: v.string(), // UNRECONCILED, RECONCILED, VOID
+    reconciledDate: v.optional(v.number()),
+    reconciledBy: v.optional(v.id("users")),
+    bankStatementDate: v.optional(v.number()), // Date from bank statement
+    notes: v.optional(v.string()),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_bank_account", ["bankAccountId"])
+    .index("by_transaction_date", ["transactionDate"])
+    .index("by_reconciliation_status", ["reconciliationStatus"])
+    .index("by_journal_entry", ["journalEntryId"]),
+
+  // Expense Categories
+  expenseCategories: defineTable({
+    categoryName: v.string(), // Operational, Utilities, Marketing, Salary, Rent
+    linkedAccountId: v.id("accounts"), // Link to CoA expense account
+    requiresApproval: v.boolean(), // If true, needs manager approval
+    approvalThreshold: v.optional(v.number()), // Auto-approve below this amount
+    description: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_category_name", ["categoryName"]),
+
+  // Expenses (with approval workflow)
+  expenses: defineTable({
+    expenseNumber: v.string(), // EXP-YYYYMMDD-001
+    branchId: v.id("branches"),
+    categoryId: v.id("expenseCategories"),
+    expenseDate: v.number(),
+    amount: v.number(),
+    vendor: v.optional(v.string()), // Vendor/supplier name
+    description: v.string(),
+    receiptAttachmentId: v.optional(v.string()), // Convex storage ID
+    status: v.string(), // DRAFT, PENDING_APPROVAL, APPROVED, REJECTED, PAID
+    paymentMethod: v.optional(v.string()), // CASH, BANK, CHECK
+    paymentDate: v.optional(v.number()),
+    checkNumber: v.optional(v.string()), // For check payments
+    
+    // Approval workflow
+    submittedBy: v.optional(v.id("users")),
+    submittedAt: v.optional(v.number()),
+    approvedBy: v.optional(v.id("users")),
+    approvedAt: v.optional(v.number()),
+    rejectedBy: v.optional(v.id("users")),
+    rejectedAt: v.optional(v.number()),
+    rejectionReason: v.optional(v.string()),
+    
+    journalEntryId: v.optional(v.id("journalEntries")), // Link to auto-generated JE
+    notes: v.optional(v.string()),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_expense_number", ["expenseNumber"])
+    .index("by_branch", ["branchId"])
+    .index("by_category", ["categoryId"])
+    .index("by_status", ["status"])
+    .index("by_expense_date", ["expenseDate"])
+    .index("by_submitted_by", ["submittedBy"]),
+
+  // Recurring Expenses (monthly rent, utilities)
+  recurringExpenses: defineTable({
+    name: v.string(), // Monthly Rent, Electricity Bill
+    categoryId: v.id("expenseCategories"),
+    branchId: v.optional(v.id("branches")), // null = all branches
+    amount: v.number(),
+    frequency: v.string(), // MONTHLY, QUARTERLY, YEARLY
+    startDate: v.number(),
+    endDate: v.optional(v.number()), // null = indefinite
+    nextDueDate: v.number(),
+    lastGeneratedDate: v.optional(v.number()),
+    autoGenerate: v.boolean(), // Auto-create expense on due date
+    vendor: v.optional(v.string()),
+    description: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_category", ["categoryId"])
+    .index("by_next_due_date", ["nextDueDate"])
+    .index("by_branch", ["branchId"]),
+
+  // Accounting Periods (for closing & audit)
+  accountingPeriods: defineTable({
+    year: v.number(), // 2025
+    month: v.number(), // 1-12
+    periodName: v.string(), // January 2025, Q1 2025
+    startDate: v.number(),
+    endDate: v.number(),
+    status: v.string(), // OPEN, CLOSED, LOCKED
+    closedBy: v.optional(v.id("users")),
+    closedAt: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    createdBy: v.optional(v.id("users")),
+  })
+    .index("by_year_month", ["year", "month"])
+    .index("by_status", ["status"])
+    .index("by_start_date", ["startDate"]),
+
+  // Period Balances (snapshot for audit trail)
+  periodBalances: defineTable({
+    periodId: v.id("accountingPeriods"),
+    accountId: v.id("accounts"),
+    branchId: v.optional(v.id("branches")), // null = consolidated
+    openingBalance: v.number(), // Debit positive, credit negative
+    debitTotal: v.number(), // Total debits in period
+    creditTotal: v.number(), // Total credits in period
+    closingBalance: v.number(), // Opening + debits - credits
+    createdAt: v.number(),
+  })
+    .index("by_period", ["periodId"])
+    .index("by_account", ["accountId"])
+    .index("by_period_account", ["periodId", "accountId"])
+    .index("by_branch", ["branchId"]),
+
+  // Tax Accounts (for VAT tracking)
+  taxAccounts: defineTable({
+    taxCode: v.string(), // VAT_INPUT, VAT_OUTPUT, WHT_23
+    taxName: v.string(), // PPN Masukan, PPN Keluaran
+    taxRate: v.number(), // 11 (for 11%)
+    linkedAccountId: v.id("accounts"), // Link to CoA
+    description: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_tax_code", ["taxCode"])
+    .index("by_linked_account", ["linkedAccountId"]),
+
   // Legacy table - keep for backward compatibility
   numbers: defineTable({
     value: v.number(),
