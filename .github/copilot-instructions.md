@@ -1,7 +1,9 @@
 # Petshop Management System - AI Agent Instructions
 
 ## Project Architecture
-Next.js 16 + Convex full-stack petshop POS with real-time sync, multi-branch inventory, and transaction management. Stack: React 19, TypeScript, shadcn/ui (New York), Tailwind CSS v4, Convex Auth.
+Next.js 16 + Convex full-stack petshop POS with real-time sync, multi-branch inventory, transaction management, and veterinary clinic services. Stack: React 19, TypeScript, shadcn/ui (New York), Tailwind CSS v4, Convex Auth.
+
+**Key modules:** Retail sales, Purchase orders, Inventory, Clinic appointments (with prescription tracking), Medical records, Multi-payment support (Cash/QRIS/Credit/Bank/Debit)
 
 ## Development Workflow
 
@@ -14,9 +16,11 @@ npm run dev  # Parallel: Next.js (3000) + Convex dev server
 ### Project-Specific Gotchas
 1. **Soft deletes everywhere**: Never use `ctx.db.delete()` - use `ctx.db.patch(id, { deletedAt: Date.now() })`
 2. **Index-first queries**: NO `.filter()` in Convex queries - define indexes in `schema.ts`, use `.withIndex()`
-3. **Stock consistency**: Sales/purchases must call helper mutations in `productStock.ts` (`reduceStockForSaleHelper`, `addStockForPurchaseHelper`) to maintain `averageCost` and create `stockMovements`
-4. **Multi-step transactions**: Sales module pattern (see `convex/sales.ts`): Create draft → Add items → Submit with payments → Auto-reduce stock
+3. **Stock consistency**: Sales/purchases/clinic must call helpers in `productStock.ts` (`reduceStockForSaleHelper`, `addStockForPurchaseHelper`) to maintain `averageCost` + create `stockMovements`
+4. **Multi-step transactions**: Pattern (sales/PO/clinic): Create draft → Add items → Submit with payments → Auto-reduce stock
 5. **Auth fields pending**: `createdBy`/`updatedBy` set to `undefined` until RBAC enforcement
+6. **Number generators**: Use dedicated functions like `generateSaleNumber()`, `generateAppointmentNumber()` - pattern: `PREFIX-YYYYMMDD-001`
+7. **Clinic prescription flow**: `isPrescription: true` on appointment services → stock NOT reduced until `pickupPrescription()` called
 
 ## Convex Backend Patterns (MANDATORY)
 
@@ -112,15 +116,17 @@ const navigation = [
 ### Stock Management Flow
 1. **Purchase Order**: Draft → Submit → Receive (calls `addStockForPurchaseHelper`)
 2. **Sale**: Draft → Add items → Submit with payments → Auto-reduces stock via `reduceStockForSaleHelper`
-3. **Stock Movements**: Audit log in `stockMovements` table (types: `PURCHASE_IN`, `SALE_OUT`, `ADJUSTMENT_IN/OUT`, `TRANSFER_IN/OUT`)
+3. **Clinic Appointment**: Draft → Add services → Submit with payments → Reduces stock ONLY for non-prescription items
+   - Prescription items: `isPrescription: true` → stock reduced later via `pickupPrescription()`
+4. **Stock Movements**: Audit log in `stockMovements` table (types: `PURCHASE_IN`, `SALE_OUT`, `ADJUSTMENT_IN/OUT`, `TRANSFER_IN/OUT`)
 
 ### Multi-Branch Inventory
 - `productStock` table: Composite key `(branchId, productId, variantId)`
 - `averageCost` recalculated on every purchase using weighted average
 - Low stock alerts: Query where `quantity < product.minStock`
 
-### Sales Transaction Calculation
-See `convex/sales.ts` helpers:
+### Transaction Calculation Pattern (Sales & Clinic)
+See `convex/sales.ts` and `convex/clinicAppointments.ts` helpers:
 ```typescript
 // Item subtotal: qty × price - discount (per item)
 // Subtotal: Sum of item subtotals
@@ -135,6 +141,17 @@ See `convex/sales.ts` helpers:
 ```typescript
 await ctx.mutation(api.customers.createDefaultCustomer, {});
 ```
+
+### Clinic-Specific Patterns
+- **Time Slots**: 08:00-17:00, 30-min intervals (09:00, 09:30, 10:00...)
+- **Staff Availability**: `checkAvailability` query prevents double-booking
+- **Prescription Pickup**: 
+  ```typescript
+  // At appointment completion: isPrescription services NOT stocked out
+  // Later pickup: staff calls pickupPrescription(serviceItemId)
+  // → reduces stock + marks prescriptionPickedUp = true
+  ```
+- **Medical Records**: Auto-created from completed appointments via `createFromAppointment()`
 
 ## Common Implementation Tasks
 
@@ -191,12 +208,106 @@ const { isAuthenticated, isLoading } = useConvexAuth();
 ```
 
 ## Key Files Reference
-- `convex/schema.ts` - Single source of truth for database
+- `convex/schema.ts` - Single source of truth for database (includes clinic tables)
 - `convex/sales.ts` - Multi-step transaction pattern reference
+- `convex/clinicAppointments.ts` - Appointment scheduling + prescription flow
 - `convex/productStock.ts` - Helper mutations for atomic stock operations
 - `app/dashboard/sales/page.tsx` - Complex form with dialog, items, payments
+- `app/dashboard/clinic/appointments/page.tsx` - Appointment UI implementation
 - `.cursor/rules/convex_rules.mdc` - Comprehensive Convex development guidelines
 - `SALES_MODULE_README.md` - Sales implementation walkthrough
+- `CLINIC_MODULE_README.md` - Clinic module features and workflows
+
+## MCP (Model Context Protocol) Integration
+
+### Available MCP Servers
+Project configured with three MCP servers (`.vscode/mcp.json`):
+
+1. **convex-mcp**: Direct Convex backend interaction
+   - Query/manipulate database without code changes
+   - View deployment status, function specs, logs
+   - Run queries/mutations with real-time results
+   - Access: `mcp_convex-mcp_status`, `mcp_convex-mcp_data`, `mcp_convex-mcp_run`, `mcp_convex-mcp_logs`
+
+2. **next-devtools**: Next.js runtime diagnostics
+   - Initialize with `mcp_next-devtools_init` FIRST in Next.js sessions
+   - Query Next.js docs: `mcp_next-devtools_nextjs_docs`
+   - Runtime diagnostics: `mcp_next-devtools_nextjs_runtime`
+   - Browser automation: `mcp_next-devtools_browser_eval`
+   - Upgrade helper: `mcp_next-devtools_upgrade_nextjs_16`
+
+3. **shadcn**: Component registry management
+   - List/search components: `mcp_shadcn_list_items_in_registries`, `mcp_shadcn_search_items_in_registries`
+   - View component details: `mcp_shadcn_view_items_in_registries`
+   - Get install commands: `mcp_shadcn_get_add_command_for_items`
+
+### When to Use MCP Tools
+
+**Convex MCP** - Use when:
+- Debugging backend issues (check logs, query data directly)
+- Testing mutations without writing test code
+- Viewing deployment status or function metadata
+- Running one-off queries for data analysis
+- Checking environment variables
+
+**Next.js DevTools MCP** - Use when:
+- Starting any Next.js development session (call `init` first)
+- Need official Next.js documentation
+- Debugging runtime errors or build issues
+- Testing page interactions (browser automation)
+- Upgrading Next.js versions
+
+**shadcn MCP** - Use when:
+- Adding new UI components
+- Searching for component examples
+- Checking component dependencies
+- Getting usage patterns for components
+
+### MCP Usage Patterns
+
+```typescript
+// Example: Query Convex data directly
+mcp_convex-mcp_status({ projectDir: "d:\\Koding\\petshop-convex" })
+// → Get deployment selector for prod/dev
+
+mcp_convex-mcp_data({
+  deploymentSelector: "{\"kind\":\"ownDev\"}",
+  tableName: "products",
+  order: "desc"
+})
+// → Read products table
+
+mcp_convex-mcp_run({
+  deploymentSelector: "{\"kind\":\"ownDev\"}",
+  functionName: "sales.list",
+  args: "{\"status\":\"Completed\"}"
+})
+// → Execute sales.list query
+
+// Example: Next.js documentation
+mcp_next-devtools_init({ project_path: "d:\\Koding\\petshop-convex" })
+// → Initialize (call first in session)
+
+mcp_next-devtools_nextjs_docs({
+  action: "search",
+  query: "app router data fetching"
+})
+// → Search Next.js docs
+
+// Example: shadcn components
+mcp_shadcn_search_items_in_registries({
+  registries: ["@shadcn"],
+  query: "data table"
+})
+// → Find data table component
+```
+
+### MCP Best Practices
+1. **Convex debugging**: Use MCP tools before diving into code - faster data inspection
+2. **Next.js sessions**: Always call `mcp_next-devtools_init` first for accurate docs
+3. **Component discovery**: Use shadcn MCP before manually adding components
+4. **Avoid redundancy**: Don't write temporary debugging code if MCP can answer it
+5. **Real-time testing**: Use `mcp_convex-mcp_run` to test mutations with actual data
 
 ## Critical Mistakes to Avoid
 1. Using `.filter()` in queries instead of indexes
@@ -207,3 +318,5 @@ const { isAuthenticated, isLoading } = useConvexAuth();
 6. Defining system fields (`_id`, `_creationTime`) in schema
 7. Not filtering `deletedAt` in list queries
 8. Indonesian/English mixing in code (use English for code, Indonesian for UI)
+9. Reducing stock for prescription items at appointment completion (use pickup flow)
+10. Not using MCP tools when debugging/inspecting data (faster than writing temp code)
