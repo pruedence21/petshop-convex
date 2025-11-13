@@ -202,7 +202,7 @@ export default function FinancialReportsPage() {
                 {/* Current Assets */}
                 <div className="ml-4 space-y-2">
                   <p className="font-semibold text-slate-700">Aset Lancar</p>
-                  {balanceSheet.assets?.currentAssets?.items?.map((item: any) => (
+                  {balanceSheet.assets?.currentAssets?.map((item: any) => (
                     <div
                       key={item.accountCode}
                       className="flex justify-between ml-4 text-sm"
@@ -228,7 +228,7 @@ export default function FinancialReportsPage() {
                 {/* Fixed Assets */}
                 <div className="ml-4 space-y-2 mt-4">
                   <p className="font-semibold text-slate-700">Aset Tetap</p>
-                  {balanceSheet.assets?.fixedAssets?.items?.map((item: any) => (
+                  {balanceSheet.assets?.fixedAssets?.map((item: any) => (
                     <div
                       key={item.accountCode}
                       className="flex justify-between ml-4 text-sm"
@@ -270,7 +270,7 @@ export default function FinancialReportsPage() {
                   <p className="font-semibold text-slate-700">
                     Kewajiban Lancar
                   </p>
-                  {balanceSheet.liabilities?.currentLiabilities?.items?.map(
+                  {balanceSheet.liabilities?.currentLiabilities?.map(
                     (item: any) => (
                       <div
                         key={item.accountCode}
@@ -296,13 +296,13 @@ export default function FinancialReportsPage() {
                 </div>
 
                 {/* Long-term Liabilities */}
-                {balanceSheet.liabilities?.longTermLiabilities?.items?.length >
+                {balanceSheet.liabilities?.longTermLiabilities?.length >
                   0 && (
                   <div className="ml-4 space-y-2 mt-4">
                     <p className="font-semibold text-slate-700">
                       Kewajiban Jangka Panjang
                     </p>
-                    {balanceSheet.liabilities?.longTermLiabilities?.items?.map(
+                    {balanceSheet.liabilities?.longTermLiabilities?.map(
                       (item: any) => (
                         <div
                           key={item.accountCode}
@@ -396,7 +396,7 @@ export default function FinancialReportsPage() {
               <div>
                 <h3 className="font-bold text-lg mb-3">PENDAPATAN</h3>
                 <div className="ml-4 space-y-2">
-                  {incomeStatement.revenue?.items?.map((item: any) => (
+                  {incomeStatement.revenue?.operatingRevenue?.map((item: any) => (
                     <div
                       key={item.accountCode}
                       className="flex justify-between text-sm"
@@ -457,7 +457,7 @@ export default function FinancialReportsPage() {
               <div>
                 <h3 className="font-bold text-lg mb-3">BEBAN OPERASIONAL</h3>
                 <div className="ml-4 space-y-2">
-                  {incomeStatement.expenses?.items?.map((item: any) => (
+                  {incomeStatement.expenses?.operating?.map((item: any) => (
                     <div
                       key={item.accountCode}
                       className="flex justify-between text-sm"
