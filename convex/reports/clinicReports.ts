@@ -116,7 +116,7 @@ export const getClinicSummary = query({
     const serviceRevenue = await Promise.all(
       Array.from(serviceRevenueMap.entries()).map(
         async ([serviceId, data]) => {
-          const product = await ctx.db.get(serviceId as any);
+          const product = await ctx.db.get(serviceId as any) as any;
           return {
             serviceId: serviceId as any,
             serviceName: product?.name || "Unknown",
@@ -146,7 +146,7 @@ export const getClinicSummary = query({
 
     const staffPerformance = await Promise.all(
       Array.from(staffMap.entries()).map(async ([staffId, data]) => {
-        const staff = await ctx.db.get(staffId as any);
+        const staff = await ctx.db.get(staffId as any) as any;
         return {
           staffId: staffId as any,
           staffName: staff?.name || "Unknown",
@@ -266,10 +266,10 @@ export const getPatientReport = query({
 
     const result = await Promise.all(
       Array.from(patientMap.entries()).map(async ([petId, data]) => {
-        const pet = await ctx.db.get(petId as any);
-        const customer = await ctx.db.get(data.customerId as any);
+        const pet = await ctx.db.get(petId as any) as any;
+        const customer = await ctx.db.get(data.customerId as any) as any;
         const animalCategory = pet?.categoryId
-          ? await ctx.db.get(pet.categoryId)
+          ? await ctx.db.get(pet.categoryId) as any
           : null;
 
         return {
@@ -351,9 +351,9 @@ export const getServiceReport = query({
 
     const result = await Promise.all(
       Array.from(serviceMap.entries()).map(async ([serviceId, data]) => {
-        const product = await ctx.db.get(serviceId as any);
+        const product = await ctx.db.get(serviceId as any) as any;
         const category = product?.categoryId
-          ? await ctx.db.get(product.categoryId)
+          ? await ctx.db.get(product.categoryId) as any
           : null;
 
         return {

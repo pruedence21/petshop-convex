@@ -246,14 +246,12 @@ export const getRoomOccupancy = query({
     })
   ),
   handler: async (ctx, args) => {
-    let roomsQuery = ctx.db.query("hotelRooms");
-    if (args.branchId) {
-      roomsQuery = roomsQuery.withIndex("by_branch", (q) =>
-        q.eq("branchId", args.branchId)
-      );
-    }
-
-    const allRooms = await roomsQuery.collect();
+    const allRooms = args.branchId
+      ? await ctx.db
+          .query("hotelRooms")
+          .withIndex("by_branch", (q) => q.eq("branchId", args.branchId!))
+          .collect()
+      : await ctx.db.query("hotelRooms").collect();
     const rooms = allRooms.filter((r) => !r.deletedAt && r.isActive);
 
     const periodDays =
@@ -375,8 +373,8 @@ export const getGuestReport = query({
 
     const result = await Promise.all(
       Array.from(guestMap.entries()).map(async ([, data]) => {
-        const customer = await ctx.db.get(data.customerId as any);
-        const pet = await ctx.db.get(data.petId as any);
+        const customer = await ctx.db.get(data.customerId as any) as any;
+        const pet = await ctx.db.get(data.petId as any) as any;
 
         return {
           customerId: data.customerId as any,
@@ -454,7 +452,7 @@ export const getHotelServicesReport = query({
 
     const result = await Promise.all(
       Array.from(serviceMap.entries()).map(async ([serviceId, data]) => {
-        const product = await ctx.db.get(serviceId as any);
+        const product = await ctx.db.get(serviceId as any) as any;
 
         return {
           serviceId: serviceId as any,

@@ -67,6 +67,7 @@ const navigation: NavigationItem[] = [
   { name: "Hewan", href: "/dashboard/pets", icon: Heart },
   { name: "Pelanggan", href: "/dashboard/customers", icon: Users },
   { name: "Supplier", href: "/dashboard/suppliers", icon: TruckIcon },
+  { name: "Laporan", href: "/dashboard/reports", icon: ClipboardList },
   {
     name: "Akuntansi",
     icon: FileText,

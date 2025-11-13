@@ -242,13 +242,12 @@ export const getMainDashboard = query({
     }).length;
 
     // === INVENTORY ===
-    let stockQuery = ctx.db.query("productStock");
-    if (args.branchId) {
-      stockQuery = stockQuery.withIndex("by_branch", (q) =>
-        q.eq("branchId", args.branchId)
-      );
-    }
-    const allStock = await stockQuery.collect();
+    const allStock = args.branchId
+      ? await ctx.db
+          .query("productStock")
+          .withIndex("by_branch", (q) => q.eq("branchId", args.branchId!))
+          .collect()
+      : await ctx.db.query("productStock").collect();
 
     const inventoryValue = allStock.reduce(
       (sum, s) => sum + s.quantity * s.averageCost,
@@ -258,10 +257,10 @@ export const getMainDashboard = query({
     // Low stock check
     const lowStockCount = await Promise.all(
       allStock.map(async (s) => {
-        const product = await ctx.db.get(s.productId);
-        return product && s.quantity <= product.minStock ? 1 : 0;
+        const product = await ctx.db.get(s.productId) as any;
+        return product && s.quantity <= (product.minStock || 0) ? 1 : 0;
       })
-    ).then((counts) => counts.reduce((sum, c) => sum + c, 0));
+    ).then((counts) => counts.reduce((sum: number, c: number) => sum + c, 0));
 
     // === ACCOUNTS RECEIVABLE ===
     const salesAR = currentSales.reduce((sum, s) => sum + s.outstandingAmount, 0);
@@ -313,7 +312,7 @@ export const getMainDashboard = query({
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(async ([productId, revenue]) => {
-          const product = await ctx.db.get(productId as any);
+          const product = await ctx.db.get(productId as any) as any;
           return {
             name: product?.name || "Unknown",
             revenue,
@@ -333,7 +332,7 @@ export const getMainDashboard = query({
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(async ([customerId, totalSpent]) => {
-          const customer = await ctx.db.get(customerId as any);
+          const customer = await ctx.db.get(customerId as any) as any;
           return {
             name: customer?.name || "Unknown",
             totalSpent,

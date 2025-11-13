@@ -58,7 +58,7 @@ export default function ReportsPage() {
       ? {
           startDate: new Date(startDate).getTime(),
           endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch ? (selectedBranch as Parameters<typeof api.reports.dashboardReports.getMainDashboard>[0]["branchId"]) : undefined,
+          branchId: selectedBranch as any,
           compareWithPreviousPeriod: true,
         }
       : "skip"
@@ -71,7 +71,7 @@ export default function ReportsPage() {
       ? {
           startDate: new Date(startDate).getTime(),
           endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch ? (selectedBranch as Parameters<typeof api.reports.salesReports.getSalesSummary>[0]["branchId"]) : undefined,
+          branchId: selectedBranch as any,
         }
       : "skip"
   );
@@ -82,7 +82,7 @@ export default function ReportsPage() {
       ? {
           startDate: new Date(startDate).getTime(),
           endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch ? (selectedBranch as Parameters<typeof api.reports.salesReports.getSalesByCustomer>[0]["branchId"]) : undefined,
+          branchId: selectedBranch as any,
           limit: 10,
         }
       : "skip"
@@ -93,7 +93,7 @@ export default function ReportsPage() {
     api.reports.inventoryReports.getStockSummary,
     activeTab === "inventory"
       ? {
-          branchId: selectedBranch ? (selectedBranch as Parameters<typeof api.reports.inventoryReports.getStockSummary>[0]["branchId"]) : undefined,
+          branchId: selectedBranch as any,
         }
       : "skip"
   );
@@ -102,7 +102,7 @@ export default function ReportsPage() {
     api.reports.inventoryReports.getLowStockItems,
     activeTab === "inventory"
       ? {
-          branchId: selectedBranch ? (selectedBranch as Parameters<typeof api.reports.inventoryReports.getLowStockItems>[0]["branchId"]) : undefined,
+          branchId: selectedBranch as any,
         }
       : "skip"
   );
@@ -113,7 +113,7 @@ export default function ReportsPage() {
       ? {
           startDate: new Date(startDate).getTime(),
           endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch ? (selectedBranch as Parameters<typeof api.reports.inventoryReports.getBestSellingProducts>[0]["branchId"]) : undefined,
+          branchId: selectedBranch as any,
           limit: 10,
         }
       : "skip"
@@ -126,7 +126,7 @@ export default function ReportsPage() {
       ? {
           startDate: new Date(startDate).getTime(),
           endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch ? (selectedBranch as Parameters<typeof api.reports.clinicReports.getClinicSummary>[0]["branchId"]) : undefined,
+          branchId: selectedBranch as any,
         }
       : "skip"
   );
@@ -137,7 +137,7 @@ export default function ReportsPage() {
       ? {
           startDate: new Date(startDate).getTime(),
           endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch ? (selectedBranch as Parameters<typeof api.reports.clinicReports.getPatientReport>[0]["branchId"]) : undefined,
+          branchId: selectedBranch as any,
         }
       : "skip"
   );
@@ -149,7 +149,7 @@ export default function ReportsPage() {
       ? {
           startDate: new Date(startDate).getTime(),
           endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch ? (selectedBranch as Parameters<typeof api.reports.hotelReports.getHotelSummary>[0]["branchId"]) : undefined,
+          branchId: selectedBranch as any,
         }
       : "skip"
   );
@@ -160,7 +160,7 @@ export default function ReportsPage() {
       ? {
           startDate: new Date(startDate).getTime(),
           endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch ? (selectedBranch as Parameters<typeof api.reports.hotelReports.getRoomOccupancy>[0]["branchId"]) : undefined,
+          branchId: selectedBranch as any,
         }
       : "skip"
   );

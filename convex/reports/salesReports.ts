@@ -144,7 +144,7 @@ export const getSalesSummary = query({
         .sort((a, b) => b[1].revenue - a[1].revenue)
         .slice(0, 10)
         .map(async ([productId, data]) => {
-          const product = await ctx.db.get(productId as any);
+          const product = await ctx.db.get(productId as any) as any;
           return {
             productId: productId as any,
             productName: product?.name || "Unknown",
@@ -259,7 +259,7 @@ export const getSalesByCustomer = query({
     const result = await Promise.all(
       Array.from(customerSalesMap.entries()).map(
         async ([customerId, data]) => {
-          const customer = await ctx.db.get(customerId as any);
+          const customer = await ctx.db.get(customerId as any) as any;
           return {
             customerId: customerId as any,
             customerCode: customer?.code || "",
@@ -345,7 +345,7 @@ export const getCashierPerformance = query({
       Array.from(cashierMap.entries()).map(async ([userId, data]) => {
         let userName = "System";
         if (userId !== "unknown") {
-          const user = await ctx.db.get(userId as any);
+          const user = await ctx.db.get(userId as any) as any;
           userName = user?.name || user?.email || "Unknown User";
         }
 

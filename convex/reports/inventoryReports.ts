@@ -30,14 +30,12 @@ export const getStockSummary = query({
   }),
   handler: async (ctx, args) => {
     // Get all stock
-    let stockQuery = ctx.db.query("productStock");
-    if (args.branchId) {
-      stockQuery = stockQuery.withIndex("by_branch", (q) =>
-        q.eq("branchId", args.branchId)
-      );
-    }
-
-    const allStock = await stockQuery.collect();
+    const allStock = args.branchId
+      ? await ctx.db
+          .query("productStock")
+          .withIndex("by_branch", (q) => q.eq("branchId", args.branchId!))
+          .collect()
+      : await ctx.db.query("productStock").collect();
     const stock = allStock.filter((s) => s.quantity > 0);
 
     // Get products
@@ -104,7 +102,7 @@ export const getStockSummary = query({
     const stockByCategory = await Promise.all(
       Array.from(categoryValueMap.entries()).map(
         async ([categoryId, data]) => {
-          const category = await ctx.db.get(categoryId as any);
+          const category = await ctx.db.get(categoryId as any) as any;
           return {
             categoryId: categoryId as any,
             categoryName: category?.name || "Unknown",
@@ -211,14 +209,12 @@ export const getLowStockItems = query({
     })
   ),
   handler: async (ctx, args) => {
-    let stockQuery = ctx.db.query("productStock");
-    if (args.branchId) {
-      stockQuery = stockQuery.withIndex("by_branch", (q) =>
-        q.eq("branchId", args.branchId)
-      );
-    }
-
-    const allStock = await stockQuery.collect();
+    const allStock = args.branchId
+      ? await ctx.db
+          .query("productStock")
+          .withIndex("by_branch", (q) => q.eq("branchId", args.branchId!))
+          .collect()
+      : await ctx.db.query("productStock").collect();
 
     const lowStockItems = [];
 
@@ -284,14 +280,12 @@ export const getStockValuation = query({
     ),
   }),
   handler: async (ctx, args) => {
-    let stockQuery = ctx.db.query("productStock");
-    if (args.branchId) {
-      stockQuery = stockQuery.withIndex("by_branch", (q) =>
-        q.eq("branchId", args.branchId)
-      );
-    }
-
-    const allStock = await stockQuery.collect();
+    const allStock = args.branchId
+      ? await ctx.db
+          .query("productStock")
+          .withIndex("by_branch", (q) => q.eq("branchId", args.branchId!))
+          .collect()
+      : await ctx.db.query("productStock").collect();
     const stock = allStock.filter((s) => s.quantity > 0);
 
     let totalValue = 0;
@@ -392,12 +386,12 @@ export const getBestSellingProducts = query({
     // Get product details
     const result = await Promise.all(
       Array.from(productMap.entries()).map(async ([productId, data]) => {
-        const product = await ctx.db.get(productId as any);
+        const product = await ctx.db.get(productId as any) as any;
         if (!product) {
           return null;
         }
 
-        const category = await ctx.db.get(product.categoryId);
+        const category = await ctx.db.get(product.categoryId) as any;
         const profit = data.revenue - data.cogs;
         const profitMargin = data.revenue > 0 ? (profit / data.revenue) * 100 : 0;
 
