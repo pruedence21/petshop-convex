@@ -110,7 +110,7 @@ if (data === undefined) return <LoadingState />;
 
 ### MCP Integration (Model Context Protocol)
 
-**MCP servers configured in `.kilocode/mcp.json`**:
+**MCP servers
 - `convex-mcp`: Query Convex deployment, read data, view tables, run functions
 - `next-devtools`: Next.js 16 runtime inspection, error detection, route analysis
 - `shadcn`: Component discovery, add UI components

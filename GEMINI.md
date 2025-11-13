@@ -1,89 +1,334 @@
-# GEMINI Project Context: Petshop Management System
+# Copilot Instructions - Pet Shop Management System
 
-This document provides a comprehensive overview of the Petshop Management System project, its architecture, and development conventions to guide future interactions and development.
+## Project Overview
 
-## 1. Project Overview
+This is a comprehensive pet shop management system built with **Next.js 16**, **Convex** (real-time backend), **TypeScript**, and **Tailwind CSS 4**. The system integrates retail POS, veterinary clinic, pet hotel/boarding, and professional double-entry accounting in one platform.
 
-This is a full-stack, real-time **Pet Shop Management System** built with a modern technology stack. The application is designed to be a comprehensive business management tool, featuring modules for:
+**Tech Stack:**
+- Frontend: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui
+- Backend: Convex (real-time database + serverless functions)
+- Auth: Convex Auth (configured in `convex/auth.config.ts`, middleware in `middleware.ts`)
+- UI Components: shadcn/ui with Radix UI primitives
 
-*   **Sales & Inventory:** Point-of-sale, product catalog, stock management, and purchase orders.
-*   **Veterinary Clinic:** Appointment scheduling, medical records, and service management.
-*   **Pet Hotel:** Room management and bookings.
-*   **Customer Management:** Customer and pet profiles.
-*   **Accounting:** A complete, integrated double-entry accounting system with a standard Indonesian Chart of Accounts (CoA), automated journal entries, and financial reporting.
+## Architecture & Critical Patterns
 
-### Technology Stack
+### Backend Architecture (Convex)
 
-*   **Frontend:** Next.js 16 (App Router), React 19
-*   **Backend & Database:** Convex (Real-time database, Serverless Functions, Auth)
-*   **UI & Styling:** Tailwind CSS 4, shadcn/ui, Radix UI
-*   **Language:** TypeScript (end-to-end)
-*   **Code Quality:** ESLint, Prettier
+**All business logic lives in `convex/` directory** as serverless functions:
+- `query` - Read-only database queries (auto-cached, reactive)
+- `mutation` - Database writes with transactions
+- `internalQuery/internalMutation` - Private functions (not exposed to clients)
+- `action` - External API calls, use Node.js runtime with `"use node";`
 
-## 2. Building and Running the Project
+**Key Pattern:** Convex uses **file-based routing** and **function references**:
+```typescript
+// Define in convex/sales.ts
+export const list = query({ ... });
 
-### Prerequisites
-*   Node.js (v18+)
-*   npm
+// Call from frontend
+import { api } from "@/convex/_generated/api";
+const sales = useQuery(api.sales.list, { ... });
 
-### Key Commands
+// Call internally
+await ctx.runQuery(internal.sales.getSomeData, { ... });
+```
 
-1.  **Install Dependencies:**
-    ```bash
-    npm install
-    ```
+**ALWAYS follow Convex conventions** from `.cursor/rules/convex_rules.mdc`:
+- Use new function syntax with `args`, `returns`, and `handler`
+- Include validators for ALL arguments and return types
+- Use `v.null()` for functions that don't return values
+- Define indexes in schema for ALL query filters (NO raw `filter()` without indexes)
+- Use `withIndex()` for queries, never unindexed `filter()`
 
-2.  **Run Development Servers:**
-    This command starts the Next.js frontend and Convex backend services concurrently. It also runs a setup script on first launch.
-    ```bash
-    npm run dev
-    ```
+### Database Schema (`convex/schema.ts`)
 
-3.  **Build for Production:**
-    ```bash
-    npm run build
-    ```
+50+ tables organized by domain:
+- **Master Data**: `customers`, `customerPets`, `products`, `productVariants`, `branches`, `suppliers`, `units`
+- **Transactions**: `sales`, `saleItems`, `salePayments`, `purchaseOrders`, `clinicAppointments`, `hotelBookings`
+- **Inventory**: `productStock`, `stockMovements` (audit log of all stock changes)
+- **Accounting**: `accounts` (Chart of Accounts), `journalEntries`, `journalEntryLines`, `bankAccounts`, `expenses`
+- **AR/AP**: Tracked through `outstandingAmount` fields in sales/appointments
 
-4.  **Start Production Server:**
-    ```bash
-    npm run start
-    ```
+**Critical Pattern - Soft Deletes**: Nearly all tables have `deletedAt: v.optional(v.number())`. Always filter with `!record.deletedAt` in queries.
 
-5.  **Lint the Code:**
-    ```bash
-    npm run lint
-    ```
+**Critical Pattern - Audit Fields**: Most tables track `createdBy`, `updatedBy` (user IDs) and `_creationTime` (auto-added by Convex).
 
-## 3. Architecture & Development Conventions
+### Accounting Module - THE MOST IMPORTANT PATTERN
 
-This project has well-documented standards. Key documents to reference are `doc/06-system-architecture.md`, `UI_UX_MODERNIZATION_GUIDE.md`, and `ACCOUNTING_MODULE_README.md`.
+**Double-Entry Bookkeeping**: Every business transaction (sale, purchase, expense, payment) automatically generates journal entries via `accountingHelpers.ts`.
 
-### Backend (Convex)
+**How it works:**
+1. Business transaction mutation completes (e.g., `sales.completeSale`)
+2. Before returning, calls `createSaleJournalEntry()` from `accountingHelpers.ts`
+3. Helper function:
+   - Generates journal number (JE-YYYYMMDD-001)
+   - Creates `journalEntries` record (header)
+   - Creates multiple `journalEntryLines` (debits & credits)
+   - **MUST balance**: `totalDebit === totalCredit`
+   - Links back to source transaction via `sourceType` + `sourceId`
 
-*   **Schema:** The single source of truth for the database is `convex/schema.ts`. It is extensive and defines all data models and their relationships.
-*   **Modularity:** Business logic is organized into files within the `convex/` directory, corresponding to the application's modules (e.g., `convex/sales.ts`, `convex/clinicAppointments.ts`, `convex/accounting/`).
-*   **Accounting Integration:** A critical architectural pattern is the automated generation of journal entries from business transactions. Helper functions like `createSaleJournalEntry` (found in `convex/accountingHelpers.ts`) **must** be called when a sale, purchase, or other financial event occurs. Refer to `ACCOUNTING_MODULE_README.md` for detailed integration logic.
+**Example Journal Entry for Sale:**
+```typescript
+// Sale completed: IDR 110,000 (10,000 discount, paid cash, COGS: 60,000)
+Debit:  Cash (1-111)                    100,000  // paidAmount
+Debit:  AR (1-141)                        0      // outstandingAmount
+Debit:  COGS (5-111)                     60,000  // sum of item.cogs
+Debit:  Discount Exp (5-511)             10,000  // transaction discount
+Credit: Sales Revenue (4-111)           110,000  // totalAmount
+Credit: Inventory (1-131)                60,000  // sum of item.cogs
+```
 
-### Frontend (Next.js & React)
+**When modifying transactions**: ALWAYS ensure journal entries are created/updated/voided accordingly.
 
-*   **Structure:** The frontend uses the Next.js App Router. Pages are located in `app/dashboard/`. Reusable components are in `components/`.
-*   **UI Components:** The project uses `shadcn/ui`. New components should be added via `npx shadcn-ui@latest add [component]`.
-*   **State Management:** Primarily uses Convex's real-time queries (`useQuery`) for server state. Local component state is managed with React hooks (`useState`, `useReducer`).
+### Frontend Patterns (Next.js App Router)
 
-### UI/UX and Accessibility Conventions
+**Structure**: `/app/dashboard/[module]/page.tsx` for main routes
+- Each page is a Client Component (`"use client"`)
+- Uses `useQuery()` and `useMutation()` from `convex/react`
+- shadcn/ui components imported from `@/components/ui/`
 
-The `UI_UX_MODERNIZATION_GUIDE.md` outlines strict guidelines that must be followed:
+**Real-time Data Pattern:**
+```typescript
+"use client";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
-*   **Accessibility (WCAG 2.1 AA):** This is a high priority.
-    *   All interactive elements must be keyboard accessible with visible focus indicators.
-    *   Icon-only buttons require an `aria-label` and a visually hidden text element (`<span className="sr-only">`).
-    *   Use semantic HTML (`<nav>`, `<main>`, etc.) over `<div>` where appropriate.
-*   **Error Handling:**
-    *   Wrap all pages or major components in the `<ErrorBoundary>` component from `@/components/error-boundary.tsx`.
-    *   Use the `withRetry()` helper function from `@/lib/error-handling.ts` for mutations to handle transient network errors.
-    *   Display user-friendly error messages using `formatErrorMessage()`.
-*   **User Interaction:**
-    *   **Do not use `window.confirm()`**. Instead, use the promise-based `useConfirm()` hook from `@/components/ui/confirm-dialog.tsx`.
-    *   Display loading states during data fetching and mutations. Use the pre-built skeleton components from `@/components/ui/loading-skeletons.tsx` for initial page loads.
-    *   Disable buttons and show a loading indicator during form submissions.
-*   **Responsiveness:** All UI must be tested on mobile, tablet, and desktop screen sizes. Use responsive Tailwind CSS classes (`sm:`, `md:`, `lg:`).
+export default function SalesPage() {
+  // Auto-updates when data changes (reactive!)
+  const sales = useQuery(api.sales.list, { status: "Completed" });
+  const completeMutation = useMutation(api.sales.completeSale);
+  
+  if (sales === undefined) return <LoadingSpinner />; // undefined = loading
+  // ... render
+}
+```
+
+**Loading States**: Convex queries return `undefined` during initial load, then data. ALWAYS handle this:
+```typescript
+if (data === undefined) return <LoadingState />;
+```
+
+### MCP Integration (Model Context Protocol)
+
+**MCP servers
+- `convex-mcp`: Query Convex deployment, read data, view tables, run functions
+- `next-devtools`: Next.js 16 runtime inspection, error detection, route analysis
+- `shadcn`: Component discovery, add UI components
+
+**Using MCPs**:
+1. **Convex MCP** - Use to inspect database, understand schema, query data without writing code
+2. **Next DevTools** - ALWAYS run `init` first, then use `nextjs_runtime` to inspect running dev server
+3. **shadcn MCP** - Search components, view examples, get add commands
+
+## Development Workflows
+
+### Running the App
+
+**Start dev server:**
+```powershell
+npm run dev
+```
+
+This runs **both** Next.js frontend (port 3000) and Convex backend concurrently via `npm-run-all`:
+- Frontend: `next dev` (http://localhost:3000)
+- Backend: `convex dev` (watches `convex/` folder, hot-reloads functions)
+
+**Important**: Convex requires authentication setup on first run. The `predev` script handles this automatically.
+
+### Database Seeding
+
+**Initial setup** is handled by `setup.mjs` (runs via `predev` script):
+- Creates default Chart of Accounts (80+ accounts)
+- Seeds categories, brands, units, branches
+- Creates "Umum" (General) default customer
+
+**Manual seeding** via Convex dashboard or functions (no separate migration files).
+
+### Making Schema Changes
+
+1. Edit `convex/schema.ts`
+2. Convex auto-detects changes and applies them
+3. **Add indexes for every query filter** - No unindexed queries!
+4. For breaking changes, you may need to backfill data via mutations
+
+### Adding New Business Transactions
+
+**Pattern for transaction modules** (sales, purchases, clinic, hotel):
+
+1. **Create transaction header** (Draft status)
+2. **Add line items** (products/services)
+3. **Calculate totals** (subtotal, discount, tax, total)
+4. **Complete transaction** (finalize, reduce stock, create journal entry)
+5. **Handle payments** (track paidAmount, outstandingAmount)
+
+**Stock Movement**: ALWAYS log to `stockMovements` table when inventory changes:
+```typescript
+await ctx.db.insert("stockMovements", {
+  branchId, productId, variantId,
+  movementType: "SALE_OUT", // or PURCHASE_IN, ADJUSTMENT_IN, etc.
+  quantity: -saleQty, // negative for OUT, positive for IN
+  referenceType: "Sale",
+  referenceId: saleId,
+  movementDate: Date.now(),
+});
+```
+
+### Accounting Integration Checklist
+
+When creating new transaction types:
+1. ✅ Add helper function to `convex/accountingHelpers.ts`
+2. ✅ Define account codes for debits/credits
+3. ✅ Ensure journal entry balances (debit = credit)
+4. ✅ Link journal entry back to transaction (`sourceType`, `sourceId`)
+5. ✅ Call helper from transaction completion mutation
+6. ✅ Test with different scenarios (cash, credit, partial payments)
+
+## Common Tasks & Examples
+
+### Adding a New UI Component
+
+**Use shadcn MCP to discover components:**
+```typescript
+// Search for component examples
+mcp_shadcn: search_items_in_registries({ query: "dialog", registries: ["@shadcn"] })
+
+// Get add command
+mcp_shadcn: get_add_command_for_items({ items: ["@shadcn/dialog"] })
+
+// Then run: npx shadcn@latest add dialog
+```
+
+### Querying Convex Data
+
+**Always use indexes** (defined in schema):
+```typescript
+// ✅ GOOD - Uses index
+const sales = await ctx.db
+  .query("sales")
+  .withIndex("by_branch", (q) => q.eq("branchId", branchId))
+  .filter((q) => q.eq(q.field("status"), "Completed"))
+  .collect();
+
+// ❌ BAD - No index (will fail in production)
+const sales = await ctx.db.query("sales")
+  .filter((q) => q.eq(q.field("branchId"), branchId))
+  .collect();
+```
+
+### Generating Document Numbers
+
+**Pattern**: All transactions use consistent format: `PREFIX-YYYYMMDD-NNN`
+- Sales: `INV-20250112-001`
+- Purchase Orders: `PO-20250112-001`
+- Journal Entries: `JE-20250112-001`
+
+**Implementation** (see any transaction file):
+```typescript
+async function generateDocNumber(ctx, prefix: string) {
+  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const fullPrefix = `${prefix}-${dateStr}-`;
+  
+  // Query existing docs with same prefix
+  const existing = await ctx.db.query("tableName")
+    .withIndex("by_doc_number")
+    .collect();
+  
+  const filtered = existing.filter(doc => doc.docNumber.startsWith(fullPrefix));
+  if (filtered.length === 0) return `${fullPrefix}001`;
+  
+  const maxNum = Math.max(...filtered.map(doc => {
+    const num = doc.docNumber.split("-")[2];
+    return parseInt(num, 10);
+  }));
+  
+  return `${fullPrefix}${String(maxNum + 1).padStart(3, "0")}`;
+}
+```
+
+### Working with Indonesian Currency
+
+**Always format as IDR** with `Intl.NumberFormat`:
+```typescript
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0, // No decimal places for IDR
+  }).format(amount);
+};
+```
+
+## Testing Strategy
+
+**No formal test suite yet**. Validation approach:
+1. Manual testing via frontend UI
+2. Convex dashboard for querying data
+3. Use MCP tools to inspect database state
+4. Check journal entries balance after transactions
+
+## Project-Specific Conventions
+
+### Naming Conventions
+- **Tables**: camelCase (`productCategories`, `saleItems`)
+- **Functions**: camelCase (`create`, `list`, `completeSale`)
+- **Files**: camelCase matching table name (`productCategories.ts`)
+- **Components**: PascalCase (`SalesPage`, `ProductForm`)
+
+### File Organization
+- `convex/`: All backend logic (queries, mutations, schema)
+- `app/dashboard/`: All authenticated UI pages
+- `components/ui/`: Reusable shadcn/ui components
+- `doc/`: Comprehensive documentation (read for deep dives)
+
+### Code Style
+- TypeScript strict mode enabled
+- Prefer explicit types over inference for function args/returns
+- Use Convex validators (`v.*`) for runtime type checking
+- Format with Prettier (configured in project)
+
+## Important Caveats & Gotchas
+
+1. **Convex Mutations are Atomic**: If mutation throws, entire transaction rolls back (good for data integrity)
+2. **No JOIN queries**: Convex is NoSQL-like. Load related data with `ctx.db.get(id)` or separate queries
+3. **Indexes Required**: Production Convex REQUIRES indexes for filters. Always define in schema
+4. **Soft Deletes**: Filter out `deletedAt` records manually in queries
+5. **File Storage**: Use Convex storage API for large files (images, PDFs), not database
+6. **Authentication**: Protected routes handled by middleware.ts (redirects unauthenticated users to /signin)
+
+## Key Files to Reference
+
+- `convex/schema.ts` - Complete database schema (50+ tables)
+- `.cursor/rules/convex_rules.mdc` - Comprehensive Convex patterns
+- `convex/accountingHelpers.ts` - Journal entry auto-generation
+- `doc/10-accounting-module.md` - Deep dive on accounting logic
+- `doc/01-project-overview.md` - High-level system design
+
+## When Stuck
+
+1. **Schema Questions**: Read `convex/schema.ts` - it's heavily commented
+2. **Convex Patterns**: Check `.cursor/rules/convex_rules.mdc` for examples
+3. **Business Logic**: Review `doc/` folder for module-specific documentation
+4. **UI Components**: Use shadcn MCP to find examples
+5. **Runtime Inspection**: Use next-devtools MCP to debug running app
+6. **Database Queries**: Use convex-mcp to inspect tables and data
+
+## MCP Workflow Example
+
+**Scenario**: User reports AR aging report showing incorrect data.
+
+**Investigation Steps:**
+1. Use `convex-mcp` to query `sales` table, filter by `outstandingAmount > 0`
+2. Use `next-devtools` `nextjs_runtime` to check if dev server has errors
+3. Read `convex/accountsReceivable.ts` to understand calculation logic
+4. Check `doc/10-accounting-module.md` for expected behavior
+5. Compare with `app/dashboard/accounting/ar-aging/page.tsx` for UI logic
+
+**Fix Approach:**
+1. Write fix in `convex/accountsReceivable.ts` (backend) if calculation wrong
+2. Write fix in `app/dashboard/accounting/ar-aging/page.tsx` if display wrong
+3. Use convex-mcp to verify data after fix
+4. Test in browser UI
+
+---
+
+**Remember**: This is a real-time, reactive system. When backend data changes, frontend auto-updates. Leverage Convex's reactivity for great UX!

@@ -1,4 +1,5 @@
-{"mcpServers":{
+{
+  "mcpServers": {
     "convex-mcp": {
       "type": "stdio",
       "command": "npx",
@@ -14,7 +15,9 @@
       "args": [
         "-y",
         "next-devtools-mcp@latest"
-      ]
+      ],
+      "disabled": true,
+      "alwaysAllow": []
     },
     "shadcn": {
       "command": "npx",
@@ -23,4 +26,5 @@
         "mcp"
       ]
     }
-}}
+  }
+}
