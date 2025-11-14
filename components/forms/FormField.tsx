@@ -5,6 +5,7 @@ export type FormFieldProps = React.PropsWithChildren<{
   label: string;
   htmlFor?: string;
   error?: string | null;
+  touched?: boolean;
   required?: boolean;
   description?: string;
   className?: string;

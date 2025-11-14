@@ -91,7 +91,7 @@ export default function ProductsPage() {
       maxStock: { label: "Stok Maximum", required: true, parse: (v) => Number(v), validate: (v) => (v < 0 ? "Tidak boleh negatif" : null), defaultValue: 100 },
       hasVariants: { label: "Memiliki Varian", parse: (v) => Boolean(v), defaultValue: false },
       type: { label: "Tipe Produk", required: true, defaultValue: "product" },
-      serviceDuration: { label: "Durasi (Menit)", parse: (v) => (v ? Number(v) : ""), defaultValue: "" },
+      serviceDuration: { label: "Durasi (Menit)", parse: (v) => (v ? Number(v) : 0), defaultValue: 0 },
     },
     onSubmit: async (values) => {
       try {
