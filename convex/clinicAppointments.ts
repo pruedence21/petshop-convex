@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { reduceStockForSaleHelper } from "./productStock";
 import { createClinicJournalEntry } from "./accountingHelpers";
+import { calculateLine, LineItemInput } from "../lib/finance";
 
 // Generate Appointment Number (APT-YYYYMMDD-001)
 async function generateAppointmentNumber(ctx: any): Promise<string> {
@@ -33,34 +34,7 @@ async function generateAppointmentNumber(ctx: any): Promise<string> {
   return `${prefix}${String(maxNumber + 1).padStart(3, "0")}`;
 }
 
-// Helper: Calculate service subtotal
-function calculateServiceSubtotal(
-  quantity: number,
-  unitPrice: number,
-  discountAmount: number,
-  discountType: string
-): number {
-  const baseAmount = quantity * unitPrice;
 
-  if (discountType === "percent") {
-    return baseAmount - (baseAmount * discountAmount) / 100;
-  } else {
-    return baseAmount - discountAmount;
-  }
-}
-
-// Helper: Calculate transaction discount
-function calculateTransactionDiscount(
-  subtotal: number,
-  discountAmount: number,
-  discountType: string
-): number {
-  if (discountType === "percent") {
-    return (subtotal * discountAmount) / 100;
-  } else {
-    return discountAmount;
-  }
-}
 
 // Create appointment (Draft/Scheduled status)
 export const create = mutation({
@@ -153,12 +127,15 @@ export const addService = mutation({
     const discountType = args.discountType || "nominal";
     const isPrescription = args.isPrescription || false;
 
-    const subtotal = calculateServiceSubtotal(
-      args.quantity,
-      args.unitPrice,
-      discountAmount,
-      discountType
-    );
+    // Calculate line item using finance.ts
+    const lineCalc = calculateLine({
+      quantity: args.quantity,
+      unitPrice: args.unitPrice,
+      discountAmount: discountType === "nominal" ? discountAmount : 0,
+      discountPercent: discountType === "percent" ? discountAmount : 0,
+      taxPercent: 0,
+    });
+    const subtotal = lineCalc.net;
 
     const serviceItemId = await ctx.db.insert("clinicAppointmentServices", {
       appointmentId: args.appointmentId,
@@ -201,15 +178,17 @@ async function recalculateAppointmentTotals(
     .filter((s: any) => !s.deletedAt)
     .reduce((sum: number, service: any) => sum + service.subtotal, 0);
 
-  const transactionDiscount = calculateTransactionDiscount(
-    newSubtotal,
-    appointment.discountAmount,
-    appointment.discountType
-  );
-  const afterDiscount = newSubtotal - transactionDiscount;
-  const taxAmount =
-    appointment.taxRate > 0 ? (afterDiscount * appointment.taxRate) / 100 : 0;
-  const totalAmount = afterDiscount + taxAmount;
+  // Calculate transaction-level discount and tax using finance.ts
+  const transDiscountInput: LineItemInput = {
+    quantity: 1,
+    unitPrice: newSubtotal,
+    discountAmount: appointment.discountType === "nominal" ? appointment.discountAmount : 0,
+    discountPercent: appointment.discountType === "percent" ? appointment.discountAmount : 0,
+    taxPercent: appointment.taxRate,
+  };
+  const finalCalc = calculateLine(transDiscountInput);
+  const taxAmount = finalCalc.taxAmount;
+  const totalAmount = finalCalc.net;
 
   await ctx.db.patch(appointmentId, {
     subtotal: newSubtotal,
@@ -246,12 +225,15 @@ export const updateService = mutation({
     const discountAmount = args.discountAmount ?? serviceItem.discountAmount;
     const discountType = args.discountType ?? serviceItem.discountType;
 
-    const subtotal = calculateServiceSubtotal(
+    // Calculate line item using finance.ts
+    const lineCalc = calculateLine({
       quantity,
       unitPrice,
-      discountAmount,
-      discountType
-    );
+      discountAmount: discountType === "nominal" ? discountAmount : 0,
+      discountPercent: discountType === "percent" ? discountAmount : 0,
+      taxPercent: 0,
+    });
+    const subtotal = lineCalc.net;
 
     await ctx.db.patch(args.serviceItemId, {
       quantity,

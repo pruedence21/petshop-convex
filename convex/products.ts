@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { buildError } from "../lib/errors"; // structured error helper
 
 // Create product
 export const create = mutation({
@@ -20,6 +21,15 @@ export const create = mutation({
     serviceDuration: v.optional(v.number()), // For services
   },
   handler: async (ctx, args) => {
+    // Uniqueness check for SKU using index
+    const existing = await ctx.db
+      .query("products")
+      .withIndex("by_sku", (q) => q.eq("sku", args.sku))
+      .unique();
+    if (existing) {
+      // Throw structured error code for UI mapping
+      throw new Error(JSON.stringify(buildError({ code: "SKU_EXISTS", message: "SKU already exists" })));
+    }
     const productId = await ctx.db.insert("products", {
       sku: args.sku,
       name: args.name,

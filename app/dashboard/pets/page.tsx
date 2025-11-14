@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { useFormSchema } from "@/components/forms/useFormSchema";
+import { FormField } from "@/components/forms/FormField";
+import { petFormSchema, PetFormData } from "@/components/forms/petFormSchema";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -57,19 +60,6 @@ export default function PetsPage() {
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Id<"animalCategories"> | "all">("all");
-  const [formData, setFormData] = useState({
-    customerId: "",
-    name: "",
-    categoryId: "",
-    subcategoryId: "",
-    breed: "",
-    dateOfBirth: "",
-    gender: "",
-    weight: "",
-    color: "",
-    microchipNumber: "",
-    notes: "",
-  });
 
   const pets = useQuery(api.customerPets.list, {
     categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
@@ -77,16 +67,62 @@ export default function PetsPage() {
   });
   const customers = useQuery(api.customers.list, { includeInactive: false });
   const categories = useQuery(api.animalCategories.list, { includeInactive: false });
-  const subcategories = useQuery(
-    api.animalSubcategories.list,
-    formData.categoryId
-      ? { categoryId: formData.categoryId as Id<"animalCategories">, includeInactive: false }
-      : "skip"
-  );
 
   const createPet = useMutation(api.customerPets.create);
   const updatePet = useMutation(api.customerPets.update);
   const deletePet = useMutation(api.customerPets.remove);
+
+  const petForm = useFormSchema<PetFormData>({
+    schema: petFormSchema,
+    onSubmit: async (values) => {
+      if (!values.customerId || !values.categoryId) {
+        toast.error("Mohon lengkapi pemilik dan kategori hewan");
+        return;
+      }
+
+      try {
+        const payload = {
+          customerId: values.customerId as Id<"customers">,
+          name: values.name,
+          categoryId: values.categoryId as Id<"animalCategories">,
+          subcategoryId: values.subcategoryId
+            ? (values.subcategoryId as Id<"animalSubcategories">)
+            : undefined,
+          breed: values.breed || undefined,
+          dateOfBirth: values.dateOfBirth
+            ? new Date(values.dateOfBirth).getTime()
+            : undefined,
+          gender: values.gender || undefined,
+          weight: values.weight ? parseFloat(values.weight) : undefined,
+          color: values.color || undefined,
+          microchipNumber: values.microchipNumber || undefined,
+          notes: values.notes || undefined,
+        };
+
+        if (editingPet) {
+          await updatePet({
+            id: editingPet._id,
+            ...payload,
+          });
+          toast.success("Data hewan berhasil diperbarui");
+        } else {
+          await createPet(payload);
+          toast.success("Data hewan berhasil ditambahkan");
+        }
+        handleCloseDialog();
+      } catch (error) {
+        toast.error("Terjadi kesalahan");
+        console.error(error);
+      }
+    },
+  });
+
+  const subcategories = useQuery(
+    api.animalSubcategories.list,
+    petForm.values.categoryId
+      ? { categoryId: petForm.values.categoryId as Id<"animalCategories">, includeInactive: false }
+      : "skip"
+  );
 
   const filteredPets = pets?.filter((pet) =>
     pet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -96,7 +132,7 @@ export default function PetsPage() {
   const handleOpenDialog = (pet?: Pet) => {
     if (pet) {
       setEditingPet(pet);
-      setFormData({
+      petForm.reset({
         customerId: pet.customerId,
         name: pet.name,
         categoryId: pet.categoryId,
@@ -113,19 +149,7 @@ export default function PetsPage() {
       });
     } else {
       setEditingPet(null);
-      setFormData({
-        customerId: "",
-        name: "",
-        categoryId: "",
-        subcategoryId: "",
-        breed: "",
-        dateOfBirth: "",
-        gender: "",
-        weight: "",
-        color: "",
-        microchipNumber: "",
-        notes: "",
-      });
+      petForm.reset();
     }
     setIsDialogOpen(true);
   };
@@ -133,50 +157,7 @@ export default function PetsPage() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingPet(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.customerId || !formData.categoryId) {
-      toast.error("Mohon lengkapi pelanggan dan kategori hewan");
-      return;
-    }
-
-    try {
-      const payload = {
-        customerId: formData.customerId as Id<"customers">,
-        name: formData.name,
-        categoryId: formData.categoryId as Id<"animalCategories">,
-        subcategoryId: formData.subcategoryId
-          ? (formData.subcategoryId as Id<"animalSubcategories">)
-          : undefined,
-        breed: formData.breed || undefined,
-        dateOfBirth: formData.dateOfBirth
-          ? new Date(formData.dateOfBirth).getTime()
-          : undefined,
-        gender: formData.gender || undefined,
-        weight: formData.weight ? parseFloat(formData.weight) : undefined,
-        color: formData.color || undefined,
-        microchipNumber: formData.microchipNumber || undefined,
-        notes: formData.notes || undefined,
-      };
-
-      if (editingPet) {
-        await updatePet({
-          id: editingPet._id,
-          ...payload,
-        });
-        toast.success("Data hewan berhasil diperbarui");
-      } else {
-        await createPet(payload);
-        toast.success("Data hewan berhasil ditambahkan");
-      }
-      handleCloseDialog();
-    } catch (error) {
-      toast.error("Terjadi kesalahan");
-      console.error(error);
-    }
+    petForm.reset();
   };
 
   const handleDelete = async (id: Id<"customerPets">) => {
@@ -344,7 +325,7 @@ export default function PetsPage() {
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={petForm.submit}>
             <DialogHeader>
               <DialogTitle>
                 {editingPet ? "Edit Data Hewan" : "Tambah Data Hewan"}
@@ -357,16 +338,16 @@ export default function PetsPage() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="customerId">
-                    Pemilik <span className="text-red-500">*</span>
-                  </Label>
+                <FormField
+                  label={petFormSchema.customerId.label}
+                  required={petFormSchema.customerId.required}
+                  error={petForm.errors.customerId}
+                >
                   <Select
-                    value={formData.customerId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, customerId: value })
-                    }
-                    required
+                    value={petForm.values.customerId}
+                    onValueChange={(value) => {
+                      petForm.setField("customerId", value);
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih pemilik" />
@@ -379,33 +360,33 @@ export default function PetsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="name">
-                    Nama Hewan <span className="text-red-500">*</span>
-                  </Label>
+                </FormField>
+                <FormField
+                  label={petFormSchema.name.label}
+                  required={petFormSchema.name.required}
+                  error={petForm.errors.name}
+                >
                   <Input
                     id="name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
+                    value={petForm.values.name}
+                    onChange={(e) => petForm.setField("name", e.target.value)}
+                    onBlur={() => petForm.handleBlur("name")}
                     placeholder="Buddy"
-                    required
                   />
-                </div>
+                </FormField>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="categoryId">
-                    Jenis Hewan <span className="text-red-500">*</span>
-                  </Label>
+                <FormField
+                  label={petFormSchema.categoryId.label}
+                  required={petFormSchema.categoryId.required}
+                  error={petForm.errors.categoryId}
+                >
                   <Select
-                    value={formData.categoryId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, categoryId: value, subcategoryId: "" })
-                    }
-                    required
+                    value={petForm.values.categoryId}
+                    onValueChange={(value) => {
+                      petForm.setField("categoryId", value);
+                      petForm.setField("subcategoryId", "");
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih jenis" />
@@ -418,15 +399,16 @@ export default function PetsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="subcategoryId">Sub Kategori</Label>
+                </FormField>
+                <FormField
+                  label={petFormSchema.subcategoryId.label}
+                  required={petFormSchema.subcategoryId.required}
+                  error={petForm.errors.subcategoryId}
+                >
                   <Select
-                    value={formData.subcategoryId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, subcategoryId: value })
-                    }
-                    disabled={!formData.categoryId}
+                    value={petForm.values.subcategoryId}
+                    onValueChange={(value) => petForm.setField("subcategoryId", value)}
+                    disabled={!petForm.values.categoryId}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih sub kategori" />
@@ -439,51 +421,58 @@ export default function PetsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </FormField>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="breed">Ras</Label>
+                <FormField
+                  label={petFormSchema.breed.label}
+                  required={petFormSchema.breed.required}
+                  error={petForm.errors.breed}
+                >
                   <Input
                     id="breed"
-                    value={formData.breed}
-                    onChange={(e) =>
-                      setFormData({ ...formData, breed: e.target.value })
-                    }
+                    value={petForm.values.breed}
+                    onChange={(e) => petForm.setField("breed", e.target.value)}
+                    onBlur={() => petForm.handleBlur("breed")}
                     placeholder="Golden Retriever, Persian, dll"
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="color">Warna</Label>
+                </FormField>
+                <FormField
+                  label={petFormSchema.color.label}
+                  required={petFormSchema.color.required}
+                  error={petForm.errors.color}
+                >
                   <Input
                     id="color"
-                    value={formData.color}
-                    onChange={(e) =>
-                      setFormData({ ...formData, color: e.target.value })
-                    }
+                    value={petForm.values.color}
+                    onChange={(e) => petForm.setField("color", e.target.value)}
+                    onBlur={() => petForm.handleBlur("color")}
                     placeholder="Coklat, Putih, dll"
                   />
-                </div>
+                </FormField>
               </div>
               <div className="grid grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="dateOfBirth">Tanggal Lahir</Label>
+                <FormField
+                  label={petFormSchema.dateOfBirth.label}
+                  required={petFormSchema.dateOfBirth.required}
+                  error={petForm.errors.dateOfBirth}
+                >
                   <Input
                     id="dateOfBirth"
                     type="date"
-                    value={formData.dateOfBirth}
-                    onChange={(e) =>
-                      setFormData({ ...formData, dateOfBirth: e.target.value })
-                    }
+                    value={petForm.values.dateOfBirth}
+                    onChange={(e) => petForm.setField("dateOfBirth", e.target.value)}
+                    onBlur={() => petForm.handleBlur("dateOfBirth")}
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="gender">Jenis Kelamin</Label>
+                </FormField>
+                <FormField
+                  label={petFormSchema.gender.label}
+                  required={petFormSchema.gender.required}
+                  error={petForm.errors.gender}
+                >
                   <Select
-                    value={formData.gender}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, gender: value })
-                    }
+                    value={petForm.values.gender}
+                    onValueChange={(value) => petForm.setField("gender", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih" />
@@ -493,44 +482,50 @@ export default function PetsPage() {
                       <SelectItem value="P">Betina</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="weight">Berat (kg)</Label>
+                </FormField>
+                <FormField
+                  label={petFormSchema.weight.label}
+                  required={petFormSchema.weight.required}
+                  error={petForm.errors.weight}
+                >
                   <Input
                     id="weight"
                     type="number"
                     step="0.1"
-                    value={formData.weight}
-                    onChange={(e) =>
-                      setFormData({ ...formData, weight: e.target.value })
-                    }
+                    value={petForm.values.weight}
+                    onChange={(e) => petForm.setField("weight", e.target.value)}
+                    onBlur={() => petForm.handleBlur("weight")}
                     placeholder="5.5"
                   />
-                </div>
+                </FormField>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="microchipNumber">Nomor Microchip</Label>
+              <FormField
+                label={petFormSchema.microchipNumber.label}
+                required={petFormSchema.microchipNumber.required}
+                error={petForm.errors.microchipNumber}
+              >
                 <Input
                   id="microchipNumber"
-                  value={formData.microchipNumber}
-                  onChange={(e) =>
-                    setFormData({ ...formData, microchipNumber: e.target.value })
-                  }
+                  value={petForm.values.microchipNumber}
+                  onChange={(e) => petForm.setField("microchipNumber", e.target.value)}
+                  onBlur={() => petForm.handleBlur("microchipNumber")}
                   placeholder="Nomor microchip jika ada"
                 />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="notes">Catatan</Label>
+              </FormField>
+              <FormField
+                label={petFormSchema.notes.label}
+                required={petFormSchema.notes.required}
+                error={petForm.errors.notes}
+              >
                 <Textarea
                   id="notes"
-                  value={formData.notes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
+                  value={petForm.values.notes}
+                  onChange={(e) => petForm.setField("notes", e.target.value)}
+                  onBlur={() => petForm.handleBlur("notes")}
                   placeholder="Catatan tambahan (alergi, kondisi kesehatan, dll)"
                   rows={3}
                 />
-              </div>
+              </FormField>
             </div>
             <DialogFooter>
               <Button
@@ -540,7 +535,7 @@ export default function PetsPage() {
               >
                 Batal
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={!petForm.isValid}>
                 {editingPet ? "Simpan" : "Tambah"}
               </Button>
             </DialogFooter>

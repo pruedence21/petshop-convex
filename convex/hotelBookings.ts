@@ -2,6 +2,7 @@ import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
+import { calculateLine, LineItemInput } from "../lib/finance";
 
 // Generate Booking Number (HTL-YYYYMMDD-001)
 async function generateBookingNumber(ctx: any): Promise<string> {
@@ -42,34 +43,7 @@ function calculateNumberOfDays(
   return Math.max(1, diffDays);
 }
 
-// Helper: Calculate service subtotal
-function calculateServiceSubtotal(
-  quantity: number,
-  unitPrice: number,
-  discountAmount: number,
-  discountType: string
-): number {
-  const baseAmount = quantity * unitPrice;
 
-  if (discountType === "percent") {
-    return baseAmount - (baseAmount * discountAmount) / 100;
-  } else {
-    return baseAmount - discountAmount;
-  }
-}
-
-// Helper: Calculate transaction discount
-function calculateTransactionDiscount(
-  subtotal: number,
-  discountAmount: number,
-  discountType: string
-): number {
-  if (discountType === "percent") {
-    return (subtotal * discountAmount) / 100;
-  } else {
-    return discountAmount;
-  }
-}
 
 // List all bookings
 export const list = query({
@@ -322,17 +296,19 @@ export const updateDiscountAndTax = mutation({
       throw new Error("Cannot update completed or cancelled booking");
     }
 
-    // Recalculate totals
+    // Recalculate totals using finance.ts
     const subtotal =
       booking.roomTotal + booking.servicesTotal + booking.consumablesTotal;
-    const discountAmountCalculated = calculateTransactionDiscount(
-      subtotal,
-      args.discountAmount,
-      args.discountType
-    );
-    const afterDiscount = subtotal - discountAmountCalculated;
-    const taxAmount = args.taxRate > 0 ? (afterDiscount * args.taxRate) / 100 : 0;
-    const totalAmount = afterDiscount + taxAmount;
+    const transDiscountInput: LineItemInput = {
+      quantity: 1,
+      unitPrice: subtotal,
+      discountAmount: args.discountType === "nominal" ? args.discountAmount : 0,
+      discountPercent: args.discountType === "percent" ? args.discountAmount : 0,
+      taxPercent: args.taxRate,
+    };
+    const finalCalc = calculateLine(transDiscountInput);
+    const taxAmount = finalCalc.taxAmount;
+    const totalAmount = finalCalc.net;
     const outstandingAmount = totalAmount - booking.paidAmount;
 
     await ctx.db.patch(args.id, {
@@ -528,17 +504,18 @@ export const recalculateTotal = internalMutation({
       .filter((c) => !c.deletedAt)
       .reduce((sum, c) => sum + c.subtotal, 0);
 
-    // Recalculate totals
+    // Recalculate totals using finance.ts
     const subtotal = booking.roomTotal + servicesTotal + consumablesTotal;
-    const discountAmountCalculated = calculateTransactionDiscount(
-      subtotal,
-      booking.discountAmount,
-      booking.discountType
-    );
-    const afterDiscount = subtotal - discountAmountCalculated;
-    const taxAmount =
-      booking.taxRate > 0 ? (afterDiscount * booking.taxRate) / 100 : 0;
-    const totalAmount = afterDiscount + taxAmount;
+    const transDiscountInput: LineItemInput = {
+      quantity: 1,
+      unitPrice: subtotal,
+      discountAmount: booking.discountType === "nominal" ? booking.discountAmount : 0,
+      discountPercent: booking.discountType === "percent" ? booking.discountAmount : 0,
+      taxPercent: booking.taxRate,
+    };
+    const finalCalc = calculateLine(transDiscountInput);
+    const taxAmount = finalCalc.taxAmount;
+    const totalAmount = finalCalc.net;
     const outstandingAmount = totalAmount - booking.paidAmount;
 
     await ctx.db.patch(args.bookingId, {

@@ -1,8 +1,10 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { Doc, Id } from "./_generated/dataModel";
+import { Id } from "./_generated/dataModel";
 import { reduceStockForSaleHelper } from "./productStock";
 import { createSaleJournalEntry } from "./accountingHelpers";
+import { calculateLine, calculateTotals, LineItemInput } from "../lib/finance";
+import { buildError } from "../lib/errors";
 
 // Generate Sale Number (INV-YYYYMMDD-001)
 async function generateSaleNumber(ctx: any): Promise<string> {
@@ -35,34 +37,8 @@ async function generateSaleNumber(ctx: any): Promise<string> {
   return `${prefix}${String(maxNumber + 1).padStart(3, "0")}`;
 }
 
-// Helper: Calculate item subtotal
-function calculateItemSubtotal(
-  quantity: number,
-  unitPrice: number,
-  discountAmount: number,
-  discountType: string
-): number {
-  const baseAmount = quantity * unitPrice;
-  
-  if (discountType === "percent") {
-    return baseAmount - (baseAmount * discountAmount / 100);
-  } else {
-    return baseAmount - discountAmount;
-  }
-}
-
-// Helper: Calculate transaction discount
-function calculateTransactionDiscount(
-  subtotal: number,
-  discountAmount: number,
-  discountType: string
-): number {
-  if (discountType === "percent") {
-    return subtotal * discountAmount / 100;
-  } else {
-    return discountAmount;
-  }
-}
+// Use centralized finance calculation from lib/finance.ts
+// calculateLine and calculateTotals handle all discount/tax logic
 
 // Create sale (Draft status)
 export const create = mutation({
@@ -111,18 +87,24 @@ export const addItem = mutation({
   },
   handler: async (ctx, args) => {
     const sale = await ctx.db.get(args.saleId);
-    if (!sale) throw new Error("Sale not found");
-    if (sale.status !== "Draft") throw new Error("Can only add items to draft sale");
+    if (!sale) {
+      throw new Error(JSON.stringify(buildError({ code: "NOT_FOUND", message: "Sale not found" })));
+    }
+    if (sale.status !== "Draft") {
+      throw new Error(JSON.stringify(buildError({ code: "STATUS_CONFLICT", message: "Can only add items to draft sale", details: { currentStatus: sale.status } })));
+    }
 
     const discountAmount = args.discountAmount || 0;
     const discountType = args.discountType || "nominal";
     
-    const subtotal = calculateItemSubtotal(
-      args.quantity,
-      args.unitPrice,
-      discountAmount,
-      discountType
-    );
+    const lineCalc = calculateLine({
+      quantity: args.quantity,
+      unitPrice: args.unitPrice,
+      discountAmount: discountType === "nominal" ? discountAmount : 0,
+      discountPercent: discountType === "percent" ? discountAmount : 0,
+      taxPercent: 0, // Tax applied at transaction level, not line level
+    });
+    const subtotal = lineCalc.netBeforeTax;
 
     const itemId = await ctx.db.insert("saleItems", {
       saleId: args.saleId,
@@ -143,17 +125,27 @@ export const addItem = mutation({
       .withIndex("by_sale", (q) => q.eq("saleId", args.saleId))
       .collect();
 
-    const newSubtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+    // Recalculate totals using centralized finance logic
+    const itemInputs: LineItemInput[] = items.map(it => ({
+      quantity: it.quantity,
+      unitPrice: it.unitPrice,
+      discountAmount: it.discountType === "nominal" ? it.discountAmount : 0,
+      discountPercent: it.discountType === "percent" ? it.discountAmount : 0,
+    }));
+    const totals = calculateTotals(itemInputs);
+    const newSubtotal = totals.totalGross - totals.totalDiscount;
     
-    // Recalculate total with existing discount and tax
-    const transactionDiscount = calculateTransactionDiscount(
-      newSubtotal,
-      sale.discountAmount,
-      sale.discountType
-    );
-    const afterDiscount = newSubtotal - transactionDiscount;
-    const taxAmount = sale.taxRate > 0 ? (afterDiscount * sale.taxRate / 100) : 0;
-    const totalAmount = afterDiscount + taxAmount;
+    // Apply transaction-level discount and tax
+    const transDiscountInput: LineItemInput = {
+      quantity: 1,
+      unitPrice: newSubtotal,
+      discountAmount: sale.discountType === "nominal" ? sale.discountAmount : 0,
+      discountPercent: sale.discountType === "percent" ? sale.discountAmount : 0,
+      taxPercent: sale.taxRate,
+    };
+    const finalCalc = calculateLine(transDiscountInput);
+    const taxAmount = finalCalc.taxAmount;
+    const totalAmount = finalCalc.net;
 
     await ctx.db.patch(args.saleId, {
       subtotal: newSubtotal,
@@ -190,12 +182,14 @@ export const updateItem = mutation({
     const discountAmount = args.discountAmount ?? item.discountAmount;
     const discountType = args.discountType ?? item.discountType;
     
-    const subtotal = calculateItemSubtotal(
+    const lineCalc = calculateLine({
       quantity,
       unitPrice,
-      discountAmount,
-      discountType
-    );
+      discountAmount: discountType === "nominal" ? discountAmount : 0,
+      discountPercent: discountType === "percent" ? discountAmount : 0,
+      taxPercent: 0,
+    });
+    const subtotal = lineCalc.netBeforeTax;
 
     await ctx.db.patch(args.itemId, {
       quantity,
@@ -212,19 +206,25 @@ export const updateItem = mutation({
       .withIndex("by_sale", (q) => q.eq("saleId", item.saleId))
       .collect();
 
-    const newSubtotal = items.reduce((sum, it) => 
-      sum + (it._id === args.itemId ? subtotal : it.subtotal), 0
-    );
+    const itemInputs: LineItemInput[] = items.map(it => ({
+      quantity: it.quantity,
+      unitPrice: it.unitPrice,
+      discountAmount: it.discountType === "nominal" ? it.discountAmount : 0,
+      discountPercent: it.discountType === "percent" ? it.discountAmount : 0,
+    }));
+    const totals = calculateTotals(itemInputs);
+    const newSubtotal = totals.totalGross - totals.totalDiscount;
 
-    // Recalculate total
-    const transactionDiscount = calculateTransactionDiscount(
-      newSubtotal,
-      sale.discountAmount,
-      sale.discountType
-    );
-    const afterDiscount = newSubtotal - transactionDiscount;
-    const taxAmount = sale.taxRate > 0 ? (afterDiscount * sale.taxRate / 100) : 0;
-    const totalAmount = afterDiscount + taxAmount;
+    const transDiscountInput: LineItemInput = {
+      quantity: 1,
+      unitPrice: newSubtotal,
+      discountAmount: sale.discountType === "nominal" ? sale.discountAmount : 0,
+      discountPercent: sale.discountType === "percent" ? sale.discountAmount : 0,
+      taxPercent: sale.taxRate,
+    };
+    const finalCalc = calculateLine(transDiscountInput);
+    const taxAmount = finalCalc.taxAmount;
+    const totalAmount = finalCalc.net;
 
     await ctx.db.patch(item.saleId, {
       subtotal: newSubtotal,
@@ -259,17 +259,25 @@ export const removeItem = mutation({
       .withIndex("by_sale", (q) => q.eq("saleId", item.saleId))
       .collect();
 
-    const newSubtotal = items.reduce((sum, it) => sum + it.subtotal, 0);
+    const itemInputs: LineItemInput[] = items.map(it => ({
+      quantity: it.quantity,
+      unitPrice: it.unitPrice,
+      discountAmount: it.discountType === "nominal" ? it.discountAmount : 0,
+      discountPercent: it.discountType === "percent" ? it.discountAmount : 0,
+    }));
+    const totals = calculateTotals(itemInputs);
+    const newSubtotal = totals.totalGross - totals.totalDiscount;
 
-    // Recalculate total
-    const transactionDiscount = calculateTransactionDiscount(
-      newSubtotal,
-      sale.discountAmount,
-      sale.discountType
-    );
-    const afterDiscount = newSubtotal - transactionDiscount;
-    const taxAmount = sale.taxRate > 0 ? (afterDiscount * sale.taxRate / 100) : 0;
-    const totalAmount = afterDiscount + taxAmount;
+    const transDiscountInput: LineItemInput = {
+      quantity: 1,
+      unitPrice: newSubtotal,
+      discountAmount: sale.discountType === "nominal" ? sale.discountAmount : 0,
+      discountPercent: sale.discountType === "percent" ? sale.discountAmount : 0,
+      taxPercent: sale.taxRate,
+    };
+    const finalCalc = calculateLine(transDiscountInput);
+    const taxAmount = finalCalc.taxAmount;
+    const totalAmount = finalCalc.net;
 
     await ctx.db.patch(item.saleId, {
       subtotal: newSubtotal,
@@ -300,15 +308,17 @@ export const updateDiscountAndTax = mutation({
     const discountType = args.discountType ?? sale.discountType;
     const taxRate = args.taxRate ?? sale.taxRate;
 
-    // Recalculate total
-    const transactionDiscount = calculateTransactionDiscount(
-      sale.subtotal,
-      discountAmount,
-      discountType
-    );
-    const afterDiscount = sale.subtotal - transactionDiscount;
-    const taxAmount = taxRate > 0 ? (afterDiscount * taxRate / 100) : 0;
-    const totalAmount = afterDiscount + taxAmount;
+    // Recalculate total using finance.ts
+    const transDiscountInput: LineItemInput = {
+      quantity: 1,
+      unitPrice: sale.subtotal,
+      discountAmount: discountType === "nominal" ? discountAmount : 0,
+      discountPercent: discountType === "percent" ? discountAmount : 0,
+      taxPercent: taxRate,
+    };
+    const finalCalc = calculateLine(transDiscountInput);
+    const taxAmount = finalCalc.taxAmount;
+    const totalAmount = finalCalc.net;
 
     await ctx.db.patch(args.saleId, {
       discountAmount,
@@ -472,8 +482,12 @@ export const submitSale = mutation({
   },
   handler: async (ctx, args) => {
     const sale = await ctx.db.get(args.saleId);
-    if (!sale) throw new Error("Sale not found");
-    if (sale.status !== "Draft") throw new Error("Can only submit draft sale");
+    if (!sale) {
+      throw new Error(JSON.stringify(buildError({ code: "NOT_FOUND", message: "Sale not found" })));
+    }
+    if (sale.status !== "Draft") {
+      throw new Error(JSON.stringify(buildError({ code: "STATUS_CONFLICT", message: "Can only submit draft sale", details: { currentStatus: sale.status } })));
+    }
 
     // Validate customer exists
     const customer = await ctx.db.get(sale.customerId);
@@ -486,7 +500,7 @@ export const submitSale = mutation({
       .collect();
 
     if (items.length === 0) {
-      throw new Error("Cannot submit sale without items");
+      throw new Error(JSON.stringify(buildError({ code: "NO_ITEMS", message: "Cannot submit sale without items" })));
     }
 
     // Validate payments
@@ -497,7 +511,7 @@ export const submitSale = mutation({
       // Only allow overpayment for CASH (will calculate change)
       const hasCash = args.payments.some(p => p.paymentMethod === "CASH");
       if (!hasCash) {
-        throw new Error("Total payments cannot exceed sale total (unless paying with cash)");
+        throw new Error(JSON.stringify(buildError({ code: "PAYMENT_EXCEEDS_TOTAL", message: "Total payments cannot exceed sale total", details: { totalPayments, totalAmount: sale.totalAmount } })));
       }
     }
 

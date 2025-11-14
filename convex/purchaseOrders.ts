@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { updateStockFromPurchaseHelper } from "./productStock";
 import { createPurchaseJournalEntry } from "./accountingHelpers";
+import { calculateLine, calculateTotals, LineItemInput } from "../lib/finance";
 
 // Generate PO Number (PO-YYYYMMDD-001)
 async function generatePONumber(ctx: any): Promise<string> {
@@ -80,9 +81,15 @@ export const addItem = mutation({
     if (!po) throw new Error("Purchase order not found");
     if (po.status !== "Draft") throw new Error("Can only add items to draft PO");
 
-    const discount = args.discount || 0;
-    const tax = args.tax || 0;
-    const subtotal = args.quantity * args.unitPrice - discount + tax;
+    // Calculate line item using finance.ts
+    const lineCalc = calculateLine({
+      quantity: args.quantity,
+      unitPrice: args.unitPrice,
+      discountAmount: args.discount || 0,
+      discountPercent: 0,
+      taxPercent: 0,
+    });
+    const subtotal = lineCalc.net + (args.tax || 0); // Add tax as flat amount
 
     const itemId = await ctx.db.insert("purchaseOrderItems", {
       purchaseOrderId: args.purchaseOrderId,
@@ -91,8 +98,8 @@ export const addItem = mutation({
       quantity: args.quantity,
       receivedQuantity: 0,
       unitPrice: args.unitPrice,
-      discount,
-      tax,
+      discount: args.discount || 0,
+      tax: args.tax || 0,
       subtotal,
       notes: args.notes,
     });
@@ -138,7 +145,16 @@ export const updateItem = mutation({
     const unitPrice = args.unitPrice ?? item.unitPrice;
     const discount = args.discount ?? item.discount ?? 0;
     const tax = args.tax ?? item.tax ?? 0;
-    const subtotal = quantity * unitPrice - discount + tax;
+    
+    // Calculate line item using finance.ts
+    const lineCalc = calculateLine({
+      quantity,
+      unitPrice,
+      discountAmount: discount,
+      discountPercent: 0,
+      taxPercent: 0,
+    });
+    const subtotal = lineCalc.net + tax; // Add tax as flat amount
 
     await ctx.db.patch(args.itemId, {
       quantity,

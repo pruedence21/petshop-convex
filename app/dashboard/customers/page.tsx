@@ -35,6 +35,9 @@ import {
 import { Plus, Pencil, Trash2, Search, User } from "lucide-react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
+import { useFormSchema } from "@/components/forms/useFormSchema";
+import { FormField } from "@/components/forms/FormField";
+import { customerFormSchema, CustomerFormData } from "@/components/forms/customerFormSchema";
 
 type Customer = {
   _id: Id<"customers">;
@@ -57,25 +60,51 @@ export default function CustomersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [formData, setFormData] = useState({
-    code: "",
-    name: "",
-    phone: "",
-    email: "",
-    address: "",
-    city: "",
-    province: "",
-    postalCode: "",
-    dateOfBirth: "",
-    gender: "",
-    idNumber: "",
-    notes: "",
-  });
 
   const customers = useQuery(api.customers.list, { includeInactive: false });
   const createCustomer = useMutation(api.customers.create);
   const updateCustomer = useMutation(api.customers.update);
   const deleteCustomer = useMutation(api.customers.remove);
+
+  const customerForm = useFormSchema<CustomerFormData>({
+    schema: customerFormSchema,
+    onSubmit: async (values) => {
+      try {
+        const payload = {
+          code: values.code,
+          name: values.name,
+          phone: values.phone,
+          email: values.email || undefined,
+          address: values.address || undefined,
+          city: values.city || undefined,
+          province: values.province || undefined,
+          postalCode: values.postalCode || undefined,
+          dateOfBirth: values.dateOfBirth
+            ? new Date(values.dateOfBirth).getTime()
+            : undefined,
+          gender: values.gender || undefined,
+          idNumber: values.idNumber || undefined,
+          notes: values.notes || undefined,
+        };
+
+        if (editingCustomer) {
+          await updateCustomer({
+            id: editingCustomer._id,
+            ...payload,
+          });
+          toast.success("Pelanggan berhasil diperbarui");
+        } else {
+          await createCustomer(payload);
+          toast.success("Pelanggan berhasil ditambahkan");
+        }
+        setIsDialogOpen(false);
+        setEditingCustomer(null);
+      } catch (error) {
+        toast.error("Terjadi kesalahan");
+        console.error(error);
+      }
+    },
+  });
 
   const filteredCustomers = customers?.filter((customer) =>
     customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -86,7 +115,7 @@ export default function CustomersPage() {
   const handleOpenDialog = (customer?: Customer) => {
     if (customer) {
       setEditingCustomer(customer);
-      setFormData({
+      customerForm.reset({
         code: customer.code,
         name: customer.name,
         phone: customer.phone,
@@ -104,20 +133,7 @@ export default function CustomersPage() {
       });
     } else {
       setEditingCustomer(null);
-      setFormData({
-        code: "",
-        name: "",
-        phone: "",
-        email: "",
-        address: "",
-        city: "",
-        province: "",
-        postalCode: "",
-        dateOfBirth: "",
-        gender: "",
-        idNumber: "",
-        notes: "",
-      });
+      customerForm.reset();
     }
     setIsDialogOpen(true);
   };
@@ -125,44 +141,7 @@ export default function CustomersPage() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingCustomer(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      const payload = {
-        code: formData.code,
-        name: formData.name,
-        phone: formData.phone,
-        email: formData.email || undefined,
-        address: formData.address || undefined,
-        city: formData.city || undefined,
-        province: formData.province || undefined,
-        postalCode: formData.postalCode || undefined,
-        dateOfBirth: formData.dateOfBirth
-          ? new Date(formData.dateOfBirth).getTime()
-          : undefined,
-        gender: formData.gender || undefined,
-        idNumber: formData.idNumber || undefined,
-        notes: formData.notes || undefined,
-      };
-
-      if (editingCustomer) {
-        await updateCustomer({
-          id: editingCustomer._id,
-          ...payload,
-        });
-        toast.success("Pelanggan berhasil diperbarui");
-      } else {
-        await createCustomer(payload);
-        toast.success("Pelanggan berhasil ditambahkan");
-      }
-      handleCloseDialog();
-    } catch (error) {
-      toast.error("Terjadi kesalahan");
-      console.error(error);
-    }
+    customerForm.reset();
   };
 
   const handleDelete = async (id: Id<"customers">) => {
@@ -282,7 +261,7 @@ export default function CustomersPage() {
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={customerForm.submit}>
             <DialogHeader>
               <DialogTitle>
                 {editingCustomer ? "Edit Pelanggan" : "Tambah Pelanggan"}
@@ -295,93 +274,100 @@ export default function CustomersPage() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="code">
-                    Kode Pelanggan <span className="text-red-500">*</span>
-                  </Label>
+                <FormField
+                  label={customerFormSchema.code.label}
+                  required={customerFormSchema.code.required}
+                  error={customerForm.errors.code}
+                  touched={customerForm.touched.code}
+                >
                   <Input
                     id="code"
-                    value={formData.code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value.toUpperCase() })
-                    }
+                    value={customerForm.values.code}
+                    onChange={(e) => customerForm.setField("code", e.target.value)}
+                    onBlur={() => customerForm.handleBlur("code")}
                     placeholder="CUST001"
-                    required
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="name">
-                    Nama Lengkap <span className="text-red-500">*</span>
-                  </Label>
+                </FormField>
+                <FormField
+                  label={customerFormSchema.name.label}
+                  required={customerFormSchema.name.required}
+                  error={customerForm.errors.name}
+                  touched={customerForm.touched.name}
+                >
                   <Input
                     id="name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
+                    value={customerForm.values.name}
+                    onChange={(e) => customerForm.setField("name", e.target.value)}
+                    onBlur={() => customerForm.handleBlur("name")}
                     placeholder="John Doe"
-                    required
                   />
-                </div>
+                </FormField>
               </div>
               <div className="grid grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="phone">
-                    Telepon <span className="text-red-500">*</span>
-                  </Label>
+                <FormField
+                  label={customerFormSchema.phone.label}
+                  required={customerFormSchema.phone.required}
+                  error={customerForm.errors.phone}
+                  touched={customerForm.touched.phone}
+                >
                   <Input
                     id="phone"
-                    value={formData.phone}
-                    onChange={(e) =>
-                      setFormData({ ...formData, phone: e.target.value })
-                    }
+                    value={customerForm.values.phone}
+                    onChange={(e) => customerForm.setField("phone", e.target.value)}
+                    onBlur={() => customerForm.handleBlur("phone")}
                     placeholder="08123456789"
-                    required
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
+                </FormField>
+                <FormField
+                  label={customerFormSchema.email.label}
+                  error={customerForm.errors.email}
+                  touched={customerForm.touched.email}
+                >
                   <Input
                     id="email"
                     type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
+                    value={customerForm.values.email}
+                    onChange={(e) => customerForm.setField("email", e.target.value)}
+                    onBlur={() => customerForm.handleBlur("email")}
                     placeholder="customer@example.com"
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="idNumber">No. KTP</Label>
+                </FormField>
+                <FormField
+                  label={customerFormSchema.idNumber.label}
+                  error={customerForm.errors.idNumber}
+                  touched={customerForm.touched.idNumber}
+                >
                   <Input
                     id="idNumber"
-                    value={formData.idNumber}
-                    onChange={(e) =>
-                      setFormData({ ...formData, idNumber: e.target.value })
-                    }
+                    value={customerForm.values.idNumber}
+                    onChange={(e) => customerForm.setField("idNumber", e.target.value)}
+                    onBlur={() => customerForm.handleBlur("idNumber")}
                     placeholder="3174..."
                   />
-                </div>
+                </FormField>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="dateOfBirth">Tanggal Lahir</Label>
+                <FormField
+                  label={customerFormSchema.dateOfBirth.label}
+                  error={customerForm.errors.dateOfBirth}
+                  touched={customerForm.touched.dateOfBirth}
+                >
                   <Input
                     id="dateOfBirth"
                     type="date"
-                    value={formData.dateOfBirth}
-                    onChange={(e) =>
-                      setFormData({ ...formData, dateOfBirth: e.target.value })
-                    }
+                    value={customerForm.values.dateOfBirth}
+                    onChange={(e) => customerForm.setField("dateOfBirth", e.target.value)}
+                    onBlur={() => customerForm.handleBlur("dateOfBirth")}
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="gender">Jenis Kelamin</Label>
+                </FormField>
+                <FormField
+                  label={customerFormSchema.gender.label}
+                  error={customerForm.errors.gender}
+                  touched={customerForm.touched.gender}
+                >
                   <Select
-                    value={formData.gender}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, gender: value })
-                    }
+                    value={customerForm.values.gender}
+                    onValueChange={(value) => customerForm.setField("gender", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih jenis kelamin" />
@@ -391,67 +377,77 @@ export default function CustomersPage() {
                       <SelectItem value="P">Perempuan</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </FormField>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="address">Alamat</Label>
+              <FormField
+                label={customerFormSchema.address.label}
+                error={customerForm.errors.address}
+                touched={customerForm.touched.address}
+              >
                 <Textarea
                   id="address"
-                  value={formData.address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address: e.target.value })
-                  }
+                  value={customerForm.values.address}
+                  onChange={(e) => customerForm.setField("address", e.target.value)}
+                  onBlur={() => customerForm.handleBlur("address")}
                   placeholder="Jl. Raya No. 123"
                   rows={2}
                 />
-              </div>
+              </FormField>
               <div className="grid grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="city">Kota</Label>
+                <FormField
+                  label={customerFormSchema.city.label}
+                  error={customerForm.errors.city}
+                  touched={customerForm.touched.city}
+                >
                   <Input
                     id="city"
-                    value={formData.city}
-                    onChange={(e) =>
-                      setFormData({ ...formData, city: e.target.value })
-                    }
+                    value={customerForm.values.city}
+                    onChange={(e) => customerForm.setField("city", e.target.value)}
+                    onBlur={() => customerForm.handleBlur("city")}
                     placeholder="Jakarta"
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="province">Provinsi</Label>
+                </FormField>
+                <FormField
+                  label={customerFormSchema.province.label}
+                  error={customerForm.errors.province}
+                  touched={customerForm.touched.province}
+                >
                   <Input
                     id="province"
-                    value={formData.province}
-                    onChange={(e) =>
-                      setFormData({ ...formData, province: e.target.value })
-                    }
+                    value={customerForm.values.province}
+                    onChange={(e) => customerForm.setField("province", e.target.value)}
+                    onBlur={() => customerForm.handleBlur("province")}
                     placeholder="DKI Jakarta"
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="postalCode">Kode Pos</Label>
+                </FormField>
+                <FormField
+                  label={customerFormSchema.postalCode.label}
+                  error={customerForm.errors.postalCode}
+                  touched={customerForm.touched.postalCode}
+                >
                   <Input
                     id="postalCode"
-                    value={formData.postalCode}
-                    onChange={(e) =>
-                      setFormData({ ...formData, postalCode: e.target.value })
-                    }
+                    value={customerForm.values.postalCode}
+                    onChange={(e) => customerForm.setField("postalCode", e.target.value)}
+                    onBlur={() => customerForm.handleBlur("postalCode")}
                     placeholder="12345"
                   />
-                </div>
+                </FormField>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="notes">Catatan</Label>
+              <FormField
+                label={customerFormSchema.notes.label}
+                error={customerForm.errors.notes}
+                touched={customerForm.touched.notes}
+              >
                 <Textarea
                   id="notes"
-                  value={formData.notes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
+                  value={customerForm.values.notes}
+                  onChange={(e) => customerForm.setField("notes", e.target.value)}
+                  onBlur={() => customerForm.handleBlur("notes")}
                   placeholder="Catatan tambahan..."
                   rows={2}
                 />
-              </div>
+              </FormField>
             </div>
             <DialogFooter>
               <Button
@@ -461,7 +457,7 @@ export default function CustomersPage() {
               >
                 Batal
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={!customerForm.isValid}>
                 {editingCustomer ? "Simpan" : "Tambah"}
               </Button>
             </DialogFooter>

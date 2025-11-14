@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { useFormSchema } from "@/components/forms/useFormSchema";
+import { supplierFormSchema, SupplierFormData } from "@/components/forms/supplierFormSchema";
+import { FormField } from "@/components/forms/FormField";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -65,25 +68,57 @@ export default function SuppliersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [formData, setFormData] = useState({
-    code: "",
-    name: "",
-    contactPerson: "",
-    phone: "",
-    email: "",
-    address: "",
-    city: "",
-    province: "",
-    postalCode: "",
-    paymentTerms: "Net 30",
-    rating: 3,
-    notes: "",
-  });
 
   const suppliers = useQuery(api.suppliers.list, { includeInactive: false });
   const createSupplier = useMutation(api.suppliers.create);
   const updateSupplier = useMutation(api.suppliers.update);
   const deleteSupplier = useMutation(api.suppliers.remove);
+
+  const supplierForm = useFormSchema<SupplierFormData>({
+    schema: supplierFormSchema,
+    onSubmit: async (values) => {
+      try {
+        if (editingSupplier) {
+          await updateSupplier({
+            id: editingSupplier._id,
+            code: values.code,
+            name: values.name,
+            contactPerson: values.contactPerson || undefined,
+            phone: values.phone,
+            email: values.email || undefined,
+            address: values.address || undefined,
+            city: values.city || undefined,
+            province: values.province || undefined,
+            postalCode: values.postalCode || undefined,
+            paymentTerms: values.paymentTerms,
+            rating: values.rating,
+            notes: values.notes || undefined,
+          });
+          toast.success("Supplier berhasil diperbarui");
+        } else {
+          await createSupplier({
+            code: values.code,
+            name: values.name,
+            contactPerson: values.contactPerson || undefined,
+            phone: values.phone,
+            email: values.email || undefined,
+            address: values.address || undefined,
+            city: values.city || undefined,
+            province: values.province || undefined,
+            postalCode: values.postalCode || undefined,
+            paymentTerms: values.paymentTerms,
+            rating: values.rating,
+            notes: values.notes || undefined,
+          });
+          toast.success("Supplier berhasil ditambahkan");
+        }
+        handleCloseDialog();
+      } catch (error) {
+        toast.error("Terjadi kesalahan");
+        console.error(error);
+      }
+    },
+  });
 
   const filteredSuppliers = suppliers?.filter((supplier) =>
     supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -94,7 +129,7 @@ export default function SuppliersPage() {
   const handleOpenDialog = (supplier?: Supplier) => {
     if (supplier) {
       setEditingSupplier(supplier);
-      setFormData({
+      supplierForm.reset({
         code: supplier.code,
         name: supplier.name,
         contactPerson: supplier.contactPerson || "",
@@ -110,20 +145,7 @@ export default function SuppliersPage() {
       });
     } else {
       setEditingSupplier(null);
-      setFormData({
-        code: "",
-        name: "",
-        contactPerson: "",
-        phone: "",
-        email: "",
-        address: "",
-        city: "",
-        province: "",
-        postalCode: "",
-        paymentTerms: "Net 30",
-        rating: 3,
-        notes: "",
-      });
+      supplierForm.reset();
     }
     setIsDialogOpen(true);
   };
@@ -131,51 +153,7 @@ export default function SuppliersPage() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingSupplier(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      if (editingSupplier) {
-        await updateSupplier({
-          id: editingSupplier._id,
-          code: formData.code,
-          name: formData.name,
-          contactPerson: formData.contactPerson || undefined,
-          phone: formData.phone,
-          email: formData.email || undefined,
-          address: formData.address || undefined,
-          city: formData.city || undefined,
-          province: formData.province || undefined,
-          postalCode: formData.postalCode || undefined,
-          paymentTerms: formData.paymentTerms,
-          rating: formData.rating,
-          notes: formData.notes || undefined,
-        });
-        toast.success("Supplier berhasil diperbarui");
-      } else {
-        await createSupplier({
-          code: formData.code,
-          name: formData.name,
-          contactPerson: formData.contactPerson || undefined,
-          phone: formData.phone,
-          email: formData.email || undefined,
-          address: formData.address || undefined,
-          city: formData.city || undefined,
-          province: formData.province || undefined,
-          postalCode: formData.postalCode || undefined,
-          paymentTerms: formData.paymentTerms,
-          rating: formData.rating,
-          notes: formData.notes || undefined,
-        });
-        toast.success("Supplier berhasil ditambahkan");
-      }
-      handleCloseDialog();
-    } catch (error) {
-      toast.error("Terjadi kesalahan");
-      console.error(error);
-    }
+    supplierForm.reset();
   };
 
   const handleDelete = async (id: Id<"suppliers">) => {
@@ -307,7 +285,7 @@ export default function SuppliersPage() {
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={supplierForm.submit}>
             <DialogHeader>
               <DialogTitle>
                 {editingSupplier ? "Edit Supplier" : "Tambah Supplier"}
@@ -320,129 +298,139 @@ export default function SuppliersPage() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="code">
-                    Kode Supplier <span className="text-red-500">*</span>
-                  </Label>
+                <FormField
+                  label={supplierFormSchema.code.label}
+                  required={supplierFormSchema.code.required}
+                  error={supplierForm.errors.code}
+                >
                   <Input
                     id="code"
-                    value={formData.code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value.toUpperCase() })
-                    }
+                    value={supplierForm.values.code}
+                    onChange={(e) => supplierForm.setField("code", e.target.value)}
+                    onBlur={() => supplierForm.handleBlur("code")}
                     placeholder="SUP001"
-                    required
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="name">
-                    Nama Supplier <span className="text-red-500">*</span>
-                  </Label>
+                </FormField>
+                <FormField
+                  label={supplierFormSchema.name.label}
+                  required={supplierFormSchema.name.required}
+                  error={supplierForm.errors.name}
+                >
                   <Input
                     id="name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
+                    value={supplierForm.values.name}
+                    onChange={(e) => supplierForm.setField("name", e.target.value)}
+                    onBlur={() => supplierForm.handleBlur("name")}
                     placeholder="PT Supplier Petshop"
-                    required
                   />
-                </div>
+                </FormField>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="contactPerson">Nama Kontak</Label>
+                <FormField
+                  label={supplierFormSchema.contactPerson.label}
+                  required={supplierFormSchema.contactPerson.required}
+                  error={supplierForm.errors.contactPerson}
+                >
                   <Input
                     id="contactPerson"
-                    value={formData.contactPerson}
-                    onChange={(e) =>
-                      setFormData({ ...formData, contactPerson: e.target.value })
-                    }
+                    value={supplierForm.values.contactPerson}
+                    onChange={(e) => supplierForm.setField("contactPerson", e.target.value)}
+                    onBlur={() => supplierForm.handleBlur("contactPerson")}
                     placeholder="John Doe"
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="phone">
-                    Telepon <span className="text-red-500">*</span>
-                  </Label>
+                </FormField>
+                <FormField
+                  label={supplierFormSchema.phone.label}
+                  required={supplierFormSchema.phone.required}
+                  error={supplierForm.errors.phone}
+                >
                   <Input
                     id="phone"
-                    value={formData.phone}
-                    onChange={(e) =>
-                      setFormData({ ...formData, phone: e.target.value })
-                    }
+                    value={supplierForm.values.phone}
+                    onChange={(e) => supplierForm.setField("phone", e.target.value)}
+                    onBlur={() => supplierForm.handleBlur("phone")}
                     placeholder="08123456789"
-                    required
                   />
-                </div>
+                </FormField>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+              <FormField
+                label={supplierFormSchema.email.label}
+                required={supplierFormSchema.email.required}
+                error={supplierForm.errors.email}
+              >
                 <Input
                   id="email"
                   type="email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
+                  value={supplierForm.values.email}
+                  onChange={(e) => supplierForm.setField("email", e.target.value)}
+                  onBlur={() => supplierForm.handleBlur("email")}
                   placeholder="supplier@example.com"
                 />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="address">Alamat</Label>
+              </FormField>
+              <FormField
+                label={supplierFormSchema.address.label}
+                required={supplierFormSchema.address.required}
+                error={supplierForm.errors.address}
+              >
                 <Textarea
                   id="address"
-                  value={formData.address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address: e.target.value })
-                  }
+                  value={supplierForm.values.address}
+                  onChange={(e) => supplierForm.setField("address", e.target.value)}
+                  onBlur={() => supplierForm.handleBlur("address")}
                   placeholder="Jl. Raya No. 123"
                   rows={2}
                 />
-              </div>
+              </FormField>
               <div className="grid grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="city">Kota</Label>
+                <FormField
+                  label={supplierFormSchema.city.label}
+                  required={supplierFormSchema.city.required}
+                  error={supplierForm.errors.city}
+                >
                   <Input
                     id="city"
-                    value={formData.city}
-                    onChange={(e) =>
-                      setFormData({ ...formData, city: e.target.value })
-                    }
+                    value={supplierForm.values.city}
+                    onChange={(e) => supplierForm.setField("city", e.target.value)}
+                    onBlur={() => supplierForm.handleBlur("city")}
                     placeholder="Jakarta"
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="province">Provinsi</Label>
+                </FormField>
+                <FormField
+                  label={supplierFormSchema.province.label}
+                  required={supplierFormSchema.province.required}
+                  error={supplierForm.errors.province}
+                >
                   <Input
                     id="province"
-                    value={formData.province}
-                    onChange={(e) =>
-                      setFormData({ ...formData, province: e.target.value })
-                    }
+                    value={supplierForm.values.province}
+                    onChange={(e) => supplierForm.setField("province", e.target.value)}
+                    onBlur={() => supplierForm.handleBlur("province")}
                     placeholder="DKI Jakarta"
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="postalCode">Kode Pos</Label>
+                </FormField>
+                <FormField
+                  label={supplierFormSchema.postalCode.label}
+                  required={supplierFormSchema.postalCode.required}
+                  error={supplierForm.errors.postalCode}
+                >
                   <Input
                     id="postalCode"
-                    value={formData.postalCode}
-                    onChange={(e) =>
-                      setFormData({ ...formData, postalCode: e.target.value })
-                    }
+                    value={supplierForm.values.postalCode}
+                    onChange={(e) => supplierForm.setField("postalCode", e.target.value)}
+                    onBlur={() => supplierForm.handleBlur("postalCode")}
                     placeholder="12345"
                   />
-                </div>
+                </FormField>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="paymentTerms">Term Pembayaran</Label>
+                <FormField
+                  label={supplierFormSchema.paymentTerms.label}
+                  required={supplierFormSchema.paymentTerms.required}
+                  error={supplierForm.errors.paymentTerms}
+                >
                   <Select
-                    value={formData.paymentTerms}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, paymentTerms: value })
-                    }
+                    value={supplierForm.values.paymentTerms}
+                    onValueChange={(value) => supplierForm.setField("paymentTerms", value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -455,20 +443,23 @@ export default function SuppliersPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="rating">Rating (1-5)</Label>
+                </FormField>
+                <FormField
+                  label={supplierFormSchema.rating.label}
+                  required={supplierFormSchema.rating.required}
+                  error={supplierForm.errors.rating}
+                >
                   <div className="flex items-center gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
                         type="button"
-                        onClick={() => setFormData({ ...formData, rating: star })}
+                        onClick={() => supplierForm.setField("rating", star)}
                         className="focus:outline-none"
                       >
                         <Star
                           className={`h-6 w-6 cursor-pointer transition-colors ${
-                            star <= formData.rating
+                            star <= supplierForm.values.rating
                               ? "fill-yellow-400 text-yellow-400"
                               : "fill-slate-200 text-slate-200 hover:fill-yellow-200 hover:text-yellow-200"
                           }`}
@@ -476,20 +467,22 @@ export default function SuppliersPage() {
                       </button>
                     ))}
                   </div>
-                </div>
+                </FormField>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="notes">Catatan</Label>
+              <FormField
+                label={supplierFormSchema.notes.label}
+                required={supplierFormSchema.notes.required}
+                error={supplierForm.errors.notes}
+              >
                 <Textarea
                   id="notes"
-                  value={formData.notes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
+                  value={supplierForm.values.notes}
+                  onChange={(e) => supplierForm.setField("notes", e.target.value)}
+                  onBlur={() => supplierForm.handleBlur("notes")}
                   placeholder="Catatan tambahan..."
                   rows={2}
                 />
-              </div>
+              </FormField>
             </div>
             <DialogFooter>
               <Button
@@ -499,7 +492,7 @@ export default function SuppliersPage() {
               >
                 Batal
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={!supplierForm.isValid}>
                 {editingSupplier ? "Simpan" : "Tambah"}
               </Button>
             </DialogFooter>

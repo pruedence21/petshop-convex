@@ -43,6 +43,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
 
 // Type definitions for navigation structure
 interface NavigationChild {
@@ -148,6 +149,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </Sheet>
             <h1 className="text-xl font-bold text-blue-600">🐾 Petshop</h1>
           </div>
+          <LocaleSwitcher />
         </div>
 
         {/* Desktop Sidebar */}
@@ -218,7 +220,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-200">
+        <div className="p-4 border-t border-slate-200 space-y-2">
+          <LocaleSwitcher />
           <Button
             variant="ghost"
             className="w-full justify-start gap-2 text-slate-600 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"

@@ -35,6 +35,9 @@ import {
 import { Plus, Pencil, Trash2, Search, Package, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
+import { useFormSchema } from "@/components/forms/useFormSchema";
+import { FormField } from "@/components/forms/FormField";
+import { NumericInput } from "@/components/forms/NumericInput";
 
 type Product = {
   _id: Id<"products">;
@@ -73,29 +76,121 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Id<"productCategories"> | "all">("all");
   const [selectedType, setSelectedType] = useState<string>("all");
-  const [formData, setFormData] = useState({
-    sku: "",
-    name: "",
-    description: "",
-    categoryId: "",
-    subcategoryId: "",
-    brandId: "",
-    unitId: "",
-    purchasePrice: "",
-    sellingPrice: "",
-    minStock: "",
-    maxStock: "",
-    hasVariants: false,
-    type: "product",
-    serviceDuration: "",
+  const productForm = useFormSchema({
+    schema: {
+      sku: { label: "SKU", required: true, parse: (v) => String(v).toUpperCase(), validate: (v) => (String(v).length < 3 ? "Minimal 3 karakter" : null), defaultValue: "" },
+      name: { label: "Nama Produk", required: true, validate: (v) => (String(v).length < 3 ? "Nama terlalu pendek" : null), defaultValue: "" },
+      description: { label: "Deskripsi", defaultValue: "" },
+      categoryId: { label: "Kategori", required: true, defaultValue: "" },
+      subcategoryId: { label: "Sub Kategori", defaultValue: "" },
+      brandId: { label: "Merek", required: true, defaultValue: "" },
+      unitId: { label: "Satuan", required: true, defaultValue: "" },
+      purchasePrice: { label: "Harga Beli", required: true, parse: (v) => Number(v), validate: (v) => (v <= 0 ? "Harus > 0" : null), defaultValue: 0 },
+      sellingPrice: { label: "Harga Jual", required: true, parse: (v) => Number(v), validate: (v) => (v <= 0 ? "Harus > 0" : null), defaultValue: 0 },
+      minStock: { label: "Stok Minimum", required: true, parse: (v) => Number(v), validate: (v) => (v < 0 ? "Tidak boleh negatif" : null), defaultValue: 10 },
+      maxStock: { label: "Stok Maximum", required: true, parse: (v) => Number(v), validate: (v) => (v < 0 ? "Tidak boleh negatif" : null), defaultValue: 100 },
+      hasVariants: { label: "Memiliki Varian", parse: (v) => Boolean(v), defaultValue: false },
+      type: { label: "Tipe Produk", required: true, defaultValue: "product" },
+      serviceDuration: { label: "Durasi (Menit)", parse: (v) => (v ? Number(v) : ""), defaultValue: "" },
+    },
+    onSubmit: async (values) => {
+      try {
+        if (editingProduct) {
+          await updateProduct({
+            id: editingProduct._id,
+            sku: values.sku,
+            name: values.name,
+            description: values.description || undefined,
+            categoryId: values.categoryId as any,
+            subcategoryId: values.subcategoryId ? (values.subcategoryId as any) : undefined,
+            brandId: values.brandId as any,
+            unitId: values.unitId as any,
+            purchasePrice: values.purchasePrice as any,
+            sellingPrice: values.sellingPrice as any,
+            minStock: values.minStock as any,
+            maxStock: values.maxStock as any,
+            hasVariants: values.hasVariants as any,
+            type: values.type as any,
+            serviceDuration: values.serviceDuration ? (values.serviceDuration as any) : undefined,
+          });
+          toast.success("Produk berhasil diperbarui");
+        } else {
+          await createProduct({
+            sku: values.sku,
+            name: values.name,
+            description: values.description || undefined,
+            categoryId: values.categoryId as any,
+            subcategoryId: values.subcategoryId ? (values.subcategoryId as any) : undefined,
+            brandId: values.brandId as any,
+            unitId: values.unitId as any,
+            purchasePrice: values.purchasePrice as any,
+            sellingPrice: values.sellingPrice as any,
+            minStock: values.minStock as any,
+            maxStock: values.maxStock as any,
+            hasVariants: values.hasVariants as any,
+            type: values.type as any,
+            serviceDuration: values.serviceDuration ? (values.serviceDuration as any) : undefined,
+          });
+          toast.success("Produk berhasil ditambahkan");
+        }
+        setIsDialogOpen(false);
+        setEditingProduct(null);
+        productForm.reset();
+      } catch (e: any) {
+        let msg = e.message || "Gagal menyimpan";
+        try {
+          const parsed = JSON.parse(e.message);
+          msg = parsed.userMessage || msg;
+        } catch {}
+        toast.error(msg);
+      }
+    },
   });
 
-  const [variantFormData, setVariantFormData] = useState({
-    variantName: "",
-    variantValue: "",
-    sku: "",
-    purchasePrice: "",
-    sellingPrice: "",
+  const variantForm = useFormSchema({
+    schema: {
+      variantName: { label: "Nama Varian", required: true, validate: (v) => (String(v).length < 2 ? "Minimal 2 karakter" : null), defaultValue: "" },
+      variantValue: { label: "Nilai Varian", required: true, validate: (v) => (String(v).length < 1 ? "Wajib diisi" : null), defaultValue: "" },
+      sku: { label: "SKU", required: true, parse: (v) => String(v).toUpperCase(), validate: (v) => (String(v).length < 3 ? "Minimal 3 karakter" : null), defaultValue: "" },
+      purchasePrice: { label: "Harga Beli", required: true, parse: (v) => Number(v), validate: (v) => (v <= 0 ? "Harus > 0" : null), defaultValue: 0 },
+      sellingPrice: { label: "Harga Jual", required: true, parse: (v) => Number(v), validate: (v) => (v <= 0 ? "Harus > 0" : null), defaultValue: 0 },
+    },
+    onSubmit: async (values) => {
+      if (!selectedProductForVariants) return;
+      try {
+        if (editingVariant) {
+          await updateVariant({
+            id: editingVariant._id,
+            variantName: values.variantName,
+            variantValue: values.variantValue,
+            sku: values.sku,
+            purchasePrice: values.purchasePrice as any,
+            sellingPrice: values.sellingPrice as any,
+          });
+          toast.success("Varian berhasil diperbarui");
+        } else {
+          await createVariant({
+            productId: selectedProductForVariants._id,
+            variantName: values.variantName,
+            variantValue: values.variantValue,
+            sku: values.sku,
+            purchasePrice: values.purchasePrice as any,
+            sellingPrice: values.sellingPrice as any,
+          });
+          toast.success("Varian berhasil ditambahkan");
+        }
+        setIsVariantDialogOpen(false);
+        setEditingVariant(null);
+        variantForm.reset();
+      } catch (e: any) {
+        let msg = e.message || "Gagal menyimpan";
+        try {
+          const parsed = JSON.parse(e.message);
+          msg = parsed.userMessage || msg;
+        } catch {}
+        toast.error(msg);
+      }
+    },
   });
 
   const products = useQuery(api.products.list, {
@@ -106,8 +201,8 @@ export default function ProductsPage() {
   const categories = useQuery(api.productCategories.list, { includeInactive: false });
   const subcategories = useQuery(
     api.productSubcategories.list,
-    formData.categoryId
-      ? { categoryId: formData.categoryId as Id<"productCategories">, includeInactive: false }
+    productForm.values.categoryId
+      ? { categoryId: productForm.values.categoryId as Id<"productCategories">, includeInactive: false }
       : "skip"
   );
   const brands = useQuery(api.brands.list, { includeInactive: false });
@@ -146,40 +241,24 @@ export default function ProductsPage() {
   const handleOpenDialog = (product?: Product) => {
     if (product) {
       setEditingProduct(product);
-      setFormData({
-        sku: product.sku,
-        name: product.name,
-        description: product.description || "",
-        categoryId: product.categoryId,
-        subcategoryId: product.subcategoryId || "",
-        brandId: product.brandId,
-        unitId: product.unitId,
-        purchasePrice: product.purchasePrice.toString(),
-        sellingPrice: product.sellingPrice.toString(),
-        minStock: product.minStock.toString(),
-        maxStock: product.maxStock.toString(),
-        hasVariants: product.hasVariants,
-        type: (product as any).type || "product",
-        serviceDuration: (product as any).serviceDuration?.toString() || "",
-      });
+      productForm.reset();
+      productForm.setField("sku", product.sku);
+      productForm.setField("name", product.name);
+      productForm.setField("description", product.description || "");
+      productForm.setField("categoryId", product.categoryId as any);
+      productForm.setField("subcategoryId", (product.subcategoryId || "") as any);
+      productForm.setField("brandId", product.brandId as any);
+      productForm.setField("unitId", product.unitId as any);
+      productForm.setField("purchasePrice", product.purchasePrice as any);
+      productForm.setField("sellingPrice", product.sellingPrice as any);
+      productForm.setField("minStock", product.minStock as any);
+      productForm.setField("maxStock", product.maxStock as any);
+      productForm.setField("hasVariants", product.hasVariants as any);
+      productForm.setField("type", ((product as any).type || "product") as any);
+      productForm.setField("serviceDuration", ((product as any).serviceDuration || "") as any);
     } else {
       setEditingProduct(null);
-      setFormData({
-        sku: "",
-        name: "",
-        description: "",
-        categoryId: "",
-        subcategoryId: "",
-        brandId: "",
-        unitId: "",
-        purchasePrice: "",
-        sellingPrice: "",
-        minStock: "10",
-        maxStock: "100",
-        hasVariants: false,
-        type: "product",
-        serviceDuration: "",
-      });
+      productForm.reset();
     }
     setIsDialogOpen(true);
   };
@@ -189,49 +268,9 @@ export default function ProductsPage() {
     setEditingProduct(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!formData.categoryId || !formData.brandId || !formData.unitId) {
-      toast.error("Mohon lengkapi semua field yang wajib");
-      return;
-    }
-
-    try {
-      const payload = {
-        sku: formData.sku,
-        name: formData.name,
-        description: formData.description || undefined,
-        categoryId: formData.categoryId as Id<"productCategories">,
-        subcategoryId: formData.subcategoryId
-          ? (formData.subcategoryId as Id<"productSubcategories">)
-          : undefined,
-        brandId: formData.brandId as Id<"brands">,
-        unitId: formData.unitId as Id<"units">,
-        purchasePrice: parseFloat(formData.purchasePrice),
-        sellingPrice: parseFloat(formData.sellingPrice),
-        minStock: parseFloat(formData.minStock),
-        maxStock: parseFloat(formData.maxStock),
-        hasVariants: formData.hasVariants,
-        type: formData.type || "product",
-        serviceDuration: formData.serviceDuration ? parseFloat(formData.serviceDuration) : undefined,
-      };
-
-      if (editingProduct) {
-        await updateProduct({
-          id: editingProduct._id,
-          ...payload,
-        });
-        toast.success("Produk berhasil diperbarui");
-      } else {
-        await createProduct(payload);
-        toast.success("Produk berhasil ditambahkan");
-      }
-      handleCloseDialog();
-    } catch (error) {
-      toast.error("Terjadi kesalahan");
-      console.error(error);
-    }
+    productForm.submit();
   };
 
   const handleDelete = async (id: Id<"products">) => {
@@ -262,22 +301,17 @@ export default function ProductsPage() {
     setSelectedProductForVariants(product);
     if (variant) {
       setEditingVariant(variant);
-      setVariantFormData({
-        variantName: variant.variantName,
-        variantValue: variant.variantValue,
-        sku: variant.sku,
-        purchasePrice: variant.purchasePrice.toString(),
-        sellingPrice: variant.sellingPrice.toString(),
-      });
+      variantForm.reset();
+      variantForm.setField("variantName", variant.variantName);
+      variantForm.setField("variantValue", variant.variantValue);
+      variantForm.setField("sku", variant.sku);
+      variantForm.setField("purchasePrice", variant.purchasePrice as any);
+      variantForm.setField("sellingPrice", variant.sellingPrice as any);
     } else {
       setEditingVariant(null);
-      setVariantFormData({
-        variantName: "",
-        variantValue: "",
-        sku: "",
-        purchasePrice: product.purchasePrice.toString(),
-        sellingPrice: product.sellingPrice.toString(),
-      });
+      variantForm.reset();
+      variantForm.setField("purchasePrice", product.purchasePrice as any);
+      variantForm.setField("sellingPrice", product.sellingPrice as any);
     }
     setIsVariantDialogOpen(true);
   };
@@ -288,38 +322,9 @@ export default function ProductsPage() {
     setSelectedProductForVariants(null);
   };
 
-  const handleSubmitVariant = async (e: React.FormEvent) => {
+  const handleSubmitVariant = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!selectedProductForVariants) return;
-
-    try {
-      const payload = {
-        variantName: variantFormData.variantName,
-        variantValue: variantFormData.variantValue,
-        sku: variantFormData.sku,
-        purchasePrice: parseFloat(variantFormData.purchasePrice),
-        sellingPrice: parseFloat(variantFormData.sellingPrice),
-      };
-
-      if (editingVariant) {
-        await updateVariant({
-          id: editingVariant._id,
-          ...payload,
-        });
-        toast.success("Varian berhasil diperbarui");
-      } else {
-        await createVariant({
-          productId: selectedProductForVariants._id,
-          ...payload,
-        });
-        toast.success("Varian berhasil ditambahkan");
-      }
-      handleCloseVariantDialog();
-    } catch (error: any) {
-      toast.error(error.message || "Terjadi kesalahan");
-      console.error(error);
-    }
+    variantForm.submit();
   };
 
   const handleDeleteVariant = async (id: Id<"productVariants">) => {
@@ -509,57 +514,40 @@ export default function ProductsPage() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="sku">
-                    SKU <span className="text-red-500">*</span>
-                  </Label>
+                <FormField label="SKU" required error={productForm.errors.sku || null}>
                   <Input
                     id="sku"
-                    value={formData.sku}
-                    onChange={(e) =>
-                      setFormData({ ...formData, sku: e.target.value.toUpperCase() })
-                    }
+                    value={productForm.values.sku as any}
+                    onChange={(e) => productForm.setField("sku", e.target.value)}
+                    onBlur={() => productForm.handleBlur("sku")}
                     placeholder="PRD-001"
-                    required
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="name">
-                    Nama Produk <span className="text-red-500">*</span>
-                  </Label>
+                </FormField>
+                <FormField label="Nama Produk" required error={productForm.errors.name || null}>
                   <Input
                     id="name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
+                    value={productForm.values.name as any}
+                    onChange={(e) => productForm.setField("name", e.target.value)}
+                    onBlur={() => productForm.handleBlur("name")}
                     placeholder="Royal Canin Adult 2kg"
-                    required
                   />
-                </div>
+                </FormField>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="description">Deskripsi</Label>
+              <FormField label="Deskripsi" error={productForm.errors.description || null}>
                 <Textarea
                   id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
+                  value={productForm.values.description as any}
+                  onChange={(e) => productForm.setField("description", e.target.value)}
+                  onBlur={() => productForm.handleBlur("description")}
                   placeholder="Deskripsi produk..."
                   rows={2}
                 />
-              </div>
+              </FormField>
               <div className="grid grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="type">
-                    Tipe Produk <span className="text-red-500">*</span>
-                  </Label>
+                <FormField label="Tipe Produk" required error={productForm.errors.type || null}>
                   <Select
-                    value={formData.type}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, type: value })
-                    }
+                    value={productForm.values.type as any}
+                    onValueChange={(value) => productForm.setField("type", value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -571,17 +559,14 @@ export default function ProductsPage() {
                       <SelectItem value="service">Layanan</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="categoryId">
-                    Kategori <span className="text-red-500">*</span>
-                  </Label>
+                </FormField>
+                <FormField label="Kategori" required error={productForm.errors.categoryId || null}>
                   <Select
-                    value={formData.categoryId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, categoryId: value, subcategoryId: "" })
-                    }
-                    required
+                    value={productForm.values.categoryId as any}
+                    onValueChange={(value) => {
+                      productForm.setField("categoryId", value);
+                      productForm.setField("subcategoryId", "");
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih kategori" />
@@ -594,15 +579,12 @@ export default function ProductsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="subcategoryId">Sub Kategori</Label>
+                </FormField>
+                <FormField label="Sub Kategori" error={productForm.errors.subcategoryId || null}>
                   <Select
-                    value={formData.subcategoryId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, subcategoryId: value })
-                    }
-                    disabled={!formData.categoryId}
+                    value={productForm.values.subcategoryId as any}
+                    onValueChange={(value) => productForm.setField("subcategoryId", value)}
+                    disabled={!productForm.values.categoryId}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih sub kategori" />
@@ -615,17 +597,11 @@ export default function ProductsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="brandId">
-                    Merek <span className="text-red-500">*</span>
-                  </Label>
+                </FormField>
+                <FormField label="Merek" required error={productForm.errors.brandId || null}>
                   <Select
-                    value={formData.brandId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, brandId: value })
-                    }
-                    required
+                    value={productForm.values.brandId as any}
+                    onValueChange={(value) => productForm.setField("brandId", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih merek" />
@@ -638,19 +614,13 @@ export default function ProductsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </FormField>
               </div>
               <div className="grid grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="unitId">
-                    Satuan <span className="text-red-500">*</span>
-                  </Label>
+                <FormField label="Satuan" required error={productForm.errors.unitId || null}>
                   <Select
-                    value={formData.unitId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, unitId: value })
-                    }
-                    required
+                    value={productForm.values.unitId as any}
+                    onValueChange={(value) => productForm.setField("unitId", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih satuan" />
@@ -663,99 +633,74 @@ export default function ProductsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="purchasePrice">
-                    Harga Beli <span className="text-red-500">*</span>
-                  </Label>
+                </FormField>
+                <FormField label="Harga Beli" required error={productForm.errors.purchasePrice || null}>
                   <Input
                     id="purchasePrice"
                     type="number"
-                    value={formData.purchasePrice}
-                    onChange={(e) =>
-                      setFormData({ ...formData, purchasePrice: e.target.value })
-                    }
+                    value={productForm.values.purchasePrice as any}
+                    onChange={(e) => productForm.setField("purchasePrice", e.target.value)}
+                    onBlur={() => productForm.handleBlur("purchasePrice")}
                     placeholder="50000"
-                    required
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="sellingPrice">
-                    Harga Jual <span className="text-red-500">*</span>
-                  </Label>
+                </FormField>
+                <FormField label="Harga Jual" required error={productForm.errors.sellingPrice || null}>
                   <Input
                     id="sellingPrice"
                     type="number"
-                    value={formData.sellingPrice}
-                    onChange={(e) =>
-                      setFormData({ ...formData, sellingPrice: e.target.value })
-                    }
+                    value={productForm.values.sellingPrice as any}
+                    onChange={(e) => productForm.setField("sellingPrice", e.target.value)}
+                    onBlur={() => productForm.handleBlur("sellingPrice")}
                     placeholder="75000"
-                    required
                   />
-                </div>
+                </FormField>
               </div>
               <div className="grid grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="minStock">
-                    Stok Minimum <span className="text-red-500">*</span>
-                  </Label>
+                <FormField label="Stok Minimum" required error={productForm.errors.minStock || null}>
                   <Input
                     id="minStock"
                     type="number"
-                    value={formData.minStock}
-                    onChange={(e) =>
-                      setFormData({ ...formData, minStock: e.target.value })
-                    }
+                    value={productForm.values.minStock as any}
+                    onChange={(e) => productForm.setField("minStock", e.target.value)}
+                    onBlur={() => productForm.handleBlur("minStock")}
                     placeholder="10"
-                    required
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="maxStock">
-                    Stok Maximum <span className="text-red-500">*</span>
-                  </Label>
+                </FormField>
+                <FormField label="Stok Maximum" required error={productForm.errors.maxStock || null}>
                   <Input
                     id="maxStock"
                     type="number"
-                    value={formData.maxStock}
-                    onChange={(e) =>
-                      setFormData({ ...formData, maxStock: e.target.value })
-                    }
+                    value={productForm.values.maxStock as any}
+                    onChange={(e) => productForm.setField("maxStock", e.target.value)}
+                    onBlur={() => productForm.handleBlur("maxStock")}
                     placeholder="100"
-                    required
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label>&nbsp;</Label>
+                </FormField>
+                <FormField label="Memiliki Varian" error={productForm.errors.hasVariants || null}>
                   <div className="flex items-center gap-2 h-10">
                     <input
                       type="checkbox"
                       id="hasVariants"
-                      checked={formData.hasVariants}
-                      onChange={(e) =>
-                        setFormData({ ...formData, hasVariants: e.target.checked })
-                      }
+                      checked={productForm.values.hasVariants as any}
+                      onChange={(e) => productForm.setField("hasVariants", e.target.checked)}
                       className="w-4 h-4"
                     />
                     <Label htmlFor="hasVariants" className="cursor-pointer">
                       Memiliki Varian
                     </Label>
                   </div>
-                </div>
+                </FormField>
               </div>
-              {(formData.type === "service" || formData.type === "procedure") && (
+              {(productForm.values.type === "service" || productForm.values.type === "procedure") && (
                 <div className="grid gap-2">
                   <Label htmlFor="serviceDuration">
-                    Durasi (Menit) {formData.type === "service" || formData.type === "procedure" ? <span className="text-red-500">*</span> : ""}
+                    Durasi (Menit) {productForm.values.type === "service" || productForm.values.type === "procedure" ? <span className="text-red-500">*</span> : ""}
                   </Label>
                   <Input
                     id="serviceDuration"
                     type="number"
-                    value={formData.serviceDuration}
-                    onChange={(e) =>
-                      setFormData({ ...formData, serviceDuration: e.target.value })
-                    }
+                    value={productForm.values.serviceDuration as any}
+                    onChange={(e) => productForm.setField("serviceDuration", e.target.value)}
                     placeholder="30"
                   />
                   <p className="text-xs text-slate-500">
@@ -772,7 +717,7 @@ export default function ProductsPage() {
               >
                 Batal
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={!productForm.isValid}>
                 {editingProduct ? "Simpan" : "Tambah"}
               </Button>
             </DialogFooter>
@@ -804,75 +749,56 @@ export default function ProductsPage() {
                 {editingVariant ? "Edit Varian" : "Tambah Varian Baru"}
               </h3>
               <div className="grid grid-cols-5 gap-3">
-                <div className="grid gap-2">
-                  <Label htmlFor="variantName">
-                    Nama Varian <span className="text-red-500">*</span>
-                  </Label>
+                <FormField label="Nama Varian" required error={variantForm.errors.variantName || null}>
                   <Input
                     id="variantName"
-                    value={variantFormData.variantName}
-                    onChange={(e) =>
-                      setVariantFormData({ ...variantFormData, variantName: e.target.value })
-                    }
+                    value={variantForm.values.variantName as any}
+                    onChange={(e) => variantForm.setField("variantName", e.target.value)}
+                    onBlur={() => variantForm.handleBlur("variantName")}
                     placeholder="Berat/Ukuran/Warna"
-                    required
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="variantValue">
-                    Nilai Varian <span className="text-red-500">*</span>
-                  </Label>
+                </FormField>
+                <FormField label="Nilai Varian" required error={variantForm.errors.variantValue || null}>
                   <Input
                     id="variantValue"
-                    value={variantFormData.variantValue}
-                    onChange={(e) =>
-                      setVariantFormData({ ...variantFormData, variantValue: e.target.value })
-                    }
+                    value={variantForm.values.variantValue as any}
+                    onChange={(e) => variantForm.setField("variantValue", e.target.value)}
+                    onBlur={() => variantForm.handleBlur("variantValue")}
                     placeholder="1kg/Merah/S"
-                    required
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="variantSku">
-                    SKU <span className="text-red-500">*</span>
-                  </Label>
+                </FormField>
+                <FormField label="SKU" required error={variantForm.errors.sku || null}>
                   <Input
                     id="variantSku"
-                    value={variantFormData.sku}
-                    onChange={(e) =>
-                      setVariantFormData({ ...variantFormData, sku: e.target.value.toUpperCase() })
-                    }
+                    value={variantForm.values.sku as any}
+                    onChange={(e) => variantForm.setField("sku", e.target.value)}
+                    onBlur={() => variantForm.handleBlur("sku")}
                     placeholder="PRD-001-1KG"
-                    required
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="variantPurchasePrice">Harga Beli</Label>
-                  <Input
+                </FormField>
+                <FormField label="Harga Beli" required error={variantForm.errors.purchasePrice || null}>
+                  <NumericInput
                     id="variantPurchasePrice"
-                    type="number"
-                    value={variantFormData.purchasePrice}
-                    onChange={(e) =>
-                      setVariantFormData({ ...variantFormData, purchasePrice: e.target.value })
-                    }
-                    required
+                    value={variantForm.values.purchasePrice as any}
+                    onChange={(val) => variantForm.setField("purchasePrice", val)}
+                    min={0}
+                    decimals={0}
+                    placeholder="50000"
                   />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="variantSellingPrice">Harga Jual</Label>
-                  <Input
+                </FormField>
+                <FormField label="Harga Jual" required error={variantForm.errors.sellingPrice || null}>
+                  <NumericInput
                     id="variantSellingPrice"
-                    type="number"
-                    value={variantFormData.sellingPrice}
-                    onChange={(e) =>
-                      setVariantFormData({ ...variantFormData, sellingPrice: e.target.value })
-                    }
-                    required
+                    value={variantForm.values.sellingPrice as any}
+                    onChange={(val) => variantForm.setField("sellingPrice", val)}
+                    min={0}
+                    decimals={0}
+                    placeholder="75000"
                   />
-                </div>
+                </FormField>
               </div>
               <div className="flex gap-2 mt-3">
-                <Button type="submit" size="sm">
+                <Button type="submit" size="sm" disabled={!variantForm.isValid}>
                   {editingVariant ? "Update Varian" : "Tambah Varian"}
                 </Button>
                 {editingVariant && (
@@ -882,13 +808,11 @@ export default function ProductsPage() {
                     size="sm"
                     onClick={() => {
                       setEditingVariant(null);
-                      setVariantFormData({
-                        variantName: "",
-                        variantValue: "",
-                        sku: "",
-                        purchasePrice: selectedProductForVariants?.purchasePrice.toString() || "",
-                        sellingPrice: selectedProductForVariants?.sellingPrice.toString() || "",
-                      });
+                      variantForm.reset();
+                      if (selectedProductForVariants) {
+                        variantForm.setField("purchasePrice", selectedProductForVariants.purchasePrice as any);
+                        variantForm.setField("sellingPrice", selectedProductForVariants.sellingPrice as any);
+                      }
                     }}
                   >
                     Batal Edit
