@@ -114,6 +114,14 @@ const navigation: NavigationItem[] = [
       { name: "Cabang", href: "/dashboard/branches", icon: Building2 },
     ],
   },
+  {
+    name: "Pengaturan",
+    icon: UserCog,
+    children: [
+      { name: "User Management", href: "/dashboard/users", icon: Users },
+      { name: "Roles & Permissions", href: "/dashboard/roles", icon: Settings },
+    ],
+  },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

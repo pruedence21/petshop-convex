@@ -8,14 +8,48 @@ import { authTables } from "@convex-dev/auth/server";
 export default defineSchema({
   ...authTables,
 
+  // ==================== USER MANAGEMENT ====================
+  
+  // User Profiles (extends authTables users with additional info)
+  userProfiles: defineTable({
+    userId: v.string(), // Reference to authTables users._id (stored as string)
+    name: v.string(), // Full name
+    email: v.string(), // Denormalized for quick access
+    phone: v.optional(v.string()),
+    branchId: v.optional(v.id("branches")), // Primary branch assignment
+    roleId: v.optional(v.id("roles")), // Primary role
+    isActive: v.boolean(),
+    lastLoginAt: v.optional(v.number()),
+    createdBy: v.optional(v.string()), // userId string (can't use v.id since auth users are special)
+    updatedBy: v.optional(v.string()),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_user_id", ["userId"])
+    .index("by_email", ["email"])
+    .index("by_branch", ["branchId"])
+    .index("by_role", ["roleId"])
+    .index("by_is_active", ["isActive"]),
+
+  // User-Role Junction (for multiple roles per user if needed in future)
+  userRoles: defineTable({
+    userId: v.string(), // Reference to authTables users._id
+    roleId: v.id("roles"),
+    assignedBy: v.optional(v.string()), // userId string
+    assignedAt: v.number(),
+    isActive: v.boolean(),
+  })
+    .index("by_user_id", ["userId"])
+    .index("by_role_id", ["roleId"])
+    .index("by_user_and_role", ["userId", "roleId"]),
+
   // ==================== ROLE & PERMISSION ====================
   roles: defineTable({
     name: v.string(), // Admin, Manager, Staff, Kasir
     description: v.optional(v.string()),
     permissions: v.array(v.string()), // ["users.create", "users.read", "products.update", etc]
     isActive: v.boolean(),
-    createdBy: v.optional(v.id("users")),
-    updatedBy: v.optional(v.id("users")),
+    createdBy: v.optional(v.string()), // userId string
+    updatedBy: v.optional(v.string()),
     deletedAt: v.optional(v.number()),
   }).index("by_name", ["name"]),
 

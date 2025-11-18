@@ -71,6 +71,42 @@ export const PERMISSIONS = {
   STOCK_ADJUST: "stock.adjust",
   STOCK_TRANSFER: "stock.transfer",
   STOCK_REPORT: "stock.report",
+  
+  // Sales
+  SALES_CREATE: "sales.create",
+  SALES_READ: "sales.read",
+  SALES_UPDATE: "sales.update",
+  SALES_DELETE: "sales.delete",
+  SALES_APPROVE: "sales.approve",
+  
+  // Expenses
+  EXPENSES_CREATE: "expenses.create",
+  EXPENSES_READ: "expenses.read",
+  EXPENSES_UPDATE: "expenses.update",
+  EXPENSES_DELETE: "expenses.delete",
+  EXPENSES_APPROVE: "expenses.approve",
+  
+  // Clinic
+  CLINIC_CREATE: "clinic.create",
+  CLINIC_READ: "clinic.read",
+  CLINIC_UPDATE: "clinic.update",
+  CLINIC_DELETE: "clinic.delete",
+  
+  // Hotel
+  HOTEL_CREATE: "hotel.create",
+  HOTEL_READ: "hotel.read",
+  HOTEL_UPDATE: "hotel.update",
+  HOTEL_DELETE: "hotel.delete",
+  
+  // Accounting
+  ACCOUNTING_READ: "accounting.read",
+  ACCOUNTING_CREATE: "accounting.create",
+  ACCOUNTING_UPDATE: "accounting.update",
+  ACCOUNTING_APPROVE: "accounting.approve",
+  
+  // Reports
+  REPORTS_VIEW: "reports.view",
+  REPORTS_EXPORT: "reports.export",
 } as const;
 
 // Default roles configuration

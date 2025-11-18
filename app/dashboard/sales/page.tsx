@@ -624,7 +624,7 @@ export default function SalesPage() {
 
       {/* Create Sale Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!max-w-[95vw] w-4xl !max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Transaksi Penjualan Baru</DialogTitle>
             <DialogDescription>

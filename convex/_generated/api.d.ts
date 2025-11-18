@@ -13,9 +13,11 @@ import type * as accountingPeriods from "../accountingPeriods.js";
 import type * as accountingSeed from "../accountingSeed.js";
 import type * as accounts from "../accounts.js";
 import type * as accountsReceivable from "../accountsReceivable.js";
+import type * as adminSeed from "../adminSeed.js";
 import type * as animalCategories from "../animalCategories.js";
 import type * as animalSubcategories from "../animalSubcategories.js";
 import type * as auth from "../auth.js";
+import type * as authHelpers from "../authHelpers.js";
 import type * as backfillMedicalRecords from "../backfillMedicalRecords.js";
 import type * as bankAccounts from "../bankAccounts.js";
 import type * as bankSeed from "../bankSeed.js";
@@ -64,6 +66,7 @@ import type * as stockMovements from "../stockMovements.js";
 import type * as suppliers from "../suppliers.js";
 import type * as unitConversions from "../unitConversions.js";
 import type * as units from "../units.js";
+import type * as userManagement from "../userManagement.js";
 
 import type {
   ApiFromModules,
@@ -77,9 +80,11 @@ declare const fullApi: ApiFromModules<{
   accountingSeed: typeof accountingSeed;
   accounts: typeof accounts;
   accountsReceivable: typeof accountsReceivable;
+  adminSeed: typeof adminSeed;
   animalCategories: typeof animalCategories;
   animalSubcategories: typeof animalSubcategories;
   auth: typeof auth;
+  authHelpers: typeof authHelpers;
   backfillMedicalRecords: typeof backfillMedicalRecords;
   bankAccounts: typeof bankAccounts;
   bankSeed: typeof bankSeed;
@@ -128,6 +133,7 @@ declare const fullApi: ApiFromModules<{
   suppliers: typeof suppliers;
   unitConversions: typeof unitConversions;
   units: typeof units;
+  userManagement: typeof userManagement;
 }>;
 
 /**

@@ -5,6 +5,8 @@ import { reduceStockForSaleHelper } from "./productStock";
 import { createSaleJournalEntry } from "./accountingHelpers";
 import { calculateLine, calculateTotals, LineItemInput } from "../lib/finance";
 import { buildError } from "../lib/errors";
+import { requirePermission, requireUserProfile } from "./authHelpers";
+import { PERMISSIONS } from "./roles";
 
 // Generate Sale Number (INV-YYYYMMDD-001)
 async function generateSaleNumber(ctx: any): Promise<string> {
@@ -48,7 +50,14 @@ export const create = mutation({
     saleDate: v.number(),
     notes: v.optional(v.string()),
   },
+  returns: v.object({
+    saleId: v.id("sales"),
+    saleNumber: v.string(),
+  }),
   handler: async (ctx, args) => {
+    // Require permission to create sales
+    const currentUser = await requirePermission(ctx, PERMISSIONS.SALES_CREATE);
+
     const saleNumber = await generateSaleNumber(ctx);
 
     const saleId = await ctx.db.insert("sales", {
@@ -66,7 +75,7 @@ export const create = mutation({
       paidAmount: 0,
       outstandingAmount: 0,
       notes: args.notes,
-      createdBy: undefined, // TODO: auth integration
+      createdBy: undefined, // TODO: Fix schema to use v.string() for auth user IDs
     });
 
     return { saleId, saleNumber };
