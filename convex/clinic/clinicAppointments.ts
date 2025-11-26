@@ -4,37 +4,7 @@ import { Id } from "../_generated/dataModel";
 import { reduceStockForSaleHelper } from "../inventory/productStock";
 import { createClinicJournalEntry } from "../finance/accountingHelpers";
 import { calculateLine, LineItemInput } from "../../lib/finance";
-
-// Generate Appointment Number (APT-YYYYMMDD-001)
-async function generateAppointmentNumber(ctx: any): Promise<string> {
-  const now = new Date();
-  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
-  const prefix = `APT-${dateStr}-`;
-
-  const todayAppointments = await ctx.db
-    .query("clinicAppointments")
-    .withIndex("by_appointment_number")
-    .collect();
-
-  const todayFiltered = todayAppointments.filter((apt: any) =>
-    apt.appointmentNumber.startsWith(prefix)
-  );
-
-  if (todayFiltered.length === 0) {
-    return `${prefix}001`;
-  }
-
-  const maxNumber = Math.max(
-    ...todayFiltered.map((apt: any) => {
-      const numPart = apt.appointmentNumber.split("-")[2];
-      return parseInt(numPart, 10);
-    })
-  );
-
-  return `${prefix}${String(maxNumber + 1).padStart(3, "0")}`;
-}
-
-
+import { getOrGenerateTransactionNumber } from "../utils/autoNumbering";
 
 // Create appointment (Draft/Scheduled status)
 export const create = mutation({
@@ -45,6 +15,7 @@ export const create = mutation({
     staffId: v.id("clinicStaff"),
     appointmentDate: v.number(),
     appointmentTime: v.string(),
+    appointmentNumber: v.optional(v.string()), // Optional: auto-generate if not provided
     notes: v.optional(v.string()),
   },
   returns: v.object({
@@ -72,7 +43,13 @@ export const create = mutation({
       );
     }
 
-    const appointmentNumber = await generateAppointmentNumber(ctx);
+    // Get or generate appointment number (auto-generate if not provided, validate if custom)
+    const appointmentNumber = await getOrGenerateTransactionNumber(
+      ctx,
+      "clinicAppointments",
+      args.appointmentNumber,
+      new Date(args.appointmentDate)
+    );
 
     const appointmentId = await ctx.db.insert("clinicAppointments", {
       appointmentNumber,

@@ -7,37 +7,7 @@ import { calculateLine, calculateTotals, LineItemInput } from "../../lib/finance
 import { buildError } from "../../lib/errors";
 import { requirePermission, requireUserProfile } from "../users/authHelpers";
 import { PERMISSIONS } from "../users/roles";
-
-// Generate Sale Number (INV-YYYYMMDD-001)
-async function generateSaleNumber(ctx: any): Promise<string> {
-  const now = new Date();
-  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
-  const prefix = `INV-${dateStr}-`;
-
-  // Find last sale of today
-  const todaySales = await ctx.db
-    .query("sales")
-    .withIndex("by_sale_number")
-    .collect();
-
-  const todayFiltered = todaySales.filter((sale: any) =>
-    sale.saleNumber.startsWith(prefix)
-  );
-
-  if (todayFiltered.length === 0) {
-    return `${prefix}001`;
-  }
-
-  // Get max number
-  const maxNumber = Math.max(
-    ...todayFiltered.map((sale: any) => {
-      const numPart = sale.saleNumber.split("-")[2];
-      return parseInt(numPart, 10);
-    })
-  );
-
-  return `${prefix}${String(maxNumber + 1).padStart(3, "0")}`;
-}
+import { getOrGenerateTransactionNumber } from "../utils/autoNumbering";
 
 // Use centralized finance calculation from lib/finance.ts
 // calculateLine and calculateTotals handle all discount/tax logic
@@ -48,6 +18,7 @@ export const create = mutation({
     branchId: v.id("branches"),
     customerId: v.id("customers"),
     saleDate: v.number(),
+    saleNumber: v.optional(v.string()), // Optional: auto-generate if not provided
     notes: v.optional(v.string()),
   },
   returns: v.object({
@@ -58,7 +29,13 @@ export const create = mutation({
     // Require permission to create sales
     const currentUser = await requirePermission(ctx, PERMISSIONS.SALES_CREATE);
 
-    const saleNumber = await generateSaleNumber(ctx);
+    // Get or generate sale number (auto-generate if not provided, validate if custom)
+    const saleNumber = await getOrGenerateTransactionNumber(
+      ctx,
+      "sales",
+      args.saleNumber,
+      new Date(args.saleDate)
+    );
 
     const saleId = await ctx.db.insert("sales", {
       saleNumber,

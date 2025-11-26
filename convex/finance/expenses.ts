@@ -1,53 +1,7 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
-
-// Helper functions
-async function generateExpenseNumber(ctx: any): Promise<string> {
-  const now = new Date();
-  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
-  const prefix = `EXP-${dateStr}-`;
-
-  const todayExpenses = await ctx.db
-    .query("expenses")
-    .withIndex("by_expense_number")
-    .collect();
-
-  const todayFiltered = todayExpenses.filter((exp: any) =>
-    exp.expenseNumber.startsWith(prefix)
-  );
-
-  if (todayFiltered.length === 0) {
-    return `${prefix}001`;
-  }
-
-  const maxNumber = Math.max(
-    ...todayFiltered.map((exp: any) => {
-      const numPart = exp.expenseNumber.split("-")[2];
-      return parseInt(numPart, 10);
-    })
-  );
-
-  return `${prefix}${String(maxNumber + 1).padStart(3, "0")}`;
-}
-
-async function generateJournalNumber(ctx: any): Promise<string> {
-  const now = new Date();
-  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
-  const prefix = `JE-${dateStr}-`;
-
-  const existing = await ctx.db.query("journalEntries").collect();
-  const filtered = existing.filter((je: any) => je.journalNumber.startsWith(prefix));
-
-  if (filtered.length === 0) return `${prefix}001`;
-
-  const maxNum = Math.max(...filtered.map((je: any) => {
-    const num = je.journalNumber.split("-")[2];
-    return parseInt(num, 10);
-  }));
-
-  return `${prefix}${String(maxNum + 1).padStart(3, "0")}`;
-}
+import { getOrGenerateTransactionNumber } from "../utils/autoNumbering";
 
 // Create expense (draft)
 export const create = mutation({
@@ -56,6 +10,7 @@ export const create = mutation({
     categoryId: v.id("expenseCategories"),
     expenseDate: v.number(),
     amount: v.number(),
+    expenseNumber: v.optional(v.string()), // Optional: auto-generate if not provided
     vendor: v.optional(v.string()),
     description: v.string(),
     notes: v.optional(v.string()),
@@ -81,7 +36,13 @@ export const create = mutation({
       throw new Error("Expense amount must be positive");
     }
 
-    const expenseNumber = await generateExpenseNumber(ctx);
+    // Get or generate expense number (auto-generate if not provided, validate if custom)
+    const expenseNumber = await getOrGenerateTransactionNumber(
+      ctx,
+      "expenses",
+      args.expenseNumber,
+      new Date(args.expenseDate)
+    );
 
     // Determine initial status
     let status = "DRAFT";

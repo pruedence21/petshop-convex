@@ -3,37 +3,7 @@ import { v } from "convex/values";
 import { calculateLine } from "../../lib/finance";
 import { updateStockFromPurchaseHelper } from "../inventory/productStock";
 import { createPurchaseJournalEntry } from "../finance/accountingHelpers";
-
-// Generate PO Number (PO-YYYYMMDD-001)
-async function generatePONumber(ctx: any): Promise<string> {
-  const now = new Date();
-  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
-  const prefix = `PO-${dateStr}-`;
-
-  // Find last PO of today
-  const todayPOs = await ctx.db
-    .query("purchaseOrders")
-    .withIndex("by_po_number")
-    .collect();
-
-  const todayFiltered = todayPOs.filter((po: any) =>
-    po.poNumber.startsWith(prefix)
-  );
-
-  if (todayFiltered.length === 0) {
-    return `${prefix}001`;
-  }
-
-  // Get max number
-  const maxNumber = Math.max(
-    ...todayFiltered.map((po: any) => {
-      const numPart = po.poNumber.split("-")[2];
-      return parseInt(numPart, 10);
-    })
-  );
-
-  return `${prefix}${String(maxNumber + 1).padStart(3, "0")}`;
-}
+import { getOrGenerateTransactionNumber } from "../utils/autoNumbering";
 
 // Create purchase order (Draft status)
 export const create = mutation({
@@ -41,11 +11,22 @@ export const create = mutation({
     supplierId: v.id("suppliers"),
     branchId: v.id("branches"),
     orderDate: v.number(),
+    poNumber: v.optional(v.string()), // Optional: auto-generate if not provided
     expectedDeliveryDate: v.optional(v.number()),
     notes: v.optional(v.string()),
   },
+  returns: v.object({
+    poId: v.id("purchaseOrders"),
+    poNumber: v.string(),
+  }),
   handler: async (ctx, args) => {
-    const poNumber = await generatePONumber(ctx);
+    // Get or generate PO number (auto-generate if not provided, validate if custom)
+    const poNumber = await getOrGenerateTransactionNumber(
+      ctx,
+      "purchaseOrders",
+      args.poNumber,
+      new Date(args.orderDate)
+    );
 
     const poId = await ctx.db.insert("purchaseOrders", {
       poNumber,
