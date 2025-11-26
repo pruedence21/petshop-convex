@@ -3,7 +3,7 @@
  * Mutations untuk create admin user dan manage accounts
  */
 
-import { mutation } from "../_generated/server";
+import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 
 /**
@@ -452,3 +452,31 @@ export const listAdmins = mutation({
 
 
 
+
+/**
+ * Check if any admin user exists
+ * Used to disable setup page
+ */
+export const checkAnyAdminExists = query({
+  args: {},
+  returns: v.boolean(),
+  handler: async (ctx) => {
+    // Get Admin role
+    const adminRole = await ctx.db
+      .query("roles")
+      .withIndex("by_name", (q) => q.eq("name", "Admin"))
+      .first();
+
+    if (!adminRole) {
+      return false;
+    }
+
+    // Check if any user has this role
+    const adminUser = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_role", (q) => q.eq("roleId", adminRole._id))
+      .first();
+
+    return !!adminUser;
+  },
+});
