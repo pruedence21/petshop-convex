@@ -99,9 +99,9 @@ The `npx convex dev` command will:
 // Run in the Convex dashboard or via CLI
 // This seeds the chart of accounts and sample data
 
-await ctx.mutation(api.accountingSeed.seedChartOfAccounts, {});
-await ctx.mutation(api.bankSeed.seedBankAccounts, {});
-await ctx.mutation(api.expenseSeed.seedExpenseCategories, {});
+await ctx.mutation(api.finance.accountingSeed.seedChartOfAccounts, {});
+await ctx.mutation(api.finance.bankSeed.seedBankAccounts, {});
+await ctx.mutation(api.finance.expenseSeed.seedExpenseCategories, {});
 
 // Output should show:
 // ✅ Successfully seeded 80 accounts

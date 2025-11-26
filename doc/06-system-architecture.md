@@ -300,18 +300,20 @@ export function SalesDashboard({
 #### Convex Function Structure
 ```
 convex/
-├── functions/                  # Main function directory
-│   ├── sales.ts               # Sales module
-│   ├── clinic/                # Clinic module
-│   ├── hotel/                 # Hotel module
-│   ├── accounting/            # Accounting module
-│   ├── inventory/             # Inventory module
-│   ├── customers/             # Customer module
-│   └── auth.ts                # Authentication
-├── schema.ts                  # Database schema
+├── clinic/                    # Clinic module
+├── finance/                   # Accounting & Finance module
+├── hotel/                     # Hotel module
+├── inventory/                 # Inventory module
+├── master_data/               # Master Data (Customers, Pets)
+├── procurement/               # Procurement module
+├── reports/                   # Reports module
+├── sales/                     # Sales module
+├── users/                     # User management
 ├── auth.config.ts             # Auth configuration
+├── auth.ts                    # Authentication logic
 ├── http.ts                    # HTTP handlers
-└── migration.ts               # Database migrations
+├── schema.ts                  # Database schema
+└── seed.ts                    # Seed data
 ```
 
 #### Query Function Example

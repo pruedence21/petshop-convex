@@ -273,4 +273,63 @@ export const bootstrapDemoAdmin = internalMutation({
   },
 });
 
+/**
+ * Fix missing admin profile by email
+ * Useful if the user signed up before roles were seeded
+ */
+export const fixAdminProfile = internalMutation({
+  args: { email: v.string() },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", args.email))
+      .first();
 
+    if (!user) {
+      throw new Error(`User with email ${args.email} not found in auth system. Please sign up first.`);
+    }
+
+    // Check if profile exists
+    const existingProfile = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+      .first();
+
+    if (existingProfile) {
+      return `Profile already exists for ${args.email} (ID: ${existingProfile._id})`;
+    }
+
+    // Get Admin role
+    const adminRole = await ctx.db
+      .query("roles")
+      .withIndex("by_name", (q) => q.eq("name", "Admin"))
+      .first();
+
+    if (!adminRole) {
+      throw new Error("Admin role not found. Run setupAdminRole first.");
+    }
+
+    // Create profile
+    const profileId = await ctx.db.insert("userProfiles", {
+      userId: user._id,
+      name: user.name || "Admin",
+      email: user.email || args.email,
+      roleId: adminRole._id,
+      isActive: true,
+      createdBy: "fix-script",
+      updatedBy: "fix-script",
+    });
+
+    // Assign role
+    await ctx.db.insert("userRoles", {
+      userId: user._id,
+      roleId: adminRole._id,
+      assignedBy: "fix-script",
+      assignedAt: Date.now(),
+      isActive: true,
+    });
+
+    return `Successfully created admin profile for ${args.email}`;
+  },
+});
