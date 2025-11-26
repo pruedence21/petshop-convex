@@ -18,7 +18,8 @@ export class MockDatabase {
         // Initialize empty collections
         const tables = [
             'accounts', 'journalEntries', 'journalEntryLines', 'sales', 'saleItems',
-            'products', 'productStock', 'branches', 'customers', 'productCategories'
+            'products', 'productStock', 'branches', 'customers', 'productCategories',
+            'purchaseOrders', 'expenses', 'clinicAppointments', 'hotelBookings'
         ];
         tables.forEach(table => this.store.set(table, new Map()));
     }
@@ -88,6 +89,13 @@ export class MockDatabase {
                 return {
                     collect: async () => filteredResults,
                     first: async () => filteredResults[0] || null,
+                    unique: async () => {
+                        if (filteredResults.length === 0) return null;
+                        if (filteredResults.length > 1) {
+                            throw new Error('unique() expects 0 or 1 result, got ' + filteredResults.length);
+                        }
+                        return filteredResults[0];
+                    },
                     filter: (filterFn: (q: any) => any) => {
                         return {
                             collect: async () => {
@@ -108,6 +116,13 @@ export class MockDatabase {
             },
             collect: async () => results,
             first: async () => results[0] || null,
+            unique: async () => {
+                if (results.length === 0) return null;
+                if (results.length > 1) {
+                    throw new Error('unique() expects 0 or 1 result, got ' + results.length);
+                }
+                return results[0];
+            },
         };
     }
 

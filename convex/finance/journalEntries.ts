@@ -1,41 +1,14 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
-
-// Generate Journal Entry Number (JE-YYYYMMDD-001)
-async function generateJournalNumber(ctx: any): Promise<string> {
-  const now = new Date();
-  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
-  const prefix = `JE-${dateStr}-`;
-
-  const todayEntries = await ctx.db
-    .query("journalEntries")
-    .withIndex("by_journal_number")
-    .collect();
-
-  const todayFiltered = todayEntries.filter((je: any) =>
-    je.journalNumber.startsWith(prefix)
-  );
-
-  if (todayFiltered.length === 0) {
-    return `${prefix}001`;
-  }
-
-  const maxNumber = Math.max(
-    ...todayFiltered.map((je: any) => {
-      const numPart = je.journalNumber.split("-")[2];
-      return parseInt(numPart, 10);
-    })
-  );
-
-  return `${prefix}${String(maxNumber + 1).padStart(3, "0")}`;
-}
+import { getOrGenerateTransactionNumber } from "../utils/autoNumbering";
 
 // Create journal entry (Draft status)
 export const create = mutation({
   args: {
     journalDate: v.number(),
     description: v.string(),
+    journalNumber: v.optional(v.string()), // Optional: auto-generate if not provided
     sourceType: v.optional(v.string()), // SALE, PURCHASE, EXPENSE, PAYMENT, CLINIC, HOTEL, MANUAL, ADJUSTMENT
     sourceId: v.optional(v.string()),
     lines: v.array(
@@ -89,7 +62,13 @@ export const create = mutation({
       }
     }
 
-    const journalNumber = await generateJournalNumber(ctx);
+    // Get or generate journal number (auto-generate if not provided, validate if custom)
+    const journalNumber = await getOrGenerateTransactionNumber(
+      ctx,
+      "journalEntries",
+      args.journalNumber,
+      new Date(args.journalDate)
+    );
 
     const journalEntryId = await ctx.db.insert("journalEntries", {
       journalNumber,

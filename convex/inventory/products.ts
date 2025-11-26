@@ -1,11 +1,12 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { buildError } from "../../lib/errors";
+import { getOrGenerateProductSKU } from "../utils/autoNumbering";
 
 // Create product
 export const create = mutation({
   args: {
-    sku: v.string(),
+    sku: v.optional(v.string()), // Optional: auto-generate if not provided
     name: v.string(),
     description: v.optional(v.string()),
     categoryId: v.id("productCategories"),
@@ -20,18 +21,30 @@ export const create = mutation({
     type: v.optional(v.string()), // "product" or "service"
     serviceDuration: v.optional(v.number()), // For services
   },
+  returns: v.id("products"),
   handler: async (ctx, args) => {
-    // Uniqueness check for SKU using index
-    const existing = await ctx.db
-      .query("products")
-      .withIndex("by_sku", (q) => q.eq("sku", args.sku))
-      .unique();
-    if (existing) {
-      // Throw structured error code for UI mapping
-      throw new Error(JSON.stringify(buildError({ code: "SKU_EXISTS", message: "SKU already exists" })));
+    // Get category and brand codes for auto-generation
+    const category = await ctx.db.get(args.categoryId);
+    const brand = await ctx.db.get(args.brandId);
+    
+    if (!category || category.deletedAt) {
+      throw new Error(JSON.stringify(buildError({ code: "NOT_FOUND", message: "Category not found" })));
     }
+    
+    if (!brand || brand.deletedAt) {
+      throw new Error(JSON.stringify(buildError({ code: "NOT_FOUND", message: "Brand not found" })));
+    }
+
+    // Get or generate SKU (auto-generate if not provided, validate if custom)
+    const sku = await getOrGenerateProductSKU(
+      ctx,
+      args.sku,
+      category.code,
+      brand.code
+    );
+
     const productId = await ctx.db.insert("products", {
-      sku: args.sku,
+      sku,
       name: args.name,
       description: args.description,
       categoryId: args.categoryId,

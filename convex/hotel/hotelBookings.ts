@@ -3,35 +3,7 @@ import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import { calculateLine, LineItemInput } from "../../lib/finance";
-
-// Generate Booking Number (HTL-YYYYMMDD-001)
-async function generateBookingNumber(ctx: any): Promise<string> {
-  const now = new Date();
-  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
-  const prefix = `HTL-${dateStr}-`;
-
-  const todayBookings = await ctx.db
-    .query("hotelBookings")
-    .withIndex("by_booking_number")
-    .collect();
-
-  const todayFiltered = todayBookings.filter((booking: any) =>
-    booking.bookingNumber.startsWith(prefix)
-  );
-
-  if (todayFiltered.length === 0) {
-    return `${prefix}001`;
-  }
-
-  const maxNumber = Math.max(
-    ...todayFiltered.map((booking: any) => {
-      const numPart = booking.bookingNumber.split("-")[2];
-      return parseInt(numPart, 10);
-    })
-  );
-
-  return `${prefix}${String(maxNumber + 1).padStart(3, "0")}`;
-}
+import { getOrGenerateTransactionNumber } from "../utils/autoNumbering";
 
 // Helper: Calculate number of days (inclusive)
 function calculateNumberOfDays(
@@ -175,6 +147,7 @@ export const create = mutation({
     roomId: v.id("hotelRooms"),
     checkInDate: v.number(),
     checkOutDate: v.number(),
+    bookingNumber: v.optional(v.string()), // Optional: auto-generate if not provided
     specialRequests: v.optional(v.string()),
     emergencyContact: v.optional(v.string()),
     ownFood: v.boolean(),
@@ -229,8 +202,13 @@ export const create = mutation({
       throw new Error("Pet not found or does not belong to customer");
     }
 
-    // Generate booking number
-    const bookingNumber = await generateBookingNumber(ctx);
+    // Get or generate booking number (auto-generate if not provided, validate if custom)
+    const bookingNumber = await getOrGenerateTransactionNumber(
+      ctx,
+      "hotelBookings",
+      args.bookingNumber,
+      new Date(args.checkInDate)
+    );
 
     // Calculate pricing
     const numberOfDays = calculateNumberOfDays(
