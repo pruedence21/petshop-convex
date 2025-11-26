@@ -5,7 +5,6 @@
  */
 
 import { QueryCtx, MutationCtx } from "../_generated/server";
-import { Doc } from "../_generated/dataModel";
 
 type NumberableTable = 
   | "sales"
@@ -78,12 +77,13 @@ export async function generateTransactionNumber(
   // Query all records with the index
   const records = await ctx.db
     .query(table)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .withIndex(indexName as any)
     .collect();
 
   // Filter to today's records
-  const todayRecords = records.filter((record: any) =>
-    record[numberField].startsWith(prefix)
+  const todayRecords = records.filter((record) =>
+    (record as Record<string, string>)[numberField].startsWith(prefix)
   );
 
   if (todayRecords.length === 0) {
@@ -92,8 +92,8 @@ export async function generateTransactionNumber(
 
   // Get max number
   const maxNumber = Math.max(
-    ...todayRecords.map((record: any) => {
-      const numPart = record[numberField].split("-")[2];
+    ...todayRecords.map((record) => {
+      const numPart = (record as Record<string, string>)[numberField].split("-")[2];
       return parseInt(numPart, 10);
     })
   );
@@ -116,11 +116,12 @@ export async function validateUniqueTransactionNumber(
   // Query using the index for the specific number
   const records = await ctx.db
     .query(table)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .withIndex(indexName as any)
     .collect();
 
-  const existing = records.find((record: any) =>
-    record[numberField] === transactionNumber
+  const existing = records.find((record) =>
+    (record as Record<string, string>)[numberField] === transactionNumber
   );
 
   if (existing) {
