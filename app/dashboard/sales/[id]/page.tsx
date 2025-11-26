@@ -77,7 +77,7 @@ export default function SaleDetailPage() {
 
   const handleCancel = async () => {
     try {
-      await cancelSale({ saleId });
+      await cancelSale({ saleId: saleId as Id<"sales"> });
       toast.success("Transaksi berhasil dibatalkan");
     } catch (error: any) {
       toast.error("Gagal membatalkan transaksi: " + error.message);
@@ -104,28 +104,28 @@ export default function SaleDetailPage() {
             Cetak Invoice
           </Button>
           {sale.status !== "Cancelled" && sale.status !== "Completed" && (
-             <AlertDialog>
-             <AlertDialogTrigger asChild>
-               <Button variant="destructive">
-                 <Ban className="h-4 w-4 mr-2" />
-                 Batalkan
-               </Button>
-             </AlertDialogTrigger>
-             <AlertDialogContent>
-               <AlertDialogHeader>
-                 <AlertDialogTitle>Batalkan Transaksi?</AlertDialogTitle>
-                 <AlertDialogDescription>
-                   Tindakan ini tidak dapat dibatalkan. Transaksi akan ditandai sebagai batal.
-                 </AlertDialogDescription>
-               </AlertDialogHeader>
-               <AlertDialogFooter>
-                 <AlertDialogCancel>Batal</AlertDialogCancel>
-                 <AlertDialogAction onClick={handleCancel} className="bg-red-600 hover:bg-red-700">
-                   Ya, Batalkan
-                 </AlertDialogAction>
-               </AlertDialogFooter>
-             </AlertDialogContent>
-           </AlertDialog>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                  <Ban className="h-4 w-4 mr-2" />
+                  Batalkan
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Batalkan Transaksi?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tindakan ini tidak dapat dibatalkan. Transaksi akan ditandai sebagai batal.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleCancel} className="bg-red-600 hover:bg-red-700">
+                    Ya, Batalkan
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
       </div>
@@ -177,18 +177,18 @@ export default function SaleDetailPage() {
           </div>
           <div className="flex-1">
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Payment Details</h3>
-             {/* Payment Summary */}
-             <div className="space-y-1 text-sm">
-               {sale.payments?.map((p: any, i: number) => (
-                 <div key={i} className="flex justify-between border-b border-slate-200/50 pb-1 mb-1 last:border-0">
-                    <span>{p.paymentMethod}</span>
-                    <span className="font-medium">{formatCurrency(p.amount)}</span>
-                 </div>
-               ))}
-               {(!sale.payments || sale.payments.length === 0) && (
-                 <div className="text-slate-400 italic">Belum ada pembayaran</div>
-               )}
-             </div>
+            {/* Payment Summary */}
+            <div className="space-y-1 text-sm">
+              {sale.payments?.map((p: any, i: number) => (
+                <div key={i} className="flex justify-between border-b border-slate-200/50 pb-1 mb-1 last:border-0">
+                  <span>{p.paymentMethod}</span>
+                  <span className="font-medium">{formatCurrency(p.amount)}</span>
+                </div>
+              ))}
+              {(!sale.payments || sale.payments.length === 0) && (
+                <div className="text-slate-400 italic">Belum ada pembayaran</div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -224,8 +224,8 @@ export default function SaleDetailPage() {
                   <TableCell className="text-right text-red-500">
                     {item.discountAmount > 0 && (
                       <>
-                        -{formatCurrency(item.discountType === "percent" 
-                          ? (item.unitPrice * item.quantity * (item.discountAmount/100)) 
+                        -{formatCurrency(item.discountType === "percent"
+                          ? (item.unitPrice * item.quantity * (item.discountAmount / 100))
                           : item.discountAmount)}
                       </>
                     )}
@@ -252,7 +252,7 @@ export default function SaleDetailPage() {
                 <span>-{formatCurrency(sale.discountType === "percent" ? (sale.subtotal * sale.discountAmount / 100) : sale.discountAmount)}</span>
               </div>
             )}
-             {sale.taxAmount > 0 && (
+            {sale.taxAmount > 0 && (
               <div className="flex justify-between w-full md:w-1/3 text-sm">
                 <span className="text-slate-500">Pajak ({sale.taxRate}%)</span>
                 <span>{formatCurrency(sale.taxAmount)}</span>
@@ -267,7 +267,7 @@ export default function SaleDetailPage() {
               <span className="text-slate-500">Dibayar</span>
               <span>{formatCurrency(sale.paidAmount)}</span>
             </div>
-             <div className="flex justify-between w-full md:w-1/3 text-sm font-medium">
+            <div className="flex justify-between w-full md:w-1/3 text-sm font-medium">
               <span>{sale.outstandingAmount > 0 ? "Sisa Tagihan" : "Kembalian"}</span>
               <span className={sale.outstandingAmount > 0 ? "text-red-600" : "text-green-600"}>
                 {formatCurrency(sale.outstandingAmount > 0 ? sale.outstandingAmount : (sale.paidAmount - sale.totalAmount))}
@@ -279,8 +279,8 @@ export default function SaleDetailPage() {
         {/* Notes */}
         {sale.notes && (
           <div className="p-8 bg-slate-50 border-t border-slate-100">
-             <h4 className="text-sm font-medium text-slate-900 mb-1">Catatan</h4>
-             <p className="text-sm text-slate-500">{sale.notes}</p>
+            <h4 className="text-sm font-medium text-slate-900 mb-1">Catatan</h4>
+            <p className="text-sm text-slate-500">{sale.notes}</p>
           </div>
         )}
       </div>
