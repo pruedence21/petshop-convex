@@ -546,6 +546,7 @@ export const getCurrentUser = query({
       email: v.optional(v.string()),
       profile: v.object({
         _id: v.id("userProfiles"),
+        _creationTime: v.number(),
         userId: v.string(),
         name: v.string(),
         email: v.string(),
@@ -554,12 +555,21 @@ export const getCurrentUser = query({
         roleId: v.optional(v.id("roles")),
         isActive: v.boolean(),
         lastLoginAt: v.optional(v.number()),
+        createdBy: v.optional(v.string()),
+        updatedBy: v.optional(v.string()),
+        deletedAt: v.optional(v.number()),
       }),
       role: v.union(
         v.object({
           _id: v.id("roles"),
+          _creationTime: v.number(),
           name: v.string(),
+          description: v.optional(v.string()),
           permissions: v.array(v.string()),
+          isActive: v.boolean(),
+          createdBy: v.optional(v.string()),
+          updatedBy: v.optional(v.string()),
+          deletedAt: v.optional(v.number()),
         }),
         v.null()
       ),
