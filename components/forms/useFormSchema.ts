@@ -107,9 +107,16 @@ export function useFormSchema<Shape extends Record<string, any>>(
     [values, validateOnBlur, validateField],
   );
 
-  const isValid = useMemo(() => Object.keys(errors).length === 0, [errors]);
+  const isValid = useMemo(() => {
+    const activeErrors = Object.values(errors).filter((err) => err !== undefined && err !== null);
+    return activeErrors.length === 0;
+  }, [errors]);
 
-  const submit = useCallback(async () => {
+  const submit = useCallback(async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (submittingRef.current) return;
     submittingRef.current = true;
     try {
