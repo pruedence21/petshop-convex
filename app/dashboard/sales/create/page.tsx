@@ -64,7 +64,7 @@ export default function SalesPOSPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editSaleIdRaw = searchParams.get("edit");
-  
+
   const isValidEditId = editSaleIdRaw && editSaleIdRaw.length > 8 && editSaleIdRaw !== "page";
   const editSaleId = isValidEditId ? (editSaleIdRaw as Id<"sales">) : null;
 
@@ -126,9 +126,9 @@ export default function SalesPOSPage() {
       setSelectedBranch(existingSale.branchId);
       setCustomerId(existingSale.customerId);
       setTransactionNotes(existingSale.notes || "");
-      setGlobalDiscount({ 
-        amount: existingSale.discountAmount, 
-        type: existingSale.discountType as "percent" | "nominal" 
+      setGlobalDiscount({
+        amount: existingSale.discountAmount,
+        type: existingSale.discountType as "percent" | "nominal"
       });
       setTaxRate(existingSale.taxRate);
 
@@ -381,21 +381,21 @@ export default function SalesPOSPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row bg-slate-50 overflow-hidden">
+    <div className="h-[calc(100vh-4rem)] lg:h-screen flex flex-col md:flex-row bg-slate-50 overflow-hidden">
       {/* LEFT SIDE: Product Catalog */}
       <div className="flex-1 flex flex-col border-r border-slate-200 h-full">
         {/* Header / Filter Bar */}
         <div className="p-4 bg-white border-b border-slate-200 space-y-4">
           <div className="flex gap-4 items-center">
             {editSaleId && (
-               <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                 <ArrowLeft className="h-5 w-5" />
-               </Button>
+              <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
             )}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Cari produk (Nama / SKU)..."
+                placeholder="Cari produk..."
                 className="pl-9 bg-slate-50 border-slate-200"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -403,7 +403,7 @@ export default function SalesPOSPage() {
               />
             </div>
             <Select value={selectedBranch as string} onValueChange={(v) => setSelectedBranch(v as Id<"branches">)}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[140px] md:w-[200px]">
                 <SelectValue placeholder="Pilih Cabang" />
               </SelectTrigger>
               <SelectContent>
@@ -441,11 +441,11 @@ export default function SalesPOSPage() {
 
         {/* Product Grid */}
         <ScrollArea className="flex-1 p-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-20">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 pb-20">
             {filteredProducts.map(product => (
               <Card
                 key={product._id}
-                className="cursor-pointer hover:shadow-md transition-all active:scale-95 border-slate-200 overflow-hidden group"
+                className="cursor-pointer hover:shadow-md transition-all active:scale-95 border-slate-200 overflow-hidden group flex flex-col"
                 onClick={() => handleProductClick(product)}
               >
                 <div className="aspect-square bg-slate-100 flex items-center justify-center relative">
@@ -457,11 +457,11 @@ export default function SalesPOSPage() {
                     </Badge>
                   )}
                 </div>
-                <div className="p-3">
-                  <h3 className="font-medium text-sm line-clamp-2 h-10 leading-tight mb-1">
+                <div className="p-3 flex flex-col flex-1">
+                  <h3 className="font-medium text-sm line-clamp-2 leading-tight mb-auto">
                     {product.name}
                   </h3>
-                  <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center justify-between mt-3">
                     <span className="font-bold text-blue-600">
                       {formatCurrency(product.sellingPrice)}
                     </span>
@@ -480,18 +480,18 @@ export default function SalesPOSPage() {
       </div>
 
       {/* RIGHT SIDE: Cart / Transaction */}
-      <div className="w-full md:w-[400px] lg:w-[450px] bg-white flex flex-col h-full shadow-xl z-10">
+      <div className="w-full md:w-[400px] lg:w-[450px] bg-white flex flex-col h-full shadow-xl z-10 border-l border-slate-200">
         {/* Customer Selector */}
         <div className="p-4 border-b border-slate-100 bg-slate-50/50">
-           <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-slate-500" />
-                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</Label>
-              </div>
-              {editSaleId && (
-                <Badge variant="outline" className="text-xs">Editing: {existingSale?.saleNumber}</Badge>
-              )}
-           </div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-slate-500" />
+              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</Label>
+            </div>
+            {editSaleId && (
+              <Badge variant="outline" className="text-xs">Editing: {existingSale?.saleNumber}</Badge>
+            )}
+          </div>
           <Select value={customerId as string} onValueChange={(v) => setCustomerId(v as Id<"customers">)}>
             <SelectTrigger className="bg-white">
               <SelectValue placeholder="Pilih Customer" />
