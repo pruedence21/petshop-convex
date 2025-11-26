@@ -61,7 +61,6 @@ export default function UsersPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
     phone: "",
     branchId: "",
     roleId: "",
@@ -88,7 +87,6 @@ export default function UsersPage() {
       setFormData({
         name: user.name,
         email: user.email,
-        password: "",
         phone: user.phone || "",
         branchId: user.branchId || "",
         roleId: user.roleId || "",
@@ -98,7 +96,6 @@ export default function UsersPage() {
       setFormData({
         name: "",
         email: "",
-        password: "",
         phone: "",
         branchId: "",
         roleId: "",
@@ -113,7 +110,6 @@ export default function UsersPage() {
     setFormData({
       name: "",
       email: "",
-      password: "",
       phone: "",
       branchId: "",
       roleId: "",
@@ -133,19 +129,14 @@ export default function UsersPage() {
         });
         toast.success("User berhasil diperbarui");
       } else {
-        if (!formData.password || formData.password.length < 8) {
-          toast.error("Password harus minimal 8 karakter");
-          return;
-        }
         await createUser({
           email: formData.email,
-          password: formData.password,
           name: formData.name,
           phone: formData.phone || undefined,
           branchId: formData.branchId ? (formData.branchId as Id<"branches">) : undefined,
           roleId: formData.roleId ? (formData.roleId as Id<"roles">) : undefined,
         });
-        toast.success("User berhasil ditambahkan");
+        toast.success("Undangan user berhasil dibuat. User dapat mendaftar dengan email ini.");
       }
       handleCloseDialog();
     } catch (error: any) {
@@ -308,6 +299,9 @@ export default function UsersPage() {
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
                       {user.name}
+                      {user.userId.startsWith("pending:") && (
+                        <Badge variant="secondary" className="text-xs">Pending</Badge>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>{user.email}</TableCell>
@@ -386,7 +380,7 @@ export default function UsersPage() {
             <DialogDescription>
               {editingUser
                 ? "Perbarui informasi user"
-                : "Buat akun user baru untuk mengakses sistem"}
+                : "Buat profil user baru. User akan diminta mendaftar dengan email yang didaftarkan."}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
@@ -413,21 +407,6 @@ export default function UsersPage() {
                   />
                 </div>
               </div>
-
-              {!editingUser && (
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password *</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required={!editingUser}
-                    minLength={8}
-                    placeholder="Minimal 8 karakter"
-                  />
-                </div>
-              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

@@ -30,46 +30,55 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         });
       }
 
-      // 2. Check if this is the admin user
-      if (email === "admin@petshop.com") {
-        // Get Admin role
-        const adminRole = await ctx.db
-          .query("roles")
-          .withIndex("by_name", (q) => q.eq("name", "Admin"))
-          .first();
+      // 2. Check if there is a pre-created profile for this email (Pre-registration flow)
+      const preCreatedProfile = await ctx.db
+        .query("userProfiles")
+        .withIndex("by_email", (q) => q.eq("email", email))
+        .first();
 
-        if (adminRole) {
-          // Check if profile already exists
-          const existingProfile = await ctx.db
-            .query("userProfiles")
-            .withIndex("by_user_id", (q) => q.eq("userId", userId))
+      if (preCreatedProfile) {
+        // If profile exists but has a pending userId (starts with "pending:"), claim it!
+        if (preCreatedProfile.userId.startsWith("pending:")) {
+          await ctx.db.patch(preCreatedProfile._id, {
+            userId: userId,
+            name: (args.profile.name as string) || preCreatedProfile.name, // Prefer auth name if available, else keep pre-set name
+            updatedBy: userId,
+          });
+
+          // Also update any userRoles that were assigned to the pending ID
+          const pendingRoles = await ctx.db
+            .query("userRoles")
+            .withIndex("by_user_id", (q) => q.eq("userId", preCreatedProfile.userId))
+            .collect();
+
+          for (const role of pendingRoles) {
+            await ctx.db.patch(role._id, {
+              userId: userId,
+              isActive: true,
+            });
+          }
+        }
+        // If profile exists and has a real userId, it's a returning user, do nothing.
+      } else {
+        // 3. No pre-created profile. Check if this is the admin user (Bootstrap flow)
+        if (email === "admin@petshop.com") {
+          // Get Admin role
+          const adminRole = await ctx.db
+            .query("roles")
+            .withIndex("by_name", (q) => q.eq("name", "Admin"))
             .first();
 
-          if (!existingProfile) {
+          if (adminRole) {
             // Create user profile with Admin role
             await ctx.db.insert("userProfiles", {
               userId: userId,
               email: email,
-              name: "Super Admin", // Default name for admin
+              name: "Super Admin",
               roleId: adminRole._id,
               isActive: true,
-              createdBy: userId, // Self-created
+              createdBy: userId,
             });
-          } else {
-            // Update existing profile to have Admin role
-            await ctx.db.patch(existingProfile._id, {
-              roleId: adminRole._id,
-              name: existingProfile.name === "User" ? "Super Admin" : existingProfile.name,
-            });
-          }
 
-          // Check if role assignment already exists
-          const existingRole = await ctx.db
-            .query("userRoles")
-            .withIndex("by_user_and_role", (q) => q.eq("userId", userId).eq("roleId", adminRole._id))
-            .first();
-
-          if (!existingRole) {
             // Create user-role junction
             await ctx.db.insert("userRoles", {
               userId: userId,
@@ -79,15 +88,9 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
               assignedBy: userId,
             });
           }
-        }
-      } else {
-        // For regular users, check if profile exists
-        const existingProfile = await ctx.db
-          .query("userProfiles")
-          .withIndex("by_user_id", (q) => q.eq("userId", userId))
-          .first();
-
-        if (!existingProfile) {
+        } else {
+          // 4. Regular new user signup (Self-registration)
+          // Create a basic profile without role (or default role if you have one)
           await ctx.db.insert("userProfiles", {
             userId: userId,
             email: email,

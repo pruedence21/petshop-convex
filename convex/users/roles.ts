@@ -292,3 +292,10 @@ export const initializeDefaultRoles = mutation({
 
 
 
+// Get all available permissions
+export const getPermissions = query({
+  args: {},
+  handler: async () => {
+    return PERMISSIONS;
+  },
+});

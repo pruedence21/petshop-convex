@@ -27,15 +27,14 @@ import { PERMISSIONS } from "./roles";
 export const createUser = mutation({
   args: {
     email: v.string(),
-    password: v.string(),
     name: v.string(),
     phone: v.optional(v.string()),
     branchId: v.optional(v.id("branches")),
     roleId: v.optional(v.id("roles")),
   },
   returns: v.object({
-    userId: v.string(),
     profileId: v.id("userProfiles"),
+    message: v.string(),
   }),
   handler: async (ctx, args) => {
     // Require admin permission
@@ -47,19 +46,14 @@ export const createUser = mutation({
       throw new Error("Invalid email format");
     }
 
-    // Validate password strength
-    if (args.password.length < 8) {
-      throw new Error("Password must be at least 8 characters long");
-    }
-
-    // Check if email already exists
+    // Check if email already exists in userProfiles
     const existingProfile = await ctx.db
       .query("userProfiles")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
 
     if (existingProfile) {
-      throw new Error("Email already exists");
+      throw new Error("User with this email already exists");
     }
 
     // Validate branch if provided
@@ -78,15 +72,38 @@ export const createUser = mutation({
       }
     }
 
-    // Note: User creation via Convex Auth happens through the auth provider
-    // For now, we'll create the profile and return instructions
-    // The actual auth user will be created when they first sign in
+    // Create a "pending" userId
+    // This will be replaced by the real userId when they sign up
+    const pendingUserId = `pending:${args.email}`;
 
-    // Create a placeholder userId (in real implementation, this would come from auth)
-    // This is a limitation of Convex Auth - we need to handle this differently
-    throw new Error(
-      "User creation requires integration with Convex Auth. Please use the auth provider's signup endpoint first, then call linkUserProfile."
-    );
+    // Create user profile
+    const profileId = await ctx.db.insert("userProfiles", {
+      userId: pendingUserId,
+      name: args.name,
+      email: args.email,
+      phone: args.phone,
+      branchId: args.branchId,
+      roleId: args.roleId,
+      isActive: true,
+      createdBy: currentUser.userId,
+      updatedBy: currentUser.userId,
+    });
+
+    // Create user-role junction if role is provided
+    if (args.roleId) {
+      await ctx.db.insert("userRoles", {
+        userId: pendingUserId,
+        roleId: args.roleId,
+        assignedBy: currentUser.userId,
+        assignedAt: Date.now(),
+        isActive: true,
+      });
+    }
+
+    return {
+      profileId,
+      message: "User profile created. User can now sign up with this email to claim the account.",
+    };
   },
 });
 

@@ -3,6 +3,7 @@ import { v } from "convex/values";
 
 /**
  * Expense Category Seeding Functions
+ * Updated to match CoA codes
  */
 
 export const seedExpenseCategories = mutation({
@@ -38,66 +39,66 @@ export const seedExpenseCategories = mutation({
     const categories = [
       {
         categoryName: "Gaji & Upah",
-        accountCode: "5-101",
+        accountCode: "5-201",
         requiresApproval: true,
         approvalThreshold: 5000000, // Rp 5 juta
         description: "Gaji karyawan, upah harian, tunjangan",
       },
       {
         categoryName: "Sewa",
-        accountCode: "5-102",
+        accountCode: "5-202",
         requiresApproval: true,
         approvalThreshold: 10000000, // Rp 10 juta
         description: "Sewa gedung, kantor, warehouse",
       },
       {
         categoryName: "Listrik, Air & Gas",
-        accountCode: "5-103",
+        accountCode: "5-203",
         requiresApproval: false,
         description: "Utilitas bulanan",
       },
       {
         categoryName: "Telepon & Internet",
-        accountCode: "5-104",
+        accountCode: "5-204",
         requiresApproval: false,
         description: "Komunikasi dan internet",
       },
       {
         categoryName: "Perlengkapan Kantor",
-        accountCode: "5-105",
+        accountCode: "5-205",
         requiresApproval: false,
         description: "ATK, printer, toner, dll",
       },
       {
         categoryName: "Pemasaran & Promosi",
-        accountCode: "5-106",
+        accountCode: "5-208",
         requiresApproval: true,
         approvalThreshold: 3000000, // Rp 3 juta
         description: "Iklan, brosur, social media ads",
       },
       {
         categoryName: "Transportasi & BBM",
-        accountCode: "5-107",
+        accountCode: "5-207",
         requiresApproval: false,
         description: "Bensin, tol, parkir, ojek online",
       },
       {
         categoryName: "Perbaikan & Pemeliharaan",
-        accountCode: "5-108",
+        accountCode: "5-206",
         requiresApproval: true,
         approvalThreshold: 2000000, // Rp 2 juta
         description: "Maintenance peralatan, gedung, kendaraan",
       },
       {
         categoryName: "Asuransi",
-        accountCode: "5-109",
+        accountCode: "5-209",
         requiresApproval: true,
         approvalThreshold: 5000000,
         description: "Premi asuransi karyawan, aset",
       },
       {
         categoryName: "Biaya Profesional",
-        accountCode: "5-110",
+        accountCode: "5-212", // Mapped to Beban Lain-lain as specific account doesn't exist
         requiresApproval: true,
         approvalThreshold: 5000000,
         description: "Konsultan, akuntan, lawyer",
@@ -110,7 +111,7 @@ export const seedExpenseCategories = mutation({
       },
       {
         categoryName: "Lain-lain",
-        accountCode: "5-299",
+        accountCode: "5-212",
         requiresApproval: true,
         approvalThreshold: 1000000, // Rp 1 juta
         description: "Pengeluaran operasional lainnya",

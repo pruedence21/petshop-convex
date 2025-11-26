@@ -68,6 +68,7 @@ import type * as reports_inventoryReports from "../reports/inventoryReports.js";
 import type * as reports_salesReports from "../reports/salesReports.js";
 import type * as sales_salePayments from "../sales/salePayments.js";
 import type * as sales_sales from "../sales/sales.js";
+import type * as seed from "../seed.js";
 import type * as users_auth from "../users/auth.js";
 import type * as users_authHelpers from "../users/authHelpers.js";
 import type * as users_createAdminAccount from "../users/createAdminAccount.js";
@@ -142,6 +143,7 @@ declare const fullApi: ApiFromModules<{
   "reports/salesReports": typeof reports_salesReports;
   "sales/salePayments": typeof sales_salePayments;
   "sales/sales": typeof sales_sales;
+  seed: typeof seed;
   "users/auth": typeof users_auth;
   "users/authHelpers": typeof users_authHelpers;
   "users/createAdminAccount": typeof users_createAdminAccount;
