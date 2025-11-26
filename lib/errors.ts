@@ -11,7 +11,8 @@ export type DomainErrorCode =
   | "NO_ITEMS"
   | "PAYMENT_EXCEEDS_TOTAL"
   | "INSUFFICIENT_STOCK"
-  | "DUPLICATE_ENTRY";
+  | "DUPLICATE_ENTRY"
+  | "INVALID_ITEM_TYPE";
 
 export interface DomainErrorShape {
   code: DomainErrorCode;
@@ -41,6 +42,8 @@ export function toUserMessage(code: DomainErrorCode): string {
       return "Stok tidak mencukupi";
     case "DUPLICATE_ENTRY":
       return "Data sudah ada";
+    case "INVALID_ITEM_TYPE":
+      return "Tipe item tidak valid untuk operasi stok";
     default:
       return "Terjadi kesalahan";
   }

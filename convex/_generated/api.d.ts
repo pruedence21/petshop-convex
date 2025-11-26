@@ -8,6 +8,8 @@
  * @module
  */
 
+import type * as __tests___helpers_mockContext from "../__tests__/helpers/mockContext.js";
+import type * as __tests___helpers_testData from "../__tests__/helpers/testData.js";
 import type * as accountingHelpers from "../accountingHelpers.js";
 import type * as accountingPeriods from "../accountingPeriods.js";
 import type * as accountingSeed from "../accountingSeed.js";
@@ -79,6 +81,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "__tests__/helpers/mockContext": typeof __tests___helpers_mockContext;
+  "__tests__/helpers/testData": typeof __tests___helpers_testData;
   accountingHelpers: typeof accountingHelpers;
   accountingPeriods: typeof accountingPeriods;
   accountingSeed: typeof accountingSeed;

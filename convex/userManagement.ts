@@ -81,7 +81,7 @@ export const createUser = mutation({
     // Note: User creation via Convex Auth happens through the auth provider
     // For now, we'll create the profile and return instructions
     // The actual auth user will be created when they first sign in
-    
+
     // Create a placeholder userId (in real implementation, this would come from auth)
     // This is a limitation of Convex Auth - we need to handle this differently
     throw new Error(
@@ -609,5 +609,60 @@ export const updateLastLogin = internalMutation({
     }
 
     return null;
+  },
+});
+
+/**
+ * Self-registration for developers/admins (fixes "User profile not found")
+ */
+export const registerSelf = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Check if profile exists
+    const existingProfile = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_user_id", (q) => q.eq("userId", identity.subject))
+      .first();
+
+    if (existingProfile) {
+      return { message: "Profile already exists", profileId: existingProfile._id };
+    }
+
+    // Get Admin role
+    let adminRole = await ctx.db
+      .query("roles")
+      .withIndex("by_name", (q) => q.eq("name", "Admin"))
+      .first();
+
+    if (!adminRole) {
+      throw new Error("Admin role not found. Please run 'node setup.mjs' first.");
+    }
+
+    // Create profile
+    const profileId = await ctx.db.insert("userProfiles", {
+      userId: identity.subject,
+      name: identity.name || identity.email || "Admin User",
+      email: identity.email || "admin@example.com",
+      roleId: adminRole._id,
+      isActive: true,
+      createdBy: "self-registration",
+      updatedBy: "self-registration",
+    });
+
+    // Create user-role junction
+    await ctx.db.insert("userRoles", {
+      userId: identity.subject,
+      roleId: adminRole._id,
+      assignedBy: "self-registration",
+      assignedAt: Date.now(),
+      isActive: true,
+    });
+
+    return { message: "Profile created successfully", profileId };
   },
 });

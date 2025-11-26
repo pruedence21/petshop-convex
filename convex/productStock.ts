@@ -1,17 +1,18 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { buildError } from "../lib/errors";
 
 // Get stock by branch
 export const getByBranch = query({
-  args: { 
+  args: {
     branchId: v.id("branches"),
     productId: v.optional(v.id("products")),
     lowStockOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     let stocks;
-    
+
     if (args.productId) {
       stocks = await ctx.db
         .query("productStock")
@@ -58,13 +59,13 @@ export const getByBranch = query({
 
 // Get stock by product (all branches)
 export const getByProduct = query({
-  args: { 
+  args: {
     productId: v.id("products"),
     variantId: v.optional(v.id("productVariants")),
   },
   handler: async (ctx, args) => {
     let stocks;
-    
+
     if (args.variantId) {
       stocks = await ctx.db
         .query("productStock")
@@ -94,15 +95,15 @@ export const getByProduct = query({
 
 // Get low stock items across all branches or specific branch
 export const getLowStock = query({
-  args: { 
+  args: {
     branchId: v.optional(v.id("branches")),
   },
   handler: async (ctx, args) => {
     const stocks = args.branchId
       ? await ctx.db
-          .query("productStock")
-          .withIndex("by_branch", (q) => q.eq("branchId", args.branchId!))
-          .collect()
+        .query("productStock")
+        .withIndex("by_branch", (q) => q.eq("branchId", args.branchId!))
+        .collect()
       : await ctx.db.query("productStock").collect();
 
     const lowStockItems = [];
@@ -142,6 +143,24 @@ export const adjustStock = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Get product to check type
+    const product = await ctx.db.get(args.productId);
+    if (!product) {
+      throw new Error(JSON.stringify(buildError({
+        code: "NOT_FOUND",
+        message: "Product not found"
+      })));
+    }
+
+    // Check if product type allows stock tracking
+    const isInventoryItem = !product.type || product.type === "product" || product.type === "medicine";
+    if (!isInventoryItem) {
+      throw new Error(JSON.stringify(buildError({
+        code: "INVALID_ITEM_TYPE",
+        message: `Cannot adjust stock for item type: ${product.type}`
+      })));
+    }
+
     // Find existing stock record
     const existingStocks = await ctx.db
       .query("productStock")
@@ -159,9 +178,12 @@ export const adjustStock = mutation({
 
     if (existingStock) {
       const newQuantity = existingStock.quantity + args.quantity;
-      
+
       if (newQuantity < 0) {
-        throw new Error("Insufficient stock for adjustment");
+        throw new Error(JSON.stringify(buildError({
+          code: "INSUFFICIENT_STOCK",
+          message: "Insufficient stock for adjustment"
+        })));
       }
 
       // Update stock
@@ -189,11 +211,14 @@ export const adjustStock = mutation({
     } else {
       // Create new stock record (only if positive adjustment)
       if (args.quantity < 0) {
-        throw new Error("Cannot create stock with negative quantity");
+        throw new Error(JSON.stringify(buildError({
+          code: "INVALID_QUANTITY",
+          message: "Cannot create stock with negative quantity"
+        })));
       }
 
       // Get product to use its purchase price as initial average cost
-      const product = await ctx.db.get(args.productId);
+      // const product = await ctx.db.get(args.productId); // Already fetched above
       const initialCost = product?.purchasePrice || 0;
 
       const stockId = await ctx.db.insert("productStock", {
@@ -237,14 +262,38 @@ export const transferStock = mutation({
   },
   handler: async (ctx, args) => {
     if (args.quantity <= 0) {
-      throw new Error("Transfer quantity must be positive");
+      throw new Error(JSON.stringify(buildError({
+        code: "INVALID_QUANTITY",
+        message: "Transfer quantity must be positive"
+      })));
     }
 
     if (args.fromBranchId === args.toBranchId) {
-      throw new Error("Cannot transfer to the same branch");
+      throw new Error(JSON.stringify(buildError({
+        code: "VALIDATION",
+        message: "Cannot transfer to the same branch"
+      })));
     }
 
     const now = Date.now();
+
+    // Get product to check type
+    const product = await ctx.db.get(args.productId);
+    if (!product) {
+      throw new Error(JSON.stringify(buildError({
+        code: "NOT_FOUND",
+        message: "Product not found"
+      })));
+    }
+
+    // Check if product type allows stock tracking
+    const isInventoryItem = !product.type || product.type === "product" || product.type === "medicine";
+    if (!isInventoryItem) {
+      throw new Error(JSON.stringify(buildError({
+        code: "INVALID_ITEM_TYPE",
+        message: `Cannot transfer stock for item type: ${product.type}`
+      })));
+    }
 
     // Find source stock
     const sourceStocks = await ctx.db
@@ -259,11 +308,17 @@ export const transferStock = mutation({
     );
 
     if (!sourceStock) {
-      throw new Error("Source stock not found");
+      throw new Error(JSON.stringify(buildError({
+        code: "NOT_FOUND",
+        message: "Source stock not found"
+      })));
     }
 
     if (sourceStock.quantity < args.quantity) {
-      throw new Error("Insufficient stock for transfer");
+      throw new Error(JSON.stringify(buildError({
+        code: "INSUFFICIENT_STOCK",
+        message: "Insufficient stock for transfer"
+      })));
     }
 
     // Reduce source stock
@@ -348,6 +403,23 @@ export async function updateStockFromPurchaseHelper(
   }
 ) {
   const now = Date.now();
+
+  // Get product to check type
+  const product = await ctx.db.get(args.productId);
+  if (!product) {
+    throw new Error(JSON.stringify(buildError({
+      code: "NOT_FOUND",
+      message: "Product not found"
+    })));
+  }
+
+  // Check if product type allows stock tracking
+  const isInventoryItem = !product.type || product.type === "product" || product.type === "medicine";
+
+  // If not inventory item (Service/Procedure), do not update stock
+  if (!isInventoryItem) {
+    return null; // Return null or appropriate value indicating no stock update
+  }
 
   // Find existing stock
   const existingStocks = await ctx.db
@@ -437,6 +509,23 @@ export async function reduceStockForSaleHelper(
 ): Promise<{ cogs: number; avgCost: number }> {
   const now = Date.now();
 
+  // Get product to check type
+  const product = await ctx.db.get(args.productId);
+  if (!product) {
+    throw new Error(JSON.stringify(buildError({
+      code: "NOT_FOUND",
+      message: "Product not found"
+    })));
+  }
+
+  // Check if product type allows stock tracking
+  const isInventoryItem = !product.type || product.type === "product" || product.type === "medicine";
+
+  // If not inventory item (Service/Procedure), skip stock reduction
+  if (!isInventoryItem) {
+    return { cogs: 0, avgCost: 0 };
+  }
+
   // Find existing stock
   const existingStocks = await ctx.db
     .query("productStock")
@@ -450,13 +539,18 @@ export async function reduceStockForSaleHelper(
   );
 
   if (!existingStock) {
-    throw new Error("Stock not found for this product/variant at this branch");
+    throw new Error(JSON.stringify(buildError({
+      code: "NOT_FOUND",
+      message: "Stock not found for this product/variant at this branch"
+    })));
   }
 
   if (existingStock.quantity < args.quantity) {
-    throw new Error(
-      `Insufficient stock. Available: ${existingStock.quantity}, Required: ${args.quantity}`
-    );
+    throw new Error(JSON.stringify(buildError({
+      code: "INSUFFICIENT_STOCK",
+      message: `Insufficient stock. Available: ${existingStock.quantity}, Required: ${args.quantity}`,
+      details: { available: existingStock.quantity, required: args.quantity }
+    })));
   }
 
   // Calculate COGS (Cost of Goods Sold)
