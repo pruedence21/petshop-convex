@@ -141,7 +141,7 @@ export default function ProductsPage() {
         try {
           const parsed = JSON.parse(e.message);
           msg = parsed.userMessage || msg;
-        } catch {}
+        } catch { }
         toast.error(msg);
       }
     },
@@ -187,38 +187,38 @@ export default function ProductsPage() {
         try {
           const parsed = JSON.parse(e.message);
           msg = parsed.userMessage || msg;
-        } catch {}
+        } catch { }
         toast.error(msg);
       }
     },
   });
 
-  const products = useQuery(api.products.list, {
+  const products = useQuery(api.inventory.products.list, {
     categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
     type: selectedType !== "all" ? selectedType : undefined,
     includeInactive: false,
   });
-  const categories = useQuery(api.productCategories.list, { includeInactive: false });
+  const categories = useQuery(api.inventory.productCategories.list, { includeInactive: false });
   const subcategories = useQuery(
-    api.productSubcategories.list,
+    api.inventory.productSubcategories.list,
     productForm.values.categoryId
       ? { categoryId: productForm.values.categoryId as Id<"productCategories">, includeInactive: false }
       : "skip"
   );
-  const brands = useQuery(api.brands.list, { includeInactive: false });
-  const units = useQuery(api.units.list, { includeInactive: false });
+  const brands = useQuery(api.inventory.brands.list, { includeInactive: false });
+  const units = useQuery(api.inventory.units.list, { includeInactive: false });
 
-  const createProduct = useMutation(api.products.create);
-  const updateProduct = useMutation(api.products.update);
-  const deleteProduct = useMutation(api.products.remove);
+  const createProduct = useMutation(api.inventory.products.create);
+  const updateProduct = useMutation(api.inventory.products.update);
+  const deleteProduct = useMutation(api.inventory.products.remove);
 
   const variants = useQuery(
-    api.productVariants.listByProduct,
+    api.inventory.productVariants.listByProduct,
     selectedProductForVariants ? { productId: selectedProductForVariants._id } : "skip"
   );
-  const createVariant = useMutation(api.productVariants.create);
-  const updateVariant = useMutation(api.productVariants.update);
-  const deleteVariant = useMutation(api.productVariants.remove);
+  const createVariant = useMutation(api.inventory.productVariants.create);
+  const updateVariant = useMutation(api.inventory.productVariants.update);
+  const deleteVariant = useMutation(api.inventory.productVariants.remove);
 
   const filteredProducts = products?.filter((product) =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

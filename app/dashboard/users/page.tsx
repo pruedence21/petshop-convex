@@ -67,20 +67,20 @@ export default function UsersPage() {
     roleId: "",
   });
 
-  const currentUser = useQuery(api.userManagement.getCurrentUser);
-  const users = useQuery(api.userManagement.listUsers, {
+  const currentUser = useQuery(api.users.userManagement.getCurrentUser);
+  const users = useQuery(api.users.userManagement.listUsers, {
     branchId: filterBranch !== "all" ? (filterBranch as Id<"branches">) : undefined,
     roleId: filterRole !== "all" ? (filterRole as Id<"roles">) : undefined,
     isActive: filterStatus === "all" ? undefined : filterStatus === "active",
     searchQuery: searchQuery || undefined,
   });
-  const branches = useQuery(api.branches.list, { includeInactive: false });
-  const roles = useQuery(api.roles.listRoles, {});
+  const branches = useQuery(api.master_data.branches.list, { includeInactive: false });
+  const roles = useQuery(api.users.roles.listRoles, {});
 
-  const createUser = useMutation(api.userManagement.createUser);
-  const updateUser = useMutation(api.userManagement.updateUser);
-  const toggleUserStatus = useMutation(api.userManagement.toggleUserStatus);
-  const deleteUser = useMutation(api.userManagement.deleteUser);
+  const createUser = useMutation(api.users.userManagement.createUser);
+  const updateUser = useMutation(api.users.userManagement.updateUser);
+  const toggleUserStatus = useMutation(api.users.userManagement.toggleUserStatus);
+  const deleteUser = useMutation(api.users.userManagement.deleteUser);
 
   const handleOpenDialog = (user?: UserProfile) => {
     if (user) {

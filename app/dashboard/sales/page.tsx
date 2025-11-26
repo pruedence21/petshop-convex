@@ -90,28 +90,29 @@ export default function SalesPOSPage() {
     notes: "",
   });
   const [currentSaleId, setCurrentSaleId] = useState<Id<"sales"> | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // -- Queries --
-  const branches = useQuery(api.branches.list, { includeInactive: false });
-  const products = useQuery(api.products.list, { includeInactive: false });
-  const categories = useQuery(api.productCategories.list, { includeInactive: false });
-  const customers = useQuery(api.customers.list, { includeInactive: false });
-  const umumCustomer = useQuery(api.customers.getOrCreateDefault, {});
+  const branches = useQuery(api.master_data.branches.list, { includeInactive: false });
+  const products = useQuery(api.inventory.products.list, { includeInactive: false });
+  const categories = useQuery(api.inventory.productCategories.list, { includeInactive: false });
+  const customers = useQuery(api.master_data.customers.list, { includeInactive: false });
+  const umumCustomer = useQuery(api.master_data.customers.getOrCreateDefault, {});
 
   const [selectedProductForVariantSelection, setSelectedProductForVariantSelection] = useState<any>(null);
   const variantsForSelection = useQuery(
-    api.productVariants.listByProduct,
+    api.inventory.productVariants.listByProduct,
     selectedProductForVariantSelection
       ? { productId: selectedProductForVariantSelection._id, includeInactive: false }
       : "skip"
   );
 
   // -- Mutations --
-  const createSale = useMutation(api.sales.create);
-  const addItem = useMutation(api.sales.addItem);
-  const updateDiscountAndTax = useMutation(api.sales.updateDiscountAndTax);
-  const submitSale = useMutation(api.sales.submitSale);
-  const createDefaultCustomer = useMutation(api.customers.createDefaultCustomer);
+  const createSale = useMutation(api.sales.sales.create);
+  const addItem = useMutation(api.sales.sales.addItem);
+  const updateDiscountAndTax = useMutation(api.sales.sales.updateDiscountAndTax);
+  const submitSale = useMutation(api.sales.sales.submitSale);
+  const createDefaultCustomer = useMutation(api.master_data.customers.createDefaultCustomer);
 
   // -- Effects --
 
@@ -254,6 +255,7 @@ export default function SalesPOSPage() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       // 1. Create Sale Header
       const sale = await createSale({
@@ -307,6 +309,8 @@ export default function SalesPOSPage() {
 
     } catch (error: any) {
       toast.error(error.message || "Gagal memproses transaksi");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -607,9 +611,9 @@ export default function SalesPOSPage() {
                 <Button
                   onClick={handlePaymentSubmit}
                   className="w-full"
-                  disabled={totalPaid < grandTotal && customerId === umumCustomer?._id}
+                  disabled={(totalPaid < grandTotal && customerId === umumCustomer?._id) || isSubmitting}
                 >
-                  Selesaikan Transaksi
+                  {isSubmitting ? "Memproses..." : "Selesaikan Transaksi"}
                 </Button>
               </DialogContent>
             </Dialog>
@@ -644,3 +648,6 @@ export default function SalesPOSPage() {
     </div>
   );
 }
+
+
+

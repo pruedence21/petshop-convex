@@ -67,27 +67,27 @@ export default function AppointmentsPage() {
     notes: "",
   });
 
-  const appointments = useQuery(api.clinicAppointments.list, {
+  const appointments = useQuery(api.clinic.clinicAppointments.list, {
     status: selectedStatus !== "all" ? selectedStatus : undefined,
     branchId: selectedBranch !== "all" ? selectedBranch : undefined,
   });
-  const branches = useQuery(api.branches.list, { includeInactive: false });
-  const customers = useQuery(api.customers.list, { includeInactive: false });
-  const pets = useQuery(api.customerPets.list, {
+  const branches = useQuery(api.master_data.branches.list, { includeInactive: false });
+  const customers = useQuery(api.master_data.customers.list, { includeInactive: false });
+  const pets = useQuery(api.master_data.customerPets.list, {
     customerId: formData.customerId
       ? (formData.customerId as Id<"customers">)
       : undefined,
   });
-  const staff = useQuery(api.clinicStaff.list, {
+  const staff = useQuery(api.clinic.clinicStaff.list, {
     branchId: formData.branchId
       ? (formData.branchId as Id<"branches">)
       : undefined,
     includeInactive: false,
   });
-  const services = useQuery(api.products.list, { type: "service", includeInactive: false });
+  const services = useQuery(api.inventory.products.list, { type: "service", includeInactive: false });
 
-  const createAppointment = useMutation(api.clinicAppointments.create);
-  const cancelAppointment = useMutation(api.clinicAppointments.cancel);
+  const createAppointment = useMutation(api.clinic.clinicAppointments.create);
+  const cancelAppointment = useMutation(api.clinic.clinicAppointments.cancel);
 
   const filteredAppointments = appointments?.filter(
     (apt) =>

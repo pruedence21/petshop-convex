@@ -55,10 +55,10 @@ export default function BrandsPage() {
     website: "",
   });
 
-  const brands = useQuery(api.brands.list, { includeInactive: false });
-  const createBrand = useMutation(api.brands.create);
-  const updateBrand = useMutation(api.brands.update);
-  const deleteBrand = useMutation(api.brands.remove);
+  const brands = useQuery(api.inventory.brands.list, { includeInactive: false });
+  const createBrand = useMutation(api.inventory.brands.create);
+  const updateBrand = useMutation(api.inventory.brands.update);
+  const deleteBrand = useMutation(api.inventory.brands.remove);
 
   const filteredBrands = brands?.filter((brand) =>
     brand.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -358,3 +358,4 @@ export default function BrandsPage() {
     </div>
   );
 }
+

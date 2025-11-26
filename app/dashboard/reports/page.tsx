@@ -49,18 +49,18 @@ export default function ReportsPage() {
     undefined
   );
 
-  const branches = useQuery(api.branches.list, {});
+  const branches = useQuery(api.master_data.branches.list, {});
 
   // Dashboard KPIs
   const dashboard = useQuery(
     api.reports.dashboardReports.getMainDashboard,
     activeTab === "dashboard"
       ? {
-          startDate: new Date(startDate).getTime(),
-          endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch as any,
-          compareWithPreviousPeriod: true,
-        }
+        startDate: new Date(startDate).getTime(),
+        endDate: new Date(endDate).getTime(),
+        branchId: selectedBranch as any,
+        compareWithPreviousPeriod: true,
+      }
       : "skip"
   );
 
@@ -69,10 +69,10 @@ export default function ReportsPage() {
     api.reports.salesReports.getSalesSummary,
     activeTab === "sales"
       ? {
-          startDate: new Date(startDate).getTime(),
-          endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch as any,
-        }
+        startDate: new Date(startDate).getTime(),
+        endDate: new Date(endDate).getTime(),
+        branchId: selectedBranch as any,
+      }
       : "skip"
   );
 
@@ -80,11 +80,11 @@ export default function ReportsPage() {
     api.reports.salesReports.getSalesByCustomer,
     activeTab === "sales"
       ? {
-          startDate: new Date(startDate).getTime(),
-          endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch as any,
-          limit: 10,
-        }
+        startDate: new Date(startDate).getTime(),
+        endDate: new Date(endDate).getTime(),
+        branchId: selectedBranch as any,
+        limit: 10,
+      }
       : "skip"
   );
 
@@ -93,8 +93,8 @@ export default function ReportsPage() {
     api.reports.inventoryReports.getStockSummary,
     activeTab === "inventory"
       ? {
-          branchId: selectedBranch as any,
-        }
+        branchId: selectedBranch as any,
+      }
       : "skip"
   );
 
@@ -102,8 +102,8 @@ export default function ReportsPage() {
     api.reports.inventoryReports.getLowStockItems,
     activeTab === "inventory"
       ? {
-          branchId: selectedBranch as any,
-        }
+        branchId: selectedBranch as any,
+      }
       : "skip"
   );
 
@@ -111,11 +111,11 @@ export default function ReportsPage() {
     api.reports.inventoryReports.getBestSellingProducts,
     activeTab === "inventory"
       ? {
-          startDate: new Date(startDate).getTime(),
-          endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch as any,
-          limit: 10,
-        }
+        startDate: new Date(startDate).getTime(),
+        endDate: new Date(endDate).getTime(),
+        branchId: selectedBranch as any,
+        limit: 10,
+      }
       : "skip"
   );
 
@@ -124,10 +124,10 @@ export default function ReportsPage() {
     api.reports.clinicReports.getClinicSummary,
     activeTab === "clinic"
       ? {
-          startDate: new Date(startDate).getTime(),
-          endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch as any,
-        }
+        startDate: new Date(startDate).getTime(),
+        endDate: new Date(endDate).getTime(),
+        branchId: selectedBranch as any,
+      }
       : "skip"
   );
 
@@ -135,10 +135,10 @@ export default function ReportsPage() {
     api.reports.clinicReports.getPatientReport,
     activeTab === "clinic"
       ? {
-          startDate: new Date(startDate).getTime(),
-          endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch as any,
-        }
+        startDate: new Date(startDate).getTime(),
+        endDate: new Date(endDate).getTime(),
+        branchId: selectedBranch as any,
+      }
       : "skip"
   );
 
@@ -147,10 +147,10 @@ export default function ReportsPage() {
     api.reports.hotelReports.getHotelSummary,
     activeTab === "hotel"
       ? {
-          startDate: new Date(startDate).getTime(),
-          endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch as any,
-        }
+        startDate: new Date(startDate).getTime(),
+        endDate: new Date(endDate).getTime(),
+        branchId: selectedBranch as any,
+      }
       : "skip"
   );
 
@@ -158,10 +158,10 @@ export default function ReportsPage() {
     api.reports.hotelReports.getRoomOccupancy,
     activeTab === "hotel"
       ? {
-          startDate: new Date(startDate).getTime(),
-          endDate: new Date(endDate).getTime(),
-          branchId: selectedBranch as any,
-        }
+        startDate: new Date(startDate).getTime(),
+        endDate: new Date(endDate).getTime(),
+        branchId: selectedBranch as any,
+      }
       : "skip"
   );
 
@@ -460,51 +460,51 @@ export default function ReportsPage() {
               {/* Alerts Section */}
               {(dashboard.kpis.lowStockItems.alert ||
                 dashboard.kpis.accountsReceivable.alert) && (
-                <Card className="border-amber-500">
-                  <CardHeader>
-                    <CardTitle className="flex items-center text-amber-600">
-                      <AlertTriangle className="w-5 h-5 mr-2" />
-                      Peringatan & Alert
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {dashboard.kpis.lowStockItems.alert && (
-                        <div className="flex items-start p-3 bg-amber-50 rounded-lg">
-                          <AlertTriangle className="w-5 h-5 text-amber-600 mr-2 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium">
-                              Stok Produk Rendah
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {dashboard.kpis.lowStockItems.value} produk
-                              memiliki stok dibawah minimum. Segera lakukan
-                              pemesanan ulang.
-                            </p>
+                  <Card className="border-amber-500">
+                    <CardHeader>
+                      <CardTitle className="flex items-center text-amber-600">
+                        <AlertTriangle className="w-5 h-5 mr-2" />
+                        Peringatan & Alert
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {dashboard.kpis.lowStockItems.alert && (
+                          <div className="flex items-start p-3 bg-amber-50 rounded-lg">
+                            <AlertTriangle className="w-5 h-5 text-amber-600 mr-2 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium">
+                                Stok Produk Rendah
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {dashboard.kpis.lowStockItems.value} produk
+                                memiliki stok dibawah minimum. Segera lakukan
+                                pemesanan ulang.
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {dashboard.kpis.accountsReceivable.alert && (
-                        <div className="flex items-start p-3 bg-red-50 rounded-lg">
-                          <AlertTriangle className="w-5 h-5 text-red-600 mr-2 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium">
-                              Piutang Tinggi
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Piutang usaha mencapai{" "}
-                              {formatCurrency(
-                                dashboard.kpis.accountsReceivable.value
-                              )}
-                              . Lakukan penagihan untuk meningkatkan arus kas.
-                            </p>
+                        )}
+                        {dashboard.kpis.accountsReceivable.alert && (
+                          <div className="flex items-start p-3 bg-red-50 rounded-lg">
+                            <AlertTriangle className="w-5 h-5 text-red-600 mr-2 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium">
+                                Piutang Tinggi
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Piutang usaha mencapai{" "}
+                                {formatCurrency(
+                                  dashboard.kpis.accountsReceivable.value
+                                )}
+                                . Lakukan penagihan untuk meningkatkan arus kas.
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
             </>
           ) : (
             <div className="flex items-center justify-center h-64">
@@ -791,11 +791,10 @@ export default function ReportsPage() {
                             </TableCell>
                             <TableCell>
                               <span
-                                className={`px-2 py-1 rounded text-xs ${
-                                  item.status === "Out of Stock"
+                                className={`px-2 py-1 rounded text-xs ${item.status === "Out of Stock"
                                     ? "bg-red-100 text-red-700"
                                     : "bg-amber-100 text-amber-700"
-                                }`}
+                                  }`}
                               >
                                 {item.status === "Out of Stock"
                                   ? "Habis"

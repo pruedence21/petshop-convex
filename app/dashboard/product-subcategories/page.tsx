@@ -56,14 +56,14 @@ export default function ProductSubcategoriesPage() {
     description: "",
   });
 
-  const subcategories = useQuery(api.productSubcategories.list, {
+  const subcategories = useQuery(api.inventory.productSubcategories.list, {
     categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
     includeInactive: false,
   });
-  const categories = useQuery(api.productCategories.list, { includeInactive: false });
-  const createSubcategory = useMutation(api.productSubcategories.create);
-  const updateSubcategory = useMutation(api.productSubcategories.update);
-  const deleteSubcategory = useMutation(api.productSubcategories.remove);
+  const categories = useQuery(api.inventory.productCategories.list, { includeInactive: false });
+  const createSubcategory = useMutation(api.inventory.productSubcategories.create);
+  const updateSubcategory = useMutation(api.inventory.productSubcategories.update);
+  const deleteSubcategory = useMutation(api.inventory.productSubcategories.remove);
 
   const filteredSubcategories = subcategories?.filter((sub) =>
     sub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

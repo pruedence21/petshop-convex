@@ -112,6 +112,7 @@ export default function ClinicTransactionPage() {
   // -- State --
   const [appointmentId, setAppointmentId] = useState<Id<"clinicAppointments"> | null>(null);
   const [activeTab, setActiveTab] = useState("clinical");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Customer Selection (Initial Dialog)
   const [isCustomerDialogOpen, setIsCustomerDialogOpen] = useState(true);
@@ -154,34 +155,29 @@ export default function ClinicTransactionPage() {
     notes: "",
   });
 
-  // -- Queries --
-  const branches = useQuery(api.branches.list, { includeInactive: false });
-  const customers = useQuery(api.customers.list, { includeInactive: false });
-  const staff = useQuery(api.clinicStaff.list, { includeInactive: false });
-  const allProducts = useQuery(api.products.list, { includeInactive: false });
-
-  const pets = useQuery(
-    api.customerPets.list,
-    selectedCustomer ? { customerId: selectedCustomer as Id<"customers">, includeInactive: false } : "skip"
-  );
+  const branches = useQuery(api.master_data.branches.list, { includeInactive: false });
+  const customers = useQuery(api.master_data.customers.list, { includeInactive: false });
+  const pets = useQuery(api.master_data.customerPets.list, {});
+  const staff = useQuery(api.clinic.clinicStaff.list, { includeInactive: false });
+  const allProducts = useQuery(api.inventory.products.list, { includeInactive: false });
 
   const appointment = useQuery(
-    api.clinicAppointments.get,
+    api.clinic.clinicAppointments.get,
     appointmentId ? { id: appointmentId } : "skip"
   );
 
   const appointmentServices = useQuery(
-    api.clinicAppointmentServices.list,
+    api.clinic.clinicAppointmentServices.list,
     appointmentId ? { appointmentId } : "skip"
   );
 
   // -- Mutations --
-  const createAppointment = useMutation(api.clinicAppointments.create);
-  const startExamination = useMutation(api.clinicAppointments.startExamination);
-  const updateClinicalData = useMutation(api.clinicAppointments.updateClinicalData);
-  const addService = useMutation(api.clinicAppointmentServices.create);
-  const removeService = useMutation(api.clinicAppointmentServices.remove);
-  const submitAppointment = useMutation(api.clinicAppointments.submitAppointment);
+  const createAppointment = useMutation(api.clinic.clinicAppointments.create);
+  const startExamination = useMutation(api.clinic.clinicAppointments.startExamination);
+  const updateClinicalData = useMutation(api.clinic.clinicAppointments.updateClinicalData);
+  const addService = useMutation(api.clinic.clinicAppointmentServices.create);
+  const removeService = useMutation(api.clinic.clinicAppointmentServices.remove);
+  const submitAppointment = useMutation(api.clinic.clinicAppointments.submitAppointment);
 
   // -- Effects --
   useEffect(() => {
@@ -332,6 +328,7 @@ export default function ClinicTransactionPage() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await submitAppointment({
         appointmentId,
@@ -341,6 +338,8 @@ export default function ClinicTransactionPage() {
       router.push("/dashboard/clinic/appointments");
     } catch (error: any) {
       toast.error(error.message || "Gagal menyelesaikan transaksi");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -534,8 +533,9 @@ export default function ClinicTransactionPage() {
               variant="default"
               className="bg-blue-600 hover:bg-blue-700 shadow-sm"
               onClick={() => setActiveTab("payment")}
+              disabled={isSubmitting}
             >
-              Selesaikan & Bayar
+              {isSubmitting ? "Memproses..." : "Selesaikan & Bayar"}
             </Button>
           </div>
         </header>

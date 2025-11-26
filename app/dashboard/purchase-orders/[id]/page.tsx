@@ -55,12 +55,12 @@ export default function PurchaseOrderDetailPage({
   });
 
   const po = useQuery(
-    api.purchaseOrders.get,
+    api.procurement.purchaseOrders.get,
     poId ? { id: poId } : "skip"
   );
-  const receivePO = useMutation(api.purchaseOrders.receive);
-  const submitPO = useMutation(api.purchaseOrders.submit);
-  const cancelPO = useMutation(api.purchaseOrders.cancel);
+  const receivePO = useMutation(api.procurement.purchaseOrders.receive);
+  const submitPO = useMutation(api.procurement.purchaseOrders.submit);
+  const cancelPO = useMutation(api.procurement.purchaseOrders.cancel);
 
   if (!poId || po === undefined) {
     return (
@@ -446,3 +446,4 @@ export default function PurchaseOrderDetailPage({
     </div>
   );
 }
+

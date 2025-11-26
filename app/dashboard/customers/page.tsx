@@ -61,10 +61,10 @@ export default function CustomersPage() {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const customers = useQuery(api.customers.list, { includeInactive: false });
-  const createCustomer = useMutation(api.customers.create);
-  const updateCustomer = useMutation(api.customers.update);
-  const deleteCustomer = useMutation(api.customers.remove);
+  const customers = useQuery(api.master_data.customers.list, { includeInactive: false });
+  const createCustomer = useMutation(api.master_data.customers.create);
+  const updateCustomer = useMutation(api.master_data.customers.update);
+  const deleteCustomer = useMutation(api.master_data.customers.remove);
 
   const customerForm = useFormSchema<CustomerFormData>({
     schema: customerFormSchema,

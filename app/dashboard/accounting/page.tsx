@@ -28,26 +28,26 @@ export default function AccountingDashboard() {
   }, []);
 
   // Fetch balance sheet for current balances
-  const balanceSheet = useQuery(api.financialReports.getBalanceSheet, {
+  const balanceSheet = useQuery(api.finance.financialReports.getBalanceSheet, {
     asOfDate: today,
   });
 
   // Fetch income statement for current month
-  const incomeStatement = useQuery(api.financialReports.getIncomeStatement, {
+  const incomeStatement = useQuery(api.finance.financialReports.getIncomeStatement, {
     startDate: firstDayOfMonth,
     endDate: today,
   });
 
   // Fetch AR aging summary
-  const arAging = useQuery(api.accountsReceivable.getAgingReport, {
+  const arAging = useQuery(api.finance.accountsReceivable.getAgingReport, {
     asOfDate: today,
   });
 
   // Fetch bank balance summary
-  const bankBalances = useQuery(api.bankAccounts.getBalanceSummary, {});
+  const bankBalances = useQuery(api.finance.bankAccounts.getBalanceSummary, {});
 
   // Fetch current period
-  const currentPeriod = useQuery(api.accountingPeriods.getCurrentPeriod, {});
+  const currentPeriod = useQuery(api.finance.accountingPeriods.getCurrentPeriod, {});
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -174,9 +174,8 @@ export default function AccountingDashboard() {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${
-                netIncome >= 0 ? "text-green-600" : "text-red-600"
-              }`}
+              className={`text-2xl font-bold ${netIncome >= 0 ? "text-green-600" : "text-red-600"
+                }`}
             >
               {formatCurrency(netIncome)}
             </div>
@@ -266,9 +265,8 @@ export default function AccountingDashboard() {
             <div className="flex justify-between items-center pt-2">
               <span className="font-semibold text-slate-900">Laba Bersih</span>
               <span
-                className={`font-bold text-lg ${
-                  netIncome >= 0 ? "text-green-600" : "text-red-600"
-                }`}
+                className={`font-bold text-lg ${netIncome >= 0 ? "text-green-600" : "text-red-600"
+                  }`}
               >
                 {formatCurrency(netIncome)}
               </span>

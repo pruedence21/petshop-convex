@@ -61,16 +61,16 @@ export default function PetsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Id<"animalCategories"> | "all">("all");
 
-  const pets = useQuery(api.customerPets.list, {
+  const pets = useQuery(api.master_data.customerPets.list, {
     categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
     includeInactive: false,
   });
-  const customers = useQuery(api.customers.list, { includeInactive: false });
-  const categories = useQuery(api.animalCategories.list, { includeInactive: false });
+  const customers = useQuery(api.master_data.customers.list, { includeInactive: false });
+  const categories = useQuery(api.clinic.animalCategories.list, { includeInactive: false });
 
-  const createPet = useMutation(api.customerPets.create);
-  const updatePet = useMutation(api.customerPets.update);
-  const deletePet = useMutation(api.customerPets.remove);
+  const createPet = useMutation(api.master_data.customerPets.create);
+  const updatePet = useMutation(api.master_data.customerPets.update);
+  const deletePet = useMutation(api.master_data.customerPets.remove);
 
   const petForm = useFormSchema<PetFormData>({
     schema: petFormSchema,
@@ -118,7 +118,7 @@ export default function PetsPage() {
   });
 
   const subcategories = useQuery(
-    api.animalSubcategories.list,
+    api.clinic.animalSubcategories.list,
     petForm.values.categoryId
       ? { categoryId: petForm.values.categoryId as Id<"animalCategories">, includeInactive: false }
       : "skip"
@@ -187,7 +187,7 @@ export default function PetsPage() {
     const birth = new Date(dateOfBirth);
     const years = now.getFullYear() - birth.getFullYear();
     const months = now.getMonth() - birth.getMonth();
-    
+
     if (years === 0) {
       return `${months} bulan`;
     } else if (months < 0) {
@@ -545,3 +545,4 @@ export default function PetsPage() {
     </div>
   );
 }
+

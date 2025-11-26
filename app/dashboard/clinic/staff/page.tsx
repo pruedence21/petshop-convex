@@ -67,16 +67,16 @@ export default function ClinicStaffPage() {
     branchId: "",
   });
 
-  const staff = useQuery(api.clinicStaff.list, {
+  const staff = useQuery(api.clinic.clinicStaff.list, {
     branchId: selectedBranch !== "all" ? selectedBranch : undefined,
     role: selectedRole !== "all" ? selectedRole : undefined,
     includeInactive: false,
   });
-  const branches = useQuery(api.branches.list, { includeInactive: false });
+  const branches = useQuery(api.master_data.branches.list, { includeInactive: false });
 
-  const createStaff = useMutation(api.clinicStaff.create);
-  const updateStaff = useMutation(api.clinicStaff.update);
-  const deleteStaff = useMutation(api.clinicStaff.remove);
+  const createStaff = useMutation(api.clinic.clinicStaff.create);
+  const updateStaff = useMutation(api.clinic.clinicStaff.update);
+  const deleteStaff = useMutation(api.clinic.clinicStaff.remove);
 
   const filteredStaff = staff?.filter(
     (s) =>
@@ -445,3 +445,4 @@ export default function ClinicStaffPage() {
     </div>
   );
 }
+

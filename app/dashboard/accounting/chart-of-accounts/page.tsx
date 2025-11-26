@@ -35,10 +35,10 @@ import { toast } from "sonner";
 import { Id } from "@/convex/_generated/dataModel";
 
 export default function ChartOfAccountsPage() {
-  const accounts = useQuery(api.accounts.list, {});
-  const createAccount = useMutation(api.accounts.create);
-  const updateAccount = useMutation(api.accounts.update);
-  const removeAccount = useMutation(api.accounts.remove);
+  const accounts = useQuery(api.finance.accounts.list, {});
+  const createAccount = useMutation(api.finance.accounts.create);
+  const updateAccount = useMutation(api.finance.accounts.update);
+  const removeAccount = useMutation(api.finance.accounts.remove);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
@@ -70,10 +70,10 @@ export default function ChartOfAccountsPage() {
   // Filter accounts based on search
   const filteredAccounts = searchQuery
     ? accounts.filter(
-        (acc) =>
-          acc.accountCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          acc.accountName.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      (acc) =>
+        acc.accountCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        acc.accountName.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : accounts;
 
   // Build tree structure
@@ -184,9 +184,8 @@ export default function ChartOfAccountsPage() {
     return (
       <div key={account._id}>
         <div
-          className={`flex items-center gap-2 py-2 px-3 hover:bg-slate-50 rounded-lg group ${
-            level > 0 ? "ml-" + level * 6 : ""
-          }`}
+          className={`flex items-center gap-2 py-2 px-3 hover:bg-slate-50 rounded-lg group ${level > 0 ? "ml-" + level * 6 : ""
+            }`}
           style={{ paddingLeft: `${level * 24 + 12}px` }}
         >
           {/* Expand/Collapse Icon */}
@@ -214,9 +213,8 @@ export default function ChartOfAccountsPage() {
 
           {/* Account Name */}
           <span
-            className={`flex-1 text-sm ${
-              account.isHeader ? "font-semibold text-slate-900" : "text-slate-700"
-            }`}
+            className={`flex-1 text-sm ${account.isHeader ? "font-semibold text-slate-900" : "text-slate-700"
+              }`}
           >
             {account.accountName}
           </span>

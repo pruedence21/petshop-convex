@@ -75,6 +75,7 @@ export default function PurchaseOrdersPage() {
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<Id<"branches"> | "all">("all");
 
   // -- Create View State --
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     supplierId: "",
     branchId: "",
@@ -86,20 +87,20 @@ export default function PurchaseOrdersPage() {
   const [productSearch, setProductSearch] = useState("");
 
   // -- Queries --
-  const pos = useQuery(api.purchaseOrders.list, {
+  const pos = useQuery(api.procurement.purchaseOrders.list, {
     status: selectedStatus !== "all" ? selectedStatus : undefined,
     branchId: selectedBranchFilter !== "all" ? selectedBranchFilter : undefined,
   });
-  const suppliers = useQuery(api.suppliers.list, { includeInactive: false });
-  const branches = useQuery(api.branches.list, { includeInactive: false });
-  const products = useQuery(api.products.list, { includeInactive: false });
+  const suppliers = useQuery(api.inventory.suppliers.list, { includeInactive: false });
+  const branches = useQuery(api.master_data.branches.list, { includeInactive: false });
+  const products = useQuery(api.inventory.products.list, { includeInactive: false });
 
   // -- Mutations --
-  const createPO = useMutation(api.purchaseOrders.create);
-  const addItem = useMutation(api.purchaseOrders.addItem);
-  const submitPO = useMutation(api.purchaseOrders.submit);
-  const cancelPO = useMutation(api.purchaseOrders.cancel);
-  const deletePO = useMutation(api.purchaseOrders.remove);
+  const createPO = useMutation(api.procurement.purchaseOrders.create);
+  const addItem = useMutation(api.procurement.purchaseOrders.addItem);
+  const submitPO = useMutation(api.procurement.purchaseOrders.submit);
+  const cancelPO = useMutation(api.procurement.purchaseOrders.cancel);
+  const deletePO = useMutation(api.procurement.purchaseOrders.remove);
 
   // -- Effects --
   useEffect(() => {
@@ -196,6 +197,7 @@ export default function PurchaseOrdersPage() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       // 1. Create Header
       const result = await createPO({
@@ -231,6 +233,8 @@ export default function PurchaseOrdersPage() {
       setViewMode("list");
     } catch (error: any) {
       toast.error(error.message || "Gagal membuat PO");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -372,13 +376,13 @@ export default function PurchaseOrdersPage() {
             <p className="text-xs text-slate-500">Total Estimasi</p>
             <p className="text-lg font-bold text-slate-900">{formatCurrency(totals.total)}</p>
           </div>
-          <Button variant="outline" onClick={() => handleSubmitOrder(true)}>
+          <Button variant="outline" onClick={() => handleSubmitOrder(true)} disabled={isSubmitting}>
             <Save className="h-4 w-4 mr-2" />
-            Simpan Draft
+            {isSubmitting ? "Menyimpan..." : "Simpan Draft"}
           </Button>
-          <Button onClick={() => handleSubmitOrder(false)} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={() => handleSubmitOrder(false)} className="bg-blue-600 hover:bg-blue-700" disabled={isSubmitting}>
             <Send className="h-4 w-4 mr-2" />
-            Submit Order
+            {isSubmitting ? "Memproses..." : "Submit Order"}
           </Button>
         </div>
       </div>

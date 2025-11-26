@@ -432,3 +432,6 @@ export const getDiagnosisReport = query({
     return result.sort((a, b) => b.count - a.count);
   },
 });
+
+
+

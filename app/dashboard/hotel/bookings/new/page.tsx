@@ -36,9 +36,9 @@ export default function NewBookingPage() {
     notes: "",
   });
 
-  const branches = useQuery(api.branches.list, { includeInactive: false });
-  const customers = useQuery(api.customers.list, { includeInactive: false });
-  const allPets = useQuery(api.customerPets.list, {});
+  const branches = useQuery(api.master_data.branches.list, { includeInactive: false });
+  const customers = useQuery(api.master_data.customers.list, { includeInactive: false });
+  const allPets = useQuery(api.master_data.customerPets.list, {});
   
   // Filter pets by selected customer
   const pets = formData.customerId
@@ -47,7 +47,7 @@ export default function NewBookingPage() {
 
   // Get available rooms based on selected dates and branch
   const availableRooms = useQuery(
-    api.hotelRooms.getAvailableRooms,
+    api.hotel.hotelRooms.getAvailableRooms,
     formData.branchId && formData.checkInDate && formData.checkOutDate
       ? {
           branchId: formData.branchId as Id<"branches">,
@@ -57,8 +57,8 @@ export default function NewBookingPage() {
       : "skip"
   );
 
-  const createBooking = useMutation(api.hotelBookings.create);
-  const addPayment = useMutation(api.hotelPayments.add);
+  const createBooking = useMutation(api.hotel.hotelBookings.create);
+  const addPayment = useMutation(api.hotel.hotelPayments.add);
 
   const [depositAmount, setDepositAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<
@@ -438,3 +438,4 @@ export default function NewBookingPage() {
     </div>
   );
 }
+

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function FixProfilePage() {
-    const registerSelf = useMutation(api.userManagement.registerSelf);
+    const registerSelf = useMutation(api.users.userManagement.registerSelf);
     const [status, setStatus] = useState("Idle");
     const [result, setResult] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
@@ -63,3 +63,4 @@ export default function FixProfilePage() {
         </div>
     );
 }
+

@@ -63,14 +63,14 @@ export default function BookingDetailPage({
   const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false);
 
   const bookingId = resolvedParams.id as Id<"hotelBookings">;
-  const booking = useQuery(api.hotelBookings.get, { id: bookingId });
-  const services = useQuery(api.hotelBookingServices.list, { bookingId });
-  const consumables = useQuery(api.hotelConsumables.list, { bookingId });
-  const payments = useQuery(api.hotelPayments.list, { bookingId });
+  const booking = useQuery(api.hotel.hotelBookings.get, { id: bookingId });
+  const services = useQuery(api.hotel.hotelBookingServices.list, { bookingId });
+  const consumables = useQuery(api.hotel.hotelConsumables.list, { bookingId });
+  const payments = useQuery(api.hotel.hotelPayments.list, { bookingId });
   
   // Conditional queries - use "skip" string when condition is false
   const invoice = useQuery(
-    api.hotelBookings.generateInvoice,
+    api.hotel.hotelBookings.generateInvoice,
     booking?.status === "CheckedOut" || booking?.status === "CheckedIn"
       ? {
           id: bookingId,
@@ -80,33 +80,33 @@ export default function BookingDetailPage({
   );
 
   const customer = useQuery(
-    api.customers.get,
+    api.master_data.customers.get,
     booking ? { id: booking.customerId } : "skip"
   );
   const pet = useQuery(
-    api.customerPets.get,
+    api.master_data.customerPets.get,
     booking ? { id: booking.petId } : "skip"
   );
   const room = useQuery(
-    api.hotelRooms.get,
+    api.hotel.hotelRooms.get,
     booking ? { id: booking.roomId } : "skip"
   );
 
-  const serviceProducts = useQuery(api.products.list, {
+  const serviceProducts = useQuery(api.inventory.products.list, {
     includeInactive: false,
   })?.filter((p) => p.type === "service");
-  const consumableProducts = useQuery(api.products.list, {
+  const consumableProducts = useQuery(api.inventory.products.list, {
     includeInactive: false,
   })?.filter((p) => p.type === "product");
 
-  const checkIn = useMutation(api.hotelBookings.checkIn);
-  const checkOut = useMutation(api.hotelBookings.checkOut);
-  const cancelBooking = useMutation(api.hotelBookings.cancel);
-  const addService = useMutation(api.hotelBookingServices.add);
-  const removeService = useMutation(api.hotelBookingServices.remove);
-  const addConsumable = useMutation(api.hotelConsumables.add);
-  const removeConsumable = useMutation(api.hotelConsumables.remove);
-  const addPayment = useMutation(api.hotelPayments.add);
+  const checkIn = useMutation(api.hotel.hotelBookings.checkIn);
+  const checkOut = useMutation(api.hotel.hotelBookings.checkOut);
+  const cancelBooking = useMutation(api.hotel.hotelBookings.cancel);
+  const addService = useMutation(api.hotel.hotelBookingServices.add);
+  const removeService = useMutation(api.hotel.hotelBookingServices.remove);
+  const addConsumable = useMutation(api.hotel.hotelConsumables.add);
+  const removeConsumable = useMutation(api.hotel.hotelConsumables.remove);
+  const addPayment = useMutation(api.hotel.hotelPayments.add);
 
   const [serviceForm, setServiceForm] = useState({
     serviceId: "",
@@ -1172,3 +1172,4 @@ export default function BookingDetailPage({
     </div>
   );
 }
+

@@ -48,10 +48,10 @@ export default function AnimalCategoriesPage() {
     icon: "",
   });
 
-  const categories = useQuery(api.animalCategories.list, { includeInactive: false });
-  const createCategory = useMutation(api.animalCategories.create);
-  const updateCategory = useMutation(api.animalCategories.update);
-  const deleteCategory = useMutation(api.animalCategories.remove);
+  const categories = useQuery(api.clinic.animalCategories.list, { includeInactive: false });
+  const createCategory = useMutation(api.clinic.animalCategories.create);
+  const updateCategory = useMutation(api.clinic.animalCategories.update);
+  const deleteCategory = useMutation(api.clinic.animalCategories.remove);
 
   const filteredCategories = categories?.filter((cat) =>
     cat.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -280,3 +280,4 @@ export default function AnimalCategoriesPage() {
     </div>
   );
 }
+

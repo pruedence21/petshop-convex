@@ -30,8 +30,8 @@ import {
 import { Id } from "@/convex/_generated/dataModel";
 
 export default function ARAgingReportPage() {
-  const agingReport = useQuery(api.accountsReceivable.getAgingReport, {});
-  
+  const agingReport = useQuery(api.finance.accountsReceivable.getAgingReport, {});
+
   const [selectedCustomerId, setSelectedCustomerId] = useState<Id<"customers"> | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
 
@@ -262,7 +262,7 @@ export default function ARAgingReportPage() {
               ) : (
                 agingReport.customerAging.map((item) => {
                   const hasOverdue = item.over90days > 0 || item.days61to90 > 0;
-                  
+
                   return (
                     <TableRow key={item.customerId}>
                       <TableCell className="font-medium">

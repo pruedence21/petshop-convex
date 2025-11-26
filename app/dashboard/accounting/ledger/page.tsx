@@ -38,27 +38,27 @@ export default function GeneralLedgerPage() {
   );
   const [viewType, setViewType] = useState<"ledger" | "trial-balance">("trial-balance");
 
-  const accounts = useQuery(api.accounts.list, {});
-  
+  const accounts = useQuery(api.finance.accounts.list, {});
+
   // Trial Balance Query
   const trialBalance = useQuery(
-    api.generalLedger.getTrialBalance,
+    api.finance.generalLedger.getTrialBalance,
     viewType === "trial-balance"
       ? {
-          asOfDate: new Date(endDate).getTime(),
-        }
+        asOfDate: new Date(endDate).getTime(),
+      }
       : "skip"
   );
 
   // Account Ledger Query
   const accountLedger = useQuery(
-    api.generalLedger.getAccountLedger,
+    api.finance.generalLedger.getAccountLedger,
     viewType === "ledger" && selectedAccountId !== "all"
       ? {
-          accountId: selectedAccountId as Id<"accounts">,
-          startDate: new Date(startDate).getTime(),
-          endDate: new Date(endDate).getTime(),
-        }
+        accountId: selectedAccountId as Id<"accounts">,
+        startDate: new Date(startDate).getTime(),
+        endDate: new Date(endDate).getTime(),
+      }
       : "skip"
   );
 
@@ -229,7 +229,7 @@ export default function GeneralLedgerPage() {
                       {formatCurrency(
                         Math.abs(
                           (trialBalance.totalDebit || 0) -
-                            (trialBalance.totalCredit || 0)
+                          (trialBalance.totalCredit || 0)
                         )
                       )}
                     </TableCell>
@@ -346,13 +346,13 @@ export default function GeneralLedgerPage() {
       {/* Loading State */}
       {((viewType === "trial-balance" && trialBalance === undefined) ||
         (viewType === "ledger" && accountLedger === undefined && selectedAccountId !== "all")) && (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-slate-600">Memuat data...</p>
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-slate-600">Memuat data...</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Empty State */}
       {viewType === "ledger" && selectedAccountId === "all" && (

@@ -364,3 +364,6 @@ export const getCashierPerformance = query({
     return result.sort((a, b) => b.totalRevenue - a.totalRevenue);
   },
 });
+
+
+

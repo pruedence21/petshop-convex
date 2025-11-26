@@ -48,10 +48,10 @@ export default function ProductCategoriesPage() {
     icon: "",
   });
 
-  const categories = useQuery(api.productCategories.list, { includeInactive: false });
-  const createCategory = useMutation(api.productCategories.create);
-  const updateCategory = useMutation(api.productCategories.update);
-  const deleteCategory = useMutation(api.productCategories.remove);
+  const categories = useQuery(api.inventory.productCategories.list, { includeInactive: false });
+  const createCategory = useMutation(api.inventory.productCategories.create);
+  const updateCategory = useMutation(api.inventory.productCategories.update);
+  const deleteCategory = useMutation(api.inventory.productCategories.remove);
 
   const filteredCategories = categories?.filter((cat) =>
     cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

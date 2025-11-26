@@ -40,11 +40,11 @@ export default function MedicalRecordsPage() {
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const records = useQuery(api.petMedicalRecords.list, {
+  const records = useQuery(api.clinic.petMedicalRecords.list, {
     petId: selectedPet !== "all" ? selectedPet : undefined,
   });
 
-  const pets = useQuery(api.customerPets.list, { includeInactive: false });
+  const pets = useQuery(api.master_data.customerPets.list, { includeInactive: false });
 
   useEffect(() => {
     setMounted(true);
@@ -310,3 +310,4 @@ export default function MedicalRecordsPage() {
     </div>
   );
 }
+

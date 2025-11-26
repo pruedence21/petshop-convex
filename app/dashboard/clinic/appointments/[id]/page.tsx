@@ -65,13 +65,13 @@ export default function AppointmentDetailPage({
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
   const appointmentId = resolvedParams.id as Id<"clinicAppointments">;
-  const appointment = useQuery(api.clinicAppointments.get, { id: appointmentId });
-  const clinicalData = useQuery(api.clinicAppointments.getClinicalData, { appointmentId });
-  const services = useQuery(api.clinicAppointmentServices.list, { appointmentId });
-  const payments = useQuery(api.clinicPayments.list, { appointmentId });
+  const appointment = useQuery(api.clinic.clinicAppointments.get, { id: appointmentId });
+  const clinicalData = useQuery(api.clinic.clinicAppointments.getClinicalData, { appointmentId });
+  const services = useQuery(api.clinic.clinicAppointmentServices.list, { appointmentId });
+  const payments = useQuery(api.clinic.clinicPayments.list, { appointmentId });
   
   // Get products for services and medicines
-  const allProducts = useQuery(api.products.list, { includeInactive: false });
+  const allProducts = useQuery(api.inventory.products.list, { includeInactive: false });
   const serviceProducts = allProducts?.filter((p: any) => 
     p.type === "service" || p.type === "procedure"
   );
@@ -118,11 +118,11 @@ export default function AppointmentDetailPage({
     notes: "",
   });
 
-  const startExamination = useMutation(api.clinicAppointments.startExamination);
-  const updateClinicalData = useMutation(api.clinicAppointments.updateClinicalData);
-  const addService = useMutation(api.clinicAppointmentServices.create);
-  const deleteService = useMutation(api.clinicAppointmentServices.remove);
-  const submitAppointment = useMutation(api.clinicAppointments.submitAppointment);
+  const startExamination = useMutation(api.clinic.clinicAppointments.startExamination);
+  const updateClinicalData = useMutation(api.clinic.clinicAppointments.updateClinicalData);
+  const addService = useMutation(api.clinic.clinicAppointmentServices.create);
+  const deleteService = useMutation(api.clinic.clinicAppointmentServices.remove);
+  const submitAppointment = useMutation(api.clinic.clinicAppointments.submitAppointment);
 
   useEffect(() => {
     setMounted(true);
@@ -1201,3 +1201,4 @@ export default function AppointmentDetailPage({
     </div>
   );
 }
+

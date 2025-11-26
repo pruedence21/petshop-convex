@@ -29,7 +29,7 @@ export default function SaleDetailPage({ params }: { params: Promise<{ id: strin
   const { id } = use(params);
   const saleId = id as Id<"sales">;
   
-  const sale = useQuery(api.sales.get, { id: saleId });
+  const sale = useQuery(api.sales.sales.get, { id: saleId });
 
   if (sale === undefined) {
     return (
@@ -401,3 +401,4 @@ export default function SaleDetailPage({ params }: { params: Promise<{ id: strin
     </div>
   );
 }
+

@@ -11,7 +11,7 @@ import {
     createPurchaseJournalEntry,
     createClinicJournalEntry,
     createPaymentReceivedJournalEntry,
-} from '../accountingHelpers';
+} from '../finance/accountingHelpers';
 import { MockDatabase, createMockMutationContext } from './helpers/mockContext';
 import { createTestScenario, createMockAccount, mockId } from './helpers/testData';
 

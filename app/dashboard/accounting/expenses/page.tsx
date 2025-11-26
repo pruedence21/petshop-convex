@@ -59,15 +59,15 @@ export default function ExpenseManagementPage() {
 }
 
 function ExpenseContent() {
-  const expenses = useQuery(api.expenses.list, {});
-  const categories = useQuery(api.expenseCategories.list, {});
-  const branches = useQuery(api.branches.list, {});
+  const expenses = useQuery(api.finance.expenses.list, {});
+  const categories = useQuery(api.finance.expenseCategories.list, {});
+  const branches = useQuery(api.master_data.branches.list, {});
 
-  const createExpense = useMutation(api.expenses.create);
-  const submitExpense = useMutation(api.expenses.submit);
-  const approveExpense = useMutation(api.expenses.approve);
-  const rejectExpense = useMutation(api.expenses.reject);
-  const payExpense = useMutation(api.expenses.pay);
+  const createExpense = useMutation(api.finance.expenses.create);
+  const submitExpense = useMutation(api.finance.expenses.submit);
+  const approveExpense = useMutation(api.finance.expenses.approve);
+  const rejectExpense = useMutation(api.finance.expenses.reject);
+  const payExpense = useMutation(api.finance.expenses.pay);
 
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [showDialog, setShowDialog] = useState(false);
@@ -160,7 +160,7 @@ function ExpenseContent() {
 
       // Auto-submit for approval
       await submitExpense({ id: result.expenseId });
-      
+
       toast.success("Expense berhasil dibuat dan disubmit untuk approval");
       setShowDialog(false);
     } catch (error: any) {

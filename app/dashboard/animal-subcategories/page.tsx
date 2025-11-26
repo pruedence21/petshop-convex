@@ -54,14 +54,14 @@ export default function AnimalSubcategoriesPage() {
     description: "",
   });
 
-  const subcategories = useQuery(api.animalSubcategories.list, {
+  const subcategories = useQuery(api.clinic.animalSubcategories.list, {
     categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
     includeInactive: false,
   });
-  const categories = useQuery(api.animalCategories.list, { includeInactive: false });
-  const createSubcategory = useMutation(api.animalSubcategories.create);
-  const updateSubcategory = useMutation(api.animalSubcategories.update);
-  const deleteSubcategory = useMutation(api.animalSubcategories.remove);
+  const categories = useQuery(api.clinic.animalCategories.list, { includeInactive: false });
+  const createSubcategory = useMutation(api.clinic.animalSubcategories.create);
+  const updateSubcategory = useMutation(api.clinic.animalSubcategories.update);
+  const deleteSubcategory = useMutation(api.clinic.animalSubcategories.remove);
 
   const filteredSubcategories = subcategories?.filter((sub) =>
     sub.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -335,3 +335,4 @@ export default function AnimalSubcategoriesPage() {
     </div>
   );
 }
+

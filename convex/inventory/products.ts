@@ -1,0 +1,181 @@
+import { mutation, query } from "../_generated/server";
+import { v } from "convex/values";
+import { buildError } from "../../lib/errors";
+
+// Create product
+export const create = mutation({
+  args: {
+    sku: v.string(),
+    name: v.string(),
+    description: v.optional(v.string()),
+    categoryId: v.id("productCategories"),
+    subcategoryId: v.optional(v.id("productSubcategories")),
+    brandId: v.id("brands"),
+    unitId: v.id("units"),
+    purchasePrice: v.number(),
+    sellingPrice: v.number(),
+    minStock: v.number(),
+    maxStock: v.number(),
+    hasVariants: v.boolean(),
+    type: v.optional(v.string()), // "product" or "service"
+    serviceDuration: v.optional(v.number()), // For services
+  },
+  handler: async (ctx, args) => {
+    // Uniqueness check for SKU using index
+    const existing = await ctx.db
+      .query("products")
+      .withIndex("by_sku", (q) => q.eq("sku", args.sku))
+      .unique();
+    if (existing) {
+      // Throw structured error code for UI mapping
+      throw new Error(JSON.stringify(buildError({ code: "SKU_EXISTS", message: "SKU already exists" })));
+    }
+    const productId = await ctx.db.insert("products", {
+      sku: args.sku,
+      name: args.name,
+      description: args.description,
+      categoryId: args.categoryId,
+      subcategoryId: args.subcategoryId,
+      brandId: args.brandId,
+      unitId: args.unitId,
+      purchasePrice: args.purchasePrice,
+      sellingPrice: args.sellingPrice,
+      minStock: args.minStock,
+      maxStock: args.maxStock,
+      hasVariants: args.hasVariants,
+      type: args.type || "product",
+      serviceDuration: args.serviceDuration,
+      isActive: true,
+      createdBy: undefined,
+    });
+    return productId;
+  },
+});
+
+// List products
+export const list = query({
+  args: {
+    categoryId: v.optional(v.id("productCategories")),
+    brandId: v.optional(v.id("brands")),
+    type: v.optional(v.string()), // Filter by "product" or "service"
+    includeInactive: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    let products;
+
+    if (args.type) {
+      products = await ctx.db
+        .query("products")
+        .withIndex("by_type", (q) => q.eq("type", args.type!))
+        .collect();
+    } else if (args.categoryId) {
+      products = await ctx.db
+        .query("products")
+        .withIndex("by_category", (q) =>
+          q.eq("categoryId", args.categoryId!)
+        )
+        .collect();
+    } else if (args.brandId) {
+      products = await ctx.db
+        .query("products")
+        .withIndex("by_brand", (q) =>
+          q.eq("brandId", args.brandId!)
+        )
+        .collect();
+    } else {
+      products = await ctx.db.query("products").collect();
+    }
+
+    if (!args.includeInactive) {
+      return products.filter(product => product.isActive && !product.deletedAt);
+    }
+
+    return products.filter(product => !product.deletedAt);
+  },
+});
+
+// Get product by ID with related data
+export const get = query({
+  args: { id: v.id("products") },
+  handler: async (ctx, args) => {
+    const product = await ctx.db.get(args.id);
+    if (!product) return null;
+
+    const category = await ctx.db.get(product.categoryId);
+    const brand = await ctx.db.get(product.brandId);
+    const unit = await ctx.db.get(product.unitId);
+
+    let subcategory = null;
+    if (product.subcategoryId) {
+      subcategory = await ctx.db.get(product.subcategoryId);
+    }
+
+    return {
+      ...product,
+      category,
+      subcategory,
+      brand,
+      unit,
+    };
+  },
+});
+
+// Update product
+export const update = mutation({
+  args: {
+    id: v.id("products"),
+    sku: v.optional(v.string()),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    categoryId: v.optional(v.id("productCategories")),
+    subcategoryId: v.optional(v.id("productSubcategories")),
+    brandId: v.optional(v.id("brands")),
+    unitId: v.optional(v.id("units")),
+    purchasePrice: v.optional(v.number()),
+    sellingPrice: v.optional(v.number()),
+    minStock: v.optional(v.number()),
+    maxStock: v.optional(v.number()),
+    hasVariants: v.optional(v.boolean()),
+    type: v.optional(v.string()),
+    serviceDuration: v.optional(v.number()),
+    isActive: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updates } = args;
+
+    await ctx.db.patch(id, {
+      ...updates,
+      updatedBy: undefined,
+    });
+
+    return id;
+  },
+});
+
+// Delete product (soft delete)
+export const remove = mutation({
+  args: { id: v.id("products") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      deletedAt: Date.now(),
+      updatedBy: undefined,
+    });
+    return args.id;
+  },
+});
+
+// Get product variants by product ID
+export const getVariants = query({
+  args: { productId: v.id("products") },
+  handler: async (ctx, args) => {
+    const variants = await ctx.db
+      .query("productVariants")
+      .withIndex("by_product", (q) => q.eq("productId", args.productId))
+      .collect();
+
+    return variants.filter(v => v.isActive && !v.deletedAt);
+  },
+});
+
+
+

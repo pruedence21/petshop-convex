@@ -45,37 +45,37 @@ export default function FinancialReportsPage() {
     new Date().toISOString().split("T")[0]
   );
 
-  const branches = useQuery(api.branches.list, {});
+  const branches = useQuery(api.master_data.branches.list, {});
 
   // Balance Sheet Query
   const balanceSheet = useQuery(
-    api.financialReports.getBalanceSheet,
+    api.finance.financialReports.getBalanceSheet,
     reportType === "balance-sheet"
       ? {
-          asOfDate: new Date(asOfDate).getTime(),
-        }
+        asOfDate: new Date(asOfDate).getTime(),
+      }
       : "skip"
   );
 
   // Income Statement Query
   const incomeStatement = useQuery(
-    api.financialReports.getIncomeStatement,
+    api.finance.financialReports.getIncomeStatement,
     reportType === "income-statement"
       ? {
-          startDate: new Date(startDate).getTime(),
-          endDate: new Date(endDate).getTime(),
-        }
+        startDate: new Date(startDate).getTime(),
+        endDate: new Date(endDate).getTime(),
+      }
       : "skip"
   );
 
   // Cash Flow Query
   const cashFlow = useQuery(
-    api.financialReports.getCashFlowStatement,
+    api.finance.financialReports.getCashFlowStatement,
     reportType === "cash-flow"
       ? {
-          startDate: new Date(startDate).getTime(),
-          endDate: new Date(endDate).getTime(),
-        }
+        startDate: new Date(startDate).getTime(),
+        endDate: new Date(endDate).getTime(),
+      }
       : "skip"
   );
 
@@ -159,25 +159,25 @@ export default function FinancialReportsPage() {
 
             {(reportType === "income-statement" ||
               reportType === "cash-flow") && (
-              <>
-                <div className="space-y-2">
-                  <Label>Dari Tanggal</Label>
-                  <Input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Sampai Tanggal</Label>
-                  <Input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
-                </div>
-              </>
-            )}
+                <>
+                  <div className="space-y-2">
+                    <Label>Dari Tanggal</Label>
+                    <Input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Sampai Tanggal</Label>
+                    <Input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
           </div>
         </CardContent>
       </Card>
@@ -198,7 +198,7 @@ export default function FinancialReportsPage() {
               {/* ASSETS */}
               <div>
                 <h3 className="font-bold text-lg mb-3 text-blue-900">ASET</h3>
-                
+
                 {/* Current Assets */}
                 <div className="ml-4 space-y-2">
                   <p className="font-semibold text-slate-700">Aset Lancar</p>
@@ -264,7 +264,7 @@ export default function FinancialReportsPage() {
                 <h3 className="font-bold text-lg mb-3 text-red-900">
                   KEWAJIBAN
                 </h3>
-                
+
                 {/* Current Liabilities */}
                 <div className="ml-4 space-y-2">
                   <p className="font-semibold text-slate-700">
@@ -298,36 +298,36 @@ export default function FinancialReportsPage() {
                 {/* Long-term Liabilities */}
                 {balanceSheet.liabilities?.longTermLiabilities?.length >
                   0 && (
-                  <div className="ml-4 space-y-2 mt-4">
-                    <p className="font-semibold text-slate-700">
-                      Kewajiban Jangka Panjang
-                    </p>
-                    {balanceSheet.liabilities?.longTermLiabilities?.map(
-                      (item: any) => (
-                        <div
-                          key={item.accountCode}
-                          className="flex justify-between ml-4 text-sm"
-                        >
-                          <span className="text-slate-600">
-                            {item.accountName}
-                          </span>
-                          <span className="font-mono">
-                            {formatCurrency(item.balance)}
-                          </span>
-                        </div>
-                      )
-                    )}
-                    <div className="flex justify-between ml-4 font-semibold border-t pt-2">
-                      <span>Total Kewajiban Jangka Panjang</span>
-                      <span className="font-mono">
-                        {formatCurrency(
-                          balanceSheet.liabilities?.totalLongTermLiabilities ||
+                    <div className="ml-4 space-y-2 mt-4">
+                      <p className="font-semibold text-slate-700">
+                        Kewajiban Jangka Panjang
+                      </p>
+                      {balanceSheet.liabilities?.longTermLiabilities?.map(
+                        (item: any) => (
+                          <div
+                            key={item.accountCode}
+                            className="flex justify-between ml-4 text-sm"
+                          >
+                            <span className="text-slate-600">
+                              {item.accountName}
+                            </span>
+                            <span className="font-mono">
+                              {formatCurrency(item.balance)}
+                            </span>
+                          </div>
+                        )
+                      )}
+                      <div className="flex justify-between ml-4 font-semibold border-t pt-2">
+                        <span>Total Kewajiban Jangka Panjang</span>
+                        <span className="font-mono">
+                          {formatCurrency(
+                            balanceSheet.liabilities?.totalLongTermLiabilities ||
                             0
-                        )}
-                      </span>
+                          )}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 <div className="flex justify-between font-bold text-lg border-t-2 border-slate-300 pt-3 mt-3">
                   <span className="text-red-900">TOTAL KEWAJIBAN</span>
@@ -491,11 +491,10 @@ export default function FinancialReportsPage() {
                   LABA BERSIH
                 </span>
                 <span
-                  className={`font-mono ${
-                    (incomeStatement.netIncome || 0) >= 0
+                  className={`font-mono ${(incomeStatement.netIncome || 0) >= 0
                       ? "text-green-700"
                       : "text-red-700"
-                  }`}
+                    }`}
                 >
                   {formatCurrency(incomeStatement.netIncome || 0)}
                 </span>
@@ -578,7 +577,7 @@ export default function FinancialReportsPage() {
                       <span className="font-mono">
                         {formatCurrency(
                           cashFlow.investingActivities?.netCashFromInvesting ||
-                            0
+                          0
                         )}
                       </span>
                     </div>
@@ -608,7 +607,7 @@ export default function FinancialReportsPage() {
                       <span className="font-mono">
                         {formatCurrency(
                           cashFlow.financingActivities?.netCashFromFinancing ||
-                            0
+                          0
                         )}
                       </span>
                     </div>
@@ -646,13 +645,13 @@ export default function FinancialReportsPage() {
       {(balanceSheet === undefined ||
         incomeStatement === undefined ||
         cashFlow === undefined) && (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-slate-600">Memuat laporan...</p>
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-slate-600">Memuat laporan...</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }

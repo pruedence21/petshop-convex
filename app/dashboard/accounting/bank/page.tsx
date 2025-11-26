@@ -44,14 +44,14 @@ import { toast } from "sonner";
 import { Id } from "@/convex/_generated/dataModel";
 
 export default function BankManagementPage() {
-  const bankAccounts = useQuery(api.bankAccounts.list, {});
-  const accounts = useQuery(api.accounts.list, { accountType: "ASSET" });
+  const bankAccounts = useQuery(api.finance.bankAccounts.list, {});
+  const accounts = useQuery(api.finance.accounts.list, { accountType: "ASSET" });
 
-  const createBankAccount = useMutation(api.bankAccounts.create);
-  const updateBankAccount = useMutation(api.bankAccounts.update);
-  const removeBankAccount = useMutation(api.bankAccounts.remove);
-  const recordTransaction = useMutation(api.bankTransactions.recordTransaction);
-  const reconcileTransaction = useMutation(api.bankTransactions.reconcile);
+  const createBankAccount = useMutation(api.finance.bankAccounts.create);
+  const updateBankAccount = useMutation(api.finance.bankAccounts.update);
+  const removeBankAccount = useMutation(api.finance.bankAccounts.remove);
+  const recordTransaction = useMutation(api.finance.bankTransactions.create);
+  const reconcileTransaction = useMutation(api.finance.bankTransactions.reconcile);
 
   const [showAccountDialog, setShowAccountDialog] = useState(false);
   const [showTransactionDialog, setShowTransactionDialog] = useState(false);
@@ -79,7 +79,7 @@ export default function BankManagementPage() {
 
   // Get transactions for selected bank
   const bankTransactions = useQuery(
-    api.bankTransactions.list,
+    api.finance.bankTransactions.list,
     selectedBankId ? { bankAccountId: selectedBankId } : "skip"
   );
 
@@ -756,3 +756,4 @@ export default function BankManagementPage() {
     </div>
   );
 }
+

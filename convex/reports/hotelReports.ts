@@ -466,3 +466,6 @@ export const getHotelServicesReport = query({
     return result.sort((a, b) => b.totalRevenue - a.totalRevenue);
   },
 });
+
+
+

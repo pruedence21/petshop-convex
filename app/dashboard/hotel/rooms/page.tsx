@@ -83,13 +83,13 @@ export default function HotelRoomsPage() {
     description: "",
   });
 
-  const rooms = useQuery(api.hotelRooms.list, {});
-  const branches = useQuery(api.branches.list, { includeInactive: false });
-  const animalCategories = useQuery(api.animalCategories.list, {});
-  const createRoom = useMutation(api.hotelRooms.create);
-  const updateRoom = useMutation(api.hotelRooms.update);
-  const updateRoomStatus = useMutation(api.hotelRooms.updateStatus);
-  const deleteRoom = useMutation(api.hotelRooms.remove);
+  const rooms = useQuery(api.hotel.hotelRooms.list, {});
+  const branches = useQuery(api.master_data.branches.list, { includeInactive: false });
+  const animalCategories = useQuery(api.clinic.animalCategories.list, {});
+  const createRoom = useMutation(api.hotel.hotelRooms.create);
+  const updateRoom = useMutation(api.hotel.hotelRooms.update);
+  const updateRoomStatus = useMutation(api.hotel.hotelRooms.updateStatus);
+  const deleteRoom = useMutation(api.hotel.hotelRooms.remove);
 
   const filteredRooms = rooms?.filter(
     (room) =>
@@ -570,3 +570,4 @@ export default function HotelRoomsPage() {
     </div>
   );
 }
+

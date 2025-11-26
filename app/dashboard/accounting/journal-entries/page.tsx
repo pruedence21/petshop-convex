@@ -45,13 +45,13 @@ import { toast } from "sonner";
 import { Id } from "@/convex/_generated/dataModel";
 
 export default function JournalEntriesPage() {
-  const journalEntries = useQuery(api.journalEntries.list, {});
-  const accounts = useQuery(api.accounts.list, {});
-  const branches = useQuery(api.branches.list, {});
+  const journalEntries = useQuery(api.finance.journalEntries.list, {});
+  const accounts = useQuery(api.finance.accounts.list, {});
+  const branches = useQuery(api.master_data.branches.list, {});
 
-  const createEntry = useMutation(api.journalEntries.create);
-  const postEntry = useMutation(api.journalEntries.post);
-  const voidEntry = useMutation(api.journalEntries.voidEntry);
+  const createEntry = useMutation(api.finance.journalEntries.create);
+  const postEntry = useMutation(api.finance.journalEntries.post);
+  const voidEntry = useMutation(api.finance.journalEntries.voidEntry);
 
   const [showDialog, setShowDialog] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
@@ -519,9 +519,8 @@ export default function JournalEntriesPage() {
                 <div className="text-right">
                   <p className="text-sm text-slate-600">Selisih</p>
                   <p
-                    className={`text-lg font-semibold ${
-                      isBalanced() ? "text-green-600" : "text-red-600"
-                    }`}
+                    className={`text-lg font-semibold ${isBalanced() ? "text-green-600" : "text-red-600"
+                      }`}
                   >
                     {formatCurrency(Math.abs(getTotalDebit() - getTotalCredit()))}
                   </p>

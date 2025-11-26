@@ -44,7 +44,7 @@ export default function StockPage() {
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [dialogType, setDialogType] = useState<DialogType>(null);
   const [selectedStock, setSelectedStock] = useState<any>(null);
-  
+
   const [adjustForm, setAdjustForm] = useState({
     quantity: 0,
     notes: "",
@@ -56,16 +56,16 @@ export default function StockPage() {
     notes: "",
   });
 
-  const branches = useQuery(api.branches.list, { includeInactive: false });
+  const branches = useQuery(api.master_data.branches.list, { includeInactive: false });
   const stocks = useQuery(
-    api.productStock.getByBranch,
+    api.inventory.productStock.getByBranch,
     selectedBranch
       ? { branchId: selectedBranch, lowStockOnly }
       : "skip"
   );
 
-  const adjustStock = useMutation(api.productStock.adjustStock);
-  const transferStock = useMutation(api.productStock.transferStock);
+  const adjustStock = useMutation(api.inventory.productStock.adjustStock);
+  const transferStock = useMutation(api.inventory.productStock.transferStock);
 
   const filteredStocks = stocks?.filter((stock: any) =>
     stock.product?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

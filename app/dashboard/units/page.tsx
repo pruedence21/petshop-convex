@@ -48,10 +48,10 @@ export default function UnitsPage() {
     isBase: false,
   });
 
-  const units = useQuery(api.units.list, { includeInactive: false });
-  const createUnit = useMutation(api.units.create);
-  const updateUnit = useMutation(api.units.update);
-  const deleteUnit = useMutation(api.units.remove);
+  const units = useQuery(api.inventory.units.list, { includeInactive: false });
+  const createUnit = useMutation(api.inventory.units.create);
+  const updateUnit = useMutation(api.inventory.units.update);
+  const deleteUnit = useMutation(api.inventory.units.remove);
 
   const filteredUnits = units?.filter((unit) =>
     unit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

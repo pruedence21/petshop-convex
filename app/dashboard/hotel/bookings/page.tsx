@@ -32,14 +32,14 @@ export default function HotelBookingsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedBranch, setSelectedBranch] = useState<string>("all");
 
-  const bookings = useQuery(api.hotelBookings.list, {
+  const bookings = useQuery(api.hotel.hotelBookings.list, {
     status: selectedStatus !== "all" ? selectedStatus : undefined,
     branchId: selectedBranch !== "all" ? (selectedBranch as Id<"branches">) : undefined,
   });
-  const branches = useQuery(api.branches.list, { includeInactive: false });
-  const customers = useQuery(api.customers.list, { includeInactive: false });
-  const pets = useQuery(api.customerPets.list, {});
-  const rooms = useQuery(api.hotelRooms.list, {});
+  const branches = useQuery(api.master_data.branches.list, { includeInactive: false });
+  const customers = useQuery(api.master_data.customers.list, { includeInactive: false });
+  const pets = useQuery(api.master_data.customerPets.list, {});
+  const rooms = useQuery(api.hotel.hotelRooms.list, {});
 
   const filteredBookings = bookings?.filter(
     (booking) =>
@@ -61,10 +61,10 @@ export default function HotelBookingsPage() {
         {status === "Reserved"
           ? "Dipesan"
           : status === "CheckedIn"
-          ? "Check-in"
-          : status === "CheckedOut"
-          ? "Selesai"
-          : "Dibatalkan"}
+            ? "Check-in"
+            : status === "CheckedOut"
+              ? "Selesai"
+              : "Dibatalkan"}
       </Badge>
     );
   };

@@ -56,10 +56,10 @@ export default function BranchesPage() {
     email: "",
   });
 
-  const branches = useQuery(api.branches.list, { includeInactive: false });
-  const createBranch = useMutation(api.branches.create);
-  const updateBranch = useMutation(api.branches.update);
-  const deleteBranch = useMutation(api.branches.remove);
+  const branches = useQuery(api.master_data.branches.list, { includeInactive: false });
+  const createBranch = useMutation(api.master_data.branches.create);
+  const updateBranch = useMutation(api.master_data.branches.update);
+  const deleteBranch = useMutation(api.master_data.branches.remove);
 
   const filteredBranches = branches?.filter((branch) =>
     branch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
