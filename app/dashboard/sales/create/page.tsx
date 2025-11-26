@@ -443,35 +443,35 @@ export default function SalesPOSPage() {
 
         {/* Product Grid */}
         <ScrollArea className="flex-1 p-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 pb-20">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 pb-20">
             {filteredProducts.map(product => (
               <Card
                 key={product._id}
                 className="cursor-pointer hover:shadow-md transition-all active:scale-95 border-slate-200 overflow-hidden group flex flex-col"
                 onClick={() => handleProductClick(product)}
               >
-                <div className="aspect-square bg-slate-100 flex items-center justify-center relative">
+                <div className="h-36 bg-slate-100 flex items-center justify-center relative">
                   {/* Placeholder for image */}
-                  <Package className="h-12 w-12 text-slate-300" />
+                  <Package className="h-10 w-10 text-slate-300" />
                   {product.hasVariants && (
-                    <Badge className="absolute top-2 right-2 bg-blue-500 hover:bg-blue-600">
+                    <Badge className="absolute top-2 right-2 bg-blue-500 hover:bg-blue-600 text-[10px] px-1.5 h-5">
                       Varian
                     </Badge>
                   )}
                 </div>
-                <div className="p-3 flex flex-col flex-1">
-                  <h3 className="font-medium text-sm line-clamp-2 leading-tight mb-auto">
+                <div className="p-2.5 flex flex-col flex-1">
+                  <h3 className="font-medium text-sm line-clamp-2 leading-tight mb-auto min-h-[2.5em]">
                     {product.name}
                   </h3>
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="font-bold text-blue-600">
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="font-bold text-blue-600 text-sm">
                       {formatCurrency(product.sellingPrice)}
                     </span>
                     <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full bg-blue-50 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-3 w-3" />
                     </Button>
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-[10px] text-slate-400 mt-1 truncate">
                     SKU: {product.sku}
                   </p>
                 </div>
