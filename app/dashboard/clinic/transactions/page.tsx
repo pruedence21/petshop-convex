@@ -56,7 +56,7 @@ import {
   X
 } from "lucide-react";
 import { toast } from "sonner";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, parseErrorMessage } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -247,7 +247,7 @@ export default function ClinicTransactionPage() {
       setIsCustomerDialogOpen(false);
       toast.success("Sesi pemeriksaan dimulai");
     } catch (error: any) {
-      toast.error(error.message || "Gagal memulai sesi");
+      toast.error(parseErrorMessage(error));
     }
   };
 
@@ -337,7 +337,7 @@ export default function ClinicTransactionPage() {
       toast.success("Transaksi Selesai!");
       router.push("/dashboard/clinic/appointments");
     } catch (error: any) {
-      toast.error(error.message || "Gagal menyelesaikan transaksi");
+      toast.error(parseErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }

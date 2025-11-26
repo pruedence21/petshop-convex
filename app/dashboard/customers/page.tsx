@@ -68,6 +68,7 @@ export default function CustomersPage() {
 
   const customerForm = useFormSchema<CustomerFormData>({
     schema: customerFormSchema,
+    validateOnChange: true,
     onSubmit: async (values) => {
       try {
         const payload = {

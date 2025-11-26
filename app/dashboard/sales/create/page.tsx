@@ -36,7 +36,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { toast } from "sonner";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, parseErrorMessage } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 
 // Types
@@ -368,7 +368,7 @@ export default function SalesPOSPage() {
       }
 
     } catch (error: any) {
-      toast.error(error.message || "Gagal memproses transaksi");
+      toast.error(parseErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
