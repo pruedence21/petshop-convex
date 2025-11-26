@@ -13,6 +13,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "seed": "convex run seed:seedAll",
     "docker:dev": "docker-compose up",
     "docker:dev:build": "docker-compose up --build",
     "docker:dev:down": "docker-compose down",

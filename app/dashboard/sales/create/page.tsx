@@ -38,6 +38,7 @@ import {
 import { toast } from "sonner";
 import { formatCurrency, parseErrorMessage } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AddCustomerDialog } from "@/components/dialogs/AddCustomerDialog";
 
 // Types
 type CartItem = {
@@ -72,6 +73,7 @@ export default function SalesPOSPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedBranch, setSelectedBranch] = useState<Id<"branches"> | "">("");
+  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
 
   // Transaction State
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -492,7 +494,16 @@ export default function SalesPOSPage() {
               <Badge variant="outline" className="text-xs">Editing: {existingSale?.saleNumber}</Badge>
             )}
           </div>
-          <Select value={customerId as string} onValueChange={(v) => setCustomerId(v as Id<"customers">)}>
+          <Select
+            value={customerId as string}
+            onValueChange={(v) => {
+              if (v === "ADD_NEW") {
+                setIsAddCustomerOpen(true);
+                return;
+              }
+              setCustomerId(v as Id<"customers">);
+            }}
+          >
             <SelectTrigger className="bg-white">
               <SelectValue placeholder="Pilih Customer" />
             </SelectTrigger>
@@ -502,6 +513,9 @@ export default function SalesPOSPage() {
                   {c.name} {c.code === "UMUM" && "(Walk-in)"}
                 </SelectItem>
               ))}
+              <SelectItem value="ADD_NEW" className="font-medium text-blue-600 border-t mt-1 pt-1">
+                + Tambah Pelanggan Baru
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -715,6 +729,12 @@ export default function SalesPOSPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AddCustomerDialog
+        open={isAddCustomerOpen}
+        onOpenChange={setIsAddCustomerOpen}
+        onSuccess={(id) => setCustomerId(id as Id<"customers">)}
+      />
     </div>
   );
 }

@@ -38,6 +38,9 @@ import { formatCurrency } from "@/lib/utils";
 import { useFormSchema } from "@/components/forms/useFormSchema";
 import { FormField } from "@/components/forms/FormField";
 import { NumericInput } from "@/components/forms/NumericInput";
+import { AddCategoryDialog } from "@/components/dialogs/AddCategoryDialog";
+import { AddBrandDialog } from "@/components/dialogs/AddBrandDialog";
+import { AddUnitDialog } from "@/components/dialogs/AddUnitDialog";
 
 type Product = {
   _id: Id<"products">;
@@ -76,6 +79,10 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Id<"productCategories"> | "all">("all");
   const [selectedType, setSelectedType] = useState<string>("all");
+
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [isAddBrandOpen, setIsAddBrandOpen] = useState(false);
+  const [isAddUnitOpen, setIsAddUnitOpen] = useState(false);
   const productForm = useFormSchema({
     schema: {
       sku: { label: "SKU", required: true, parse: (v) => String(v).toUpperCase(), validate: (v) => (String(v).length < 3 ? "Minimal 3 karakter" : null), defaultValue: "" },
@@ -566,6 +573,10 @@ export default function ProductsPage() {
                   <Select
                     value={productForm.values.categoryId as any}
                     onValueChange={(value) => {
+                      if (value === "ADD_NEW") {
+                        setIsAddCategoryOpen(true);
+                        return;
+                      }
                       productForm.setField("categoryId", value);
                       productForm.setField("subcategoryId", "");
                     }}
@@ -579,6 +590,9 @@ export default function ProductsPage() {
                           {category.icon} {category.name}
                         </SelectItem>
                       ))}
+                      <SelectItem value="ADD_NEW" className="font-medium text-blue-600 border-t mt-1 pt-1">
+                        + Tambah Kategori Baru
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </FormField>
@@ -603,7 +617,13 @@ export default function ProductsPage() {
                 <FormField label="Merek" required error={productForm.errors.brandId || null}>
                   <Select
                     value={productForm.values.brandId as any}
-                    onValueChange={(value) => productForm.setField("brandId", value)}
+                    onValueChange={(value) => {
+                      if (value === "ADD_NEW") {
+                        setIsAddBrandOpen(true);
+                        return;
+                      }
+                      productForm.setField("brandId", value);
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih merek" />
@@ -614,6 +634,9 @@ export default function ProductsPage() {
                           {brand.name}
                         </SelectItem>
                       ))}
+                      <SelectItem value="ADD_NEW" className="font-medium text-blue-600 border-t mt-1 pt-1">
+                        + Tambah Merek Baru
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </FormField>
@@ -622,7 +645,13 @@ export default function ProductsPage() {
                 <FormField label="Satuan" required error={productForm.errors.unitId || null}>
                   <Select
                     value={productForm.values.unitId as any}
-                    onValueChange={(value) => productForm.setField("unitId", value)}
+                    onValueChange={(value) => {
+                      if (value === "ADD_NEW") {
+                        setIsAddUnitOpen(true);
+                        return;
+                      }
+                      productForm.setField("unitId", value);
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih satuan" />
@@ -633,6 +662,9 @@ export default function ProductsPage() {
                           {unit.code} - {unit.name}
                         </SelectItem>
                       ))}
+                      <SelectItem value="ADD_NEW" className="font-medium text-blue-600 border-t mt-1 pt-1">
+                        + Tambah Satuan Baru
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </FormField>
@@ -726,6 +758,25 @@ export default function ProductsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AddCategoryDialog
+        open={isAddCategoryOpen}
+        onOpenChange={setIsAddCategoryOpen}
+        onSuccess={(id) => {
+          productForm.setField("categoryId", id);
+          productForm.setField("subcategoryId", "");
+        }}
+      />
+      <AddBrandDialog
+        open={isAddBrandOpen}
+        onOpenChange={setIsAddBrandOpen}
+        onSuccess={(id) => productForm.setField("brandId", id)}
+      />
+      <AddUnitDialog
+        open={isAddUnitOpen}
+        onOpenChange={setIsAddUnitOpen}
+        onSuccess={(id) => productForm.setField("unitId", id)}
+      />
 
       {/* Dialog Kelola Varian */}
       <Dialog open={isVariantDialogOpen} onOpenChange={setIsVariantDialogOpen}>

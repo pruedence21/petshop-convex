@@ -32,7 +32,31 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Search, DoorOpen } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  LayoutGrid,
+  List as ListIcon,
+  Dog,
+  Cat,
+  Bird,
+  Fish,
+  Home,
+  Wrench,
+  CheckCircle2,
+  XCircle,
+  MoreVertical,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 type HotelRoom = {
@@ -70,6 +94,7 @@ export default function HotelRoomsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<HotelRoom | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [formData, setFormData] = useState({
     code: "",
     name: "",
@@ -97,6 +122,14 @@ export default function HotelRoomsPage() {
       room.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       room.roomType.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Summary Statistics
+  const stats = {
+    total: rooms?.length || 0,
+    available: rooms?.filter((r) => r.status === "Available").length || 0,
+    occupied: rooms?.filter((r) => r.status === "Occupied").length || 0,
+    maintenance: rooms?.filter((r) => r.status === "Maintenance").length || 0,
+  };
 
   const handleOpenDialog = (room?: HotelRoom) => {
     if (room) {
@@ -221,17 +254,38 @@ export default function HotelRoomsPage() {
       Reserved: "secondary",
       Maintenance: "secondary",
     };
+    
+    const labels: Record<string, string> = {
+      Available: "Tersedia",
+      Occupied: "Terisi",
+      Reserved: "Dipesan",
+      Maintenance: "Maintenance",
+    };
+
     return (
       <Badge variant={variants[status] || "default"}>
-        {status === "Available"
-          ? "Tersedia"
-          : status === "Occupied"
-          ? "Terisi"
-          : status === "Reserved"
-          ? "Dipesan"
-          : "Maintenance"}
+        {labels[status] || status}
       </Badge>
     );
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Available": return "bg-green-500";
+      case "Occupied": return "bg-red-500";
+      case "Reserved": return "bg-yellow-500";
+      case "Maintenance": return "bg-gray-500";
+      default: return "bg-gray-500";
+    }
+  };
+
+  const getAnimalIcon = (category: string) => {
+    const lower = category.toLowerCase();
+    if (lower.includes("anjing") || lower.includes("dog")) return <Dog className="h-4 w-4" />;
+    if (lower.includes("kucing") || lower.includes("cat")) return <Cat className="h-4 w-4" />;
+    if (lower.includes("burung") || lower.includes("bird")) return <Bird className="h-4 w-4" />;
+    if (lower.includes("ikan") || lower.includes("fish")) return <Fish className="h-4 w-4" />;
+    return <Home className="h-4 w-4" />;
   };
 
   const formatCurrency = (amount: number) => {
@@ -243,119 +297,249 @@ export default function HotelRoomsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Kandang Hotel</h1>
-          <p className="text-muted-foreground">
-            Kelola kandang/kamar untuk pet hotel
+          <h1 className="text-3xl font-bold tracking-tight">Kandang Hotel</h1>
+          <p className="text-muted-foreground mt-1">
+            Kelola inventaris kandang dan kamar untuk layanan pet hotel
           </p>
         </div>
-        <Button onClick={() => handleOpenDialog()}>
+        <Button onClick={() => handleOpenDialog()} size="lg" className="shadow-sm">
           <Plus className="mr-2 h-4 w-4" />
           Tambah Kandang
         </Button>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Cari kandang..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+      {/* Summary Stats */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card className="p-4 flex items-center justify-between bg-card shadow-sm border-l-4 border-l-blue-500">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Total Kandang</p>
+            <h2 className="text-2xl font-bold">{stats.total}</h2>
+          </div>
+          <Home className="h-8 w-8 text-blue-500 opacity-20" />
+        </Card>
+        <Card className="p-4 flex items-center justify-between bg-card shadow-sm border-l-4 border-l-green-500">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Tersedia</p>
+            <h2 className="text-2xl font-bold">{stats.available}</h2>
+          </div>
+          <CheckCircle2 className="h-8 w-8 text-green-500 opacity-20" />
+        </Card>
+        <Card className="p-4 flex items-center justify-between bg-card shadow-sm border-l-4 border-l-red-500">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Terisi</p>
+            <h2 className="text-2xl font-bold">{stats.occupied}</h2>
+          </div>
+          <Home className="h-8 w-8 text-red-500 opacity-20" />
+        </Card>
+        <Card className="p-4 flex items-center justify-between bg-card shadow-sm border-l-4 border-l-gray-500">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Maintenance</p>
+            <h2 className="text-2xl font-bold">{stats.maintenance}</h2>
+          </div>
+          <Wrench className="h-8 w-8 text-gray-500 opacity-20" />
+        </Card>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Kode</TableHead>
-              <TableHead>Nama</TableHead>
-              <TableHead>Tipe</TableHead>
-              <TableHead>Kategori</TableHead>
-              <TableHead>Ukuran</TableHead>
-              <TableHead>Kapasitas</TableHead>
-              <TableHead>Tarif/Hari</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {!filteredRooms && (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center">
-                  Loading...
-                </TableCell>
-              </TableRow>
-            )}
-            {filteredRooms && filteredRooms.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center">
-                  Tidak ada kandang
-                </TableCell>
-              </TableRow>
-            )}
-            {filteredRooms?.map((room) => (
-              <TableRow key={room._id}>
-                <TableCell className="font-medium">{room.code}</TableCell>
-                <TableCell>{room.name}</TableCell>
-                <TableCell>{room.roomType}</TableCell>
-                <TableCell>{room.animalCategory}</TableCell>
-                <TableCell>{room.size}</TableCell>
-                <TableCell>{room.capacity}</TableCell>
-                <TableCell>{formatCurrency(room.dailyRate)}</TableCell>
-                <TableCell>
-                  <Select
-                    value={room.status}
-                    onValueChange={(value) =>
-                      handleStatusChange(room._id, value)
-                    }
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUSES.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status === "Available"
-                            ? "Tersedia"
-                            : status === "Occupied"
-                            ? "Terisi"
-                            : status === "Reserved"
-                            ? "Dipesan"
-                            : "Maintenance"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleOpenDialog(room)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(room._id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      {/* Filters and View Toggle */}
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-muted/20 p-4 rounded-lg border">
+        <div className="relative w-full sm:w-96">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Cari kandang, kode, atau tipe..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-background"
+          />
+        </div>
+        
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "grid" | "list")} className="w-auto">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="grid"><LayoutGrid className="h-4 w-4 mr-2" /> Grid</TabsTrigger>
+            <TabsTrigger value="list"><ListIcon className="h-4 w-4 mr-2" /> List</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
+
+      {/* Content Area */}
+      {viewMode === "grid" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredRooms?.map((room) => (
+            <Card key={room._id} className="overflow-hidden transition-all hover:shadow-md group">
+              <div className={`h-2 w-full ${getStatusColor(room.status)}`} />
+              <CardHeader className="pb-2 flex flex-row items-start justify-between space-y-0">
+                <div>
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                    {room.code}
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">{room.name}</p>
+                </div>
+                <Badge variant="outline" className="flex items-center gap-1">
+                  {getAnimalIcon(room.animalCategory)}
+                  {room.animalCategory}
+                </Badge>
+              </CardHeader>
+              <CardContent className="pb-2">
+                <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                  <div className="text-muted-foreground">Tipe: <span className="font-medium text-foreground">{room.roomType}</span></div>
+                  <div className="text-muted-foreground">Ukuran: <span className="font-medium text-foreground">{room.size}</span></div>
+                  <div className="text-muted-foreground">Kap: <span className="font-medium text-foreground">{room.capacity} ekor</span></div>
+                  <div className="text-muted-foreground">Tarif: <span className="font-medium text-foreground">{formatCurrency(room.dailyRate)}</span></div>
+                </div>
+                
+                {room.amenities.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {room.amenities.slice(0, 3).map((a, i) => (
+                      <span key={i} className="text-[10px] bg-secondary px-1.5 py-0.5 rounded text-secondary-foreground">
+                        {a}
+                      </span>
+                    ))}
+                    {room.amenities.length > 3 && (
+                      <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded text-secondary-foreground">
+                        +{room.amenities.length - 3}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter className="pt-2 flex items-center justify-between border-t bg-muted/10">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${getStatusColor(room.status)}`} />
+                  <span className="text-sm font-medium">{
+                    room.status === "Available" ? "Tersedia" : 
+                    room.status === "Occupied" ? "Terisi" :
+                    room.status === "Reserved" ? "Dipesan" : "Maintenance"
+                  }</span>
+                </div>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleOpenDialog(room)}>
+                      <Pencil className="mr-2 h-4 w-4" /> Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDelete(room._id)} className="text-red-600">
+                      <Trash2 className="mr-2 h-4 w-4" /> Hapus
+                    </DropdownMenuItem>
+                    <div className="border-t my-1" />
+                    <DropdownMenuItem disabled className="text-xs text-muted-foreground">Ubah Status:</DropdownMenuItem>
+                    {STATUSES.map((s) => (
+                      <DropdownMenuItem 
+                        key={s} 
+                        onClick={() => handleStatusChange(room._id, s)}
+                        className={room.status === s ? "bg-accent" : ""}
+                      >
+                        {s}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </CardFooter>
+            </Card>
+          ))}
+          {!filteredRooms && <div className="col-span-full text-center p-8">Loading...</div>}
+          {filteredRooms && filteredRooms.length === 0 && (
+            <div className="col-span-full text-center p-12 border rounded-lg border-dashed">
+              <Home className="h-12 w-12 mx-auto text-muted-foreground opacity-20 mb-4" />
+              <h3 className="text-lg font-medium">Tidak ada kandang ditemukan</h3>
+              <p className="text-muted-foreground">Coba ubah kata kunci pencarian atau tambah kandang baru.</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-md border bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Kode</TableHead>
+                <TableHead>Nama</TableHead>
+                <TableHead>Tipe</TableHead>
+                <TableHead>Kategori</TableHead>
+                <TableHead>Ukuran</TableHead>
+                <TableHead>Kapasitas</TableHead>
+                <TableHead>Tarif/Hari</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredRooms?.map((room) => (
+                <TableRow key={room._id}>
+                  <TableCell className="font-medium">{room.code}</TableCell>
+                  <TableCell>{room.name}</TableCell>
+                  <TableCell>{room.roomType}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      {getAnimalIcon(room.animalCategory)}
+                      {room.animalCategory}
+                    </div>
+                  </TableCell>
+                  <TableCell>{room.size}</TableCell>
+                  <TableCell>{room.capacity}</TableCell>
+                  <TableCell>{formatCurrency(room.dailyRate)}</TableCell>
+                  <TableCell>
+                    <Select
+                      value={room.status}
+                      onValueChange={(value) =>
+                        handleStatusChange(room._id, value)
+                      }
+                    >
+                      <SelectTrigger className="w-32 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUSES.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status === "Available"
+                              ? "Tersedia"
+                              : status === "Occupied"
+                              ? "Terisi"
+                              : status === "Reserved"
+                              ? "Dipesan"
+                              : "Maintenance"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenDialog(room)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(room._id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredRooms && filteredRooms.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8">
+                    Tidak ada kandang
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

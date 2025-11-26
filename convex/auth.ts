@@ -60,34 +60,56 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         }
         // If profile exists and has a real userId, it's a returning user, do nothing.
       } else {
-        // 3. No pre-created profile. Check if this is the admin user (Bootstrap flow)
-        if (email === "admin@petshop.com") {
-          // Get Admin role
-          const adminRole = await ctx.db
-            .query("roles")
-            .withIndex("by_name", (q) => q.eq("name", "Admin"))
-            .first();
+        // 3. No pre-created profile. Check if this is the FIRST Admin user (Bootstrap flow)
 
-          if (adminRole) {
-            // Create user profile with Admin role
-            await ctx.db.insert("userProfiles", {
-              userId: userId,
-              email: email,
-              name: "Super Admin",
-              roleId: adminRole._id,
-              isActive: true,
-              createdBy: userId,
-            });
+        // Check if Admin role exists, if not create it (Self-bootstrapping)
+        let adminRole = await ctx.db
+          .query("roles")
+          .withIndex("by_name", (q) => q.eq("name", "Admin"))
+          .first();
 
-            // Create user-role junction
-            await ctx.db.insert("userRoles", {
-              userId: userId,
-              roleId: adminRole._id,
-              assignedAt: Date.now(),
-              isActive: true,
-              assignedBy: userId,
-            });
-          }
+        if (!adminRole) {
+          // Create Admin role with all permissions (inline list to avoid circular deps)
+          // We use a simplified list here, the full list is in adminSeed.ts
+          // But for bootstrap purposes, we just need the role to exist.
+          // Ideally, we should call a helper, but we are inside a callback.
+          // Let's just create the role record.
+          const adminRoleId = await ctx.db.insert("roles", {
+            name: "Admin",
+            description: "Administrator (Auto-created)",
+            permissions: ["*"], // Wildcard or full list will be managed by adminSeed later
+            isActive: true,
+            createdBy: userId,
+          });
+          adminRole = await ctx.db.get(adminRoleId);
+        }
+
+        // Check if ANY user has the Admin role
+        const existingAdmin = await ctx.db
+          .query("userRoles")
+          .withIndex("by_role_id", (q) => q.eq("roleId", adminRole!._id))
+          .first();
+
+        // If NO existing admin, this user becomes the Admin!
+        if (!existingAdmin) {
+          // Create user profile with Admin role
+          await ctx.db.insert("userProfiles", {
+            userId: userId,
+            email: email,
+            name: (args.profile.name as string) || "Super Admin",
+            roleId: adminRole!._id,
+            isActive: true,
+            createdBy: userId,
+          });
+
+          // Create user-role junction
+          await ctx.db.insert("userRoles", {
+            userId: userId,
+            roleId: adminRole!._id,
+            assignedAt: Date.now(),
+            isActive: true,
+            assignedBy: userId,
+          });
         } else {
           // 4. Regular new user signup (Self-registration)
           // Create a basic profile without role (or default role if you have one)

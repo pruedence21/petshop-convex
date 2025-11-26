@@ -249,7 +249,7 @@ export const bootstrapDemoAdmin = internalMutation({
     const profileId = await ctx.db.insert("userProfiles", {
       userId: args.userId,
       name: "Super Administrator",
-      email: "admin@petshop.com",
+      email: "admin@cingcing.id",
       phone: "+62812345678",
       roleId: adminRole._id,
       isActive: true,

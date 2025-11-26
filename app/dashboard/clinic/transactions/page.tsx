@@ -60,6 +60,8 @@ import { formatCurrency, formatDate, parseErrorMessage } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { AddCustomerDialog } from "@/components/dialogs/AddCustomerDialog";
+import { AddPetDialog } from "@/components/dialogs/AddPetDialog";
 
 // -- Types --
 type VitalSignProps = {
@@ -121,6 +123,8 @@ export default function ClinicTransactionPage() {
   const [selectedStaff, setSelectedStaff] = useState<Id<"clinicStaff"> | "">("");
   const [selectedBranch, setSelectedBranch] = useState<Id<"branches"> | "">("");
   const [initialComplaint, setInitialComplaint] = useState("");
+  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+  const [isAddPetOpen, setIsAddPetOpen] = useState(false);
 
   // Clinical Data Form
   const [clinicalForm, setClinicalForm] = useState({
@@ -396,7 +400,16 @@ export default function ClinicTransactionPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Pemilik Hewan</Label>
-                  <Select value={selectedCustomer as string} onValueChange={(v) => setSelectedCustomer(v as Id<"customers">)}>
+                  <Select
+                    value={selectedCustomer as string}
+                    onValueChange={(v) => {
+                      if (v === "ADD_NEW") {
+                        setIsAddCustomerOpen(true);
+                        return;
+                      }
+                      setSelectedCustomer(v as Id<"customers">);
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Cari Customer..." />
                     </SelectTrigger>
@@ -404,6 +417,9 @@ export default function ClinicTransactionPage() {
                       {customers?.map(c => (
                         <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>
                       ))}
+                      <SelectItem value="ADD_NEW" className="font-medium text-blue-600 border-t mt-1 pt-1">
+                        + Tambah Pelanggan Baru
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -412,7 +428,13 @@ export default function ClinicTransactionPage() {
                   <Label>Hewan Peliharaan</Label>
                   <Select
                     value={selectedPet as string}
-                    onValueChange={(v) => setSelectedPet(v as Id<"customerPets">)}
+                    onValueChange={(v) => {
+                      if (v === "ADD_NEW") {
+                        setIsAddPetOpen(true);
+                        return;
+                      }
+                      setSelectedPet(v as Id<"customerPets">);
+                    }}
                     disabled={!selectedCustomer}
                   >
                     <SelectTrigger>
@@ -422,6 +444,9 @@ export default function ClinicTransactionPage() {
                       {pets?.map(p => (
                         <SelectItem key={p._id} value={p._id}>{p.name} ({p.gender})</SelectItem>
                       ))}
+                      <SelectItem value="ADD_NEW" className="font-medium text-blue-600 border-t mt-1 pt-1">
+                        + Tambah Hewan Baru
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -447,6 +472,17 @@ export default function ClinicTransactionPage() {
             </Button>
           </CardContent>
         </Card>
+        <AddCustomerDialog
+          open={isAddCustomerOpen}
+          onOpenChange={setIsAddCustomerOpen}
+          onSuccess={(id) => setSelectedCustomer(id as Id<"customers">)}
+        />
+        <AddPetDialog
+          open={isAddPetOpen}
+          onOpenChange={setIsAddPetOpen}
+          onSuccess={(id) => setSelectedPet(id as Id<"customerPets">)}
+          defaultCustomerId={selectedCustomer as string}
+        />
       </div>
     );
   }

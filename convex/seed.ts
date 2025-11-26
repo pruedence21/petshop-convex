@@ -1,6 +1,6 @@
 import { mutation, action } from "./_generated/server";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 // ==================== MASTER DATA SEEDING ====================
 // Updated to include detailed products
@@ -426,12 +426,15 @@ export const seedAll = action({
         const results = {
             accounting: "Skipped",
             masterData: null as any,
+            bankAccounts: null as any,
+            expenseCategories: null as any,
+            clinic: null as any,
             generalCustomer: null as any,
             products: null as any,
             errors: [] as string[],
         };
 
-        // 1. Seed Chart of Accounts
+        // 1. Seed Chart of Accounts (Base Financial Structure)
         try {
             await ctx.runMutation(api.finance.accountingSeed.seedChartOfAccounts);
             results.accounting = "Success";
@@ -443,28 +446,42 @@ export const seedAll = action({
             }
         }
 
-        // 2. Seed Expense Categories
+        // 2. Seed Master Data (Branches, Units, Categories, Brands, Suppliers)
         try {
-            await ctx.runMutation(api.finance.expenseSeed.seedExpenseCategories);
-        } catch (e: any) {
-            results.errors.push(`Expense categories seed failed: ${e.message}`);
-        }
-
-        // 3. Seed Master Data
-        try {
-            results.masterData = await ctx.runMutation(api.seed.seedMasterData);
+            results.masterData = await ctx.runMutation(internal.master_data.masterDataSeed.seedMasterData);
         } catch (e: any) {
             results.errors.push(`Master data seed failed: ${e.message}`);
         }
 
-        // 4. Seed General Customer
+        // 3. Seed Bank Accounts (Requires CoA)
+        try {
+            results.bankAccounts = await ctx.runMutation(api.finance.bankSeed.seedBankAccounts);
+        } catch (e: any) {
+            results.errors.push(`Bank accounts seed failed: ${e.message}`);
+        }
+
+        // 4. Seed Expense Categories
+        try {
+            results.expenseCategories = await ctx.runMutation(api.finance.expenseSeed.seedExpenseCategories);
+        } catch (e: any) {
+            results.errors.push(`Expense categories seed failed: ${e.message}`);
+        }
+
+        // 5. Seed Clinic Data (Services, Staff - Requires Branch from Master Data)
+        try {
+            results.clinic = await ctx.runMutation(api.clinic.clinicSeed.seedClinicData);
+        } catch (e: any) {
+            results.errors.push(`Clinic seed failed: ${e.message}`);
+        }
+
+        // 6. Seed General Customer
         try {
             results.generalCustomer = await ctx.runMutation(api.seed.seedGeneralCustomer);
         } catch (e: any) {
             results.errors.push(`General customer seed failed: ${e.message}`);
         }
 
-        // 5. Seed Products & Services
+        // 7. Seed Products (Uses IDs from Master Data)
         try {
             results.products = await ctx.runMutation(api.seed.seedProducts);
         } catch (e: any) {
