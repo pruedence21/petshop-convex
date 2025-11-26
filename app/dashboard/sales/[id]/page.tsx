@@ -1,12 +1,14 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useParams, useRouter } from "next/navigation";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -19,386 +21,269 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Printer, Banknote, Smartphone, CreditCard } from "lucide-react";
-import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-import { use } from "react";
+import { Separator } from "@/components/ui/separator";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import {
+  ArrowLeft,
+  Printer,
+  Ban,
+  Edit,
+  CreditCard,
+  Download,
+} from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-export default function SaleDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function SaleDetailPage() {
+  const params = useParams();
   const router = useRouter();
-  const { id } = use(params);
-  const saleId = id as Id<"sales">;
-  
-  const sale = useQuery(api.sales.sales.get, { id: saleId });
+  const saleId = params.id as string;
+
+  // Helper to check if string looks like a valid ID (prevent "page", "create" etc)
+  const isValidId = saleId && saleId !== "page" && saleId !== "create" && saleId.length > 8;
+
+  const sale = useQuery(api.sales.sales.get, isValidId ? { id: saleId as Id<"sales"> } : "skip");
+  const cancelSale = useMutation(api.sales.sales.cancel);
+
+  if (!isValidId) {
+    return null; // Or redirect to list
+  }
 
   if (sale === undefined) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-slate-500">Loading...</div>
-        </div>
-      </div>
-    );
+    return <div className="p-8 text-center text-slate-500">Memuat data transaksi...</div>;
   }
 
   if (sale === null) {
     return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-slate-500">Penjualan tidak ditemukan</div>
-        </div>
+      <div className="p-8 text-center">
+        <h2 className="text-xl font-bold text-red-600">Transaksi tidak ditemukan</h2>
+        <Button variant="outline" onClick={() => router.back()} className="mt-4">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Kembali
+        </Button>
       </div>
     );
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Draft":
-        return <Badge variant="secondary">Draft</Badge>;
-      case "Completed":
-        return <Badge className="bg-green-500">Completed</Badge>;
-      case "Cancelled":
-        return <Badge variant="destructive">Cancelled</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
+  const handleCancel = async () => {
+    try {
+      await cancelSale({ saleId });
+      toast.success("Transaksi berhasil dibatalkan");
+    } catch (error: any) {
+      toast.error("Gagal membatalkan transaksi: " + error.message);
     }
-  };
-
-  const getPaymentMethodIcon = (method: string) => {
-    switch (method) {
-      case "CASH":
-        return <Banknote className="h-4 w-4" />;
-      case "QRIS":
-        return <Smartphone className="h-4 w-4" />;
-      case "CREDIT":
-        return <CreditCard className="h-4 w-4" />;
-      default:
-        return <CreditCard className="h-4 w-4" />;
-    }
-  };
-
-  const getPaymentMethodLabel = (method: string) => {
-    const labels: Record<string, string> = {
-      CASH: "Tunai",
-      QRIS: "QRIS",
-      CREDIT: "Kredit",
-      BANK_TRANSFER: "Transfer Bank",
-      DEBIT_CARD: "Kartu Debit",
-    };
-    return labels[method] || method;
-  };
-
-  const calculateProfit = () => {
-    if (!sale.items) return 0;
-    return sale.items.reduce((sum, item) => {
-      const revenue = item.subtotal;
-      const cost = item.cogs || 0;
-      return sum + (revenue - cost);
-    }, 0);
   };
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={() => router.push("/dashboard/sales")}
-          className="mb-4"
-        >
+    <div className="p-6 space-y-6 max-w-5xl mx-auto">
+      {/* Header Actions */}
+      <div className="flex items-center justify-between print:hidden">
+        <Button variant="ghost" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Kembali ke Daftar Penjualan
+          Kembali
         </Button>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">
-              {sale.saleNumber}
-            </h1>
-            <p className="text-slate-500 mt-1">
-              {formatDateTime(sale.saleDate)}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            {getStatusBadge(sale.status)}
-            <Button variant="outline" className="gap-2">
-              <Printer className="h-4 w-4" />
-              Cetak
+        <div className="flex gap-2">
+          {sale.status === "Draft" && (
+            <Button variant="outline" onClick={() => router.push(`/dashboard/sales/create?edit=${sale._id}`)}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
             </Button>
-          </div>
+          )}
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="h-4 w-4 mr-2" />
+            Cetak Invoice
+          </Button>
+          {sale.status !== "Cancelled" && sale.status !== "Completed" && (
+             <AlertDialog>
+             <AlertDialogTrigger asChild>
+               <Button variant="destructive">
+                 <Ban className="h-4 w-4 mr-2" />
+                 Batalkan
+               </Button>
+             </AlertDialogTrigger>
+             <AlertDialogContent>
+               <AlertDialogHeader>
+                 <AlertDialogTitle>Batalkan Transaksi?</AlertDialogTitle>
+                 <AlertDialogDescription>
+                   Tindakan ini tidak dapat dibatalkan. Transaksi akan ditandai sebagai batal.
+                 </AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter>
+                 <AlertDialogCancel>Batal</AlertDialogCancel>
+                 <AlertDialogAction onClick={handleCancel} className="bg-red-600 hover:bg-red-700">
+                   Ya, Batalkan
+                 </AlertDialogAction>
+               </AlertDialogFooter>
+             </AlertDialogContent>
+           </AlertDialog>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Customer & Branch Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informasi Transaksi</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm text-slate-500">Customer</label>
-                  <p className="font-medium">{sale.customer?.name || "-"}</p>
-                  {sale.customer?.phone && (
-                    <p className="text-sm text-slate-500">{sale.customer.phone}</p>
-                  )}
+      {/* Invoice Content */}
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden print:shadow-none print:border-none">
+        {/* Header Section */}
+        <div className="p-8 border-b border-slate-100">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Invoice</h1>
+              <p className="text-slate-500 mt-1">#{sale.saleNumber}</p>
+              <div className="mt-4 space-y-1 text-sm">
+                <div className="flex gap-2">
+                  <span className="text-slate-500 w-24">Tanggal:</span>
+                  <span className="font-medium">{formatDate(sale.saleDate)}</span>
                 </div>
-                <div>
-                  <label className="text-sm text-slate-500">Cabang</label>
-                  <p className="font-medium">{sale.branch?.name || "-"}</p>
-                  {sale.branch?.address && (
-                    <p className="text-sm text-slate-500">{sale.branch.address}</p>
-                  )}
+                <div className="flex gap-2">
+                  <span className="text-slate-500 w-24">Status:</span>
+                  <Badge variant={sale.status === "Completed" ? "default" : sale.status === "Cancelled" ? "destructive" : "secondary"}>
+                    {sale.status}
+                  </Badge>
                 </div>
-                {sale.notes && (
-                  <div className="col-span-2">
-                    <label className="text-sm text-slate-500">Catatan</label>
-                    <p className="font-medium">{sale.notes}</p>
-                  </div>
-                )}
+                <div className="flex gap-2">
+                  <span className="text-slate-500 w-24">Kasir:</span>
+                  <span>-</span> {/* TODO: Add user info */}
+                </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Items */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Daftar Item</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Produk</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead className="text-right">Harga</TableHead>
-                    <TableHead className="text-right">Diskon</TableHead>
-                    <TableHead className="text-right">Subtotal</TableHead>
-                    {sale.status === "Completed" && (
-                      <TableHead className="text-right">COGS</TableHead>
-                    )}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sale.items && sale.items.length > 0 ? (
-                    sale.items.map((item) => (
-                      <TableRow key={item._id}>
-                        <TableCell>
-                          <div className="font-medium">{item.product?.name || "-"}</div>
-                          {item.variant && (
-                            <div className="text-sm text-slate-500">
-                              {item.variant.variantName}: {item.variant.variantValue}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(item.unitPrice)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {item.discountAmount > 0 ? (
-                            <span className="text-orange-600">
-                              {item.discountType === "percent"
-                                ? `${item.discountAmount}%`
-                                : formatCurrency(item.discountAmount)}
-                            </span>
-                          ) : (
-                            "-"
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(item.subtotal)}
-                        </TableCell>
-                        {sale.status === "Completed" && (
-                          <TableCell className="text-right text-slate-500">
-                            {formatCurrency(item.cogs || 0)}
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={sale.status === "Completed" ? 6 : 5}
-                        className="text-center py-8 text-slate-500"
-                      >
-                        Tidak ada item
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          {/* Payments */}
-          {sale.payments && sale.payments.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Riwayat Pembayaran</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tanggal</TableHead>
-                      <TableHead>Metode</TableHead>
-                      <TableHead>Referensi</TableHead>
-                      <TableHead className="text-right">Jumlah</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sale.payments.map((payment) => (
-                      <TableRow key={payment._id}>
-                        <TableCell>
-                          {formatDateTime(payment.paymentDate)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getPaymentMethodIcon(payment.paymentMethod)}
-                            {getPaymentMethodLabel(payment.paymentMethod)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-slate-500">
-                          {payment.referenceNumber || "-"}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(payment.amount)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
+            </div>
+            <div className="text-right">
+              <div className="font-bold text-xl text-blue-600">PetShop</div>
+              <div className="text-sm text-slate-500 mt-1 max-w-[200px]">
+                {sale.branch?.address || "Alamat Cabang"}
+              </div>
+              <div className="text-sm text-slate-500">
+                {sale.branch?.phone}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Right Column - Summary */}
-        <div className="space-y-6">
-          {/* Financial Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Ringkasan</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Subtotal:</span>
-                  <span className="font-medium">
-                    {formatCurrency(sale.subtotal)}
-                  </span>
-                </div>
+        {/* Customer Section */}
+        <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex flex-col md:flex-row gap-8">
+          <div className="flex-1">
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Bill To</h3>
+            <div className="font-medium text-slate-900">{sale.customer?.name}</div>
+            <div className="text-sm text-slate-500 mt-1">{sale.customer?.address || "-"}</div>
+            <div className="text-sm text-slate-500 mt-1">{sale.customer?.phone || "-"}</div>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Payment Details</h3>
+             {/* Payment Summary */}
+             <div className="space-y-1 text-sm">
+               {sale.payments?.map((p: any, i: number) => (
+                 <div key={i} className="flex justify-between border-b border-slate-200/50 pb-1 mb-1 last:border-0">
+                    <span>{p.paymentMethod}</span>
+                    <span className="font-medium">{formatCurrency(p.amount)}</span>
+                 </div>
+               ))}
+               {(!sale.payments || sale.payments.length === 0) && (
+                 <div className="text-slate-400 italic">Belum ada pembayaran</div>
+               )}
+             </div>
+          </div>
+        </div>
 
-                {sale.discountAmount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">
-                      Diskon Transaksi
-                      {sale.discountType === "percent" && ` (${sale.discountAmount}%)`}:
-                    </span>
-                    <span className="text-orange-600 font-medium">
-                      -{formatCurrency(
-                        sale.discountType === "percent"
-                          ? sale.subtotal * sale.discountAmount / 100
-                          : sale.discountAmount
-                      )}
-                    </span>
-                  </div>
-                )}
-
-                {sale.taxAmount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">
-                      Pajak ({sale.taxRate}%):
-                    </span>
-                    <span className="font-medium">
-                      {formatCurrency(sale.taxAmount)}
-                    </span>
-                  </div>
-                )}
-
-                <div className="pt-3 border-t">
-                  <div className="flex justify-between">
-                    <span className="font-semibold">Total:</span>
-                    <span className="font-bold text-lg">
-                      {formatCurrency(sale.totalAmount)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Dibayar:</span>
-                  <span className="font-medium text-green-600">
-                    {formatCurrency(sale.paidAmount)}
-                  </span>
-                </div>
-
-                {sale.outstandingAmount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Sisa Tagihan:</span>
-                    <span className="font-medium text-orange-600">
-                      {formatCurrency(sale.outstandingAmount)}
-                    </span>
-                  </div>
-                )}
-
-                {sale.status === "Completed" && sale.items && (
-                  <>
-                    <div className="pt-3 border-t">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-500">Total COGS:</span>
-                        <span className="font-medium">
-                          {formatCurrency(
-                            sale.items.reduce((sum, item) => sum + (item.cogs || 0), 0)
-                          )}
-                        </span>
+        {/* Items Table */}
+        <div className="p-0">
+          <Table>
+            <TableHeader className="bg-slate-50">
+              <TableRow>
+                <TableHead className="pl-8">Produk</TableHead>
+                <TableHead className="text-right">Harga</TableHead>
+                <TableHead className="text-center">Qty</TableHead>
+                <TableHead className="text-right">Diskon</TableHead>
+                <TableHead className="text-right pr-8">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sale.items?.map((item: any) => (
+                <TableRow key={item._id}>
+                  <TableCell className="pl-8">
+                    <div className="font-medium">{item.product?.name}</div>
+                    {item.variant && (
+                      <div className="text-xs text-slate-500">
+                        {item.variant.variantName}: {item.variant.variantValue}
                       </div>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-semibold text-blue-600">Profit:</span>
-                      <span className="font-bold text-blue-600">
-                        {formatCurrency(calculateProfit())}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Status Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Status Pembayaran</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {sale.outstandingAmount > 0 ? (
-                <div className="text-center py-4">
-                  <div className="text-orange-600 font-semibold text-lg mb-2">
-                    Belum Lunas
-                  </div>
-                  <div className="text-sm text-slate-500">
-                    Sisa tagihan: {formatCurrency(sale.outstandingAmount)}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <div className="text-green-600 font-semibold text-lg mb-2">
-                    Lunas
-                  </div>
-                  <div className="text-sm text-slate-500">
-                    Semua pembayaran telah diterima
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(item.unitPrice)}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {item.quantity}
+                  </TableCell>
+                  <TableCell className="text-right text-red-500">
+                    {item.discountAmount > 0 && (
+                      <>
+                        -{formatCurrency(item.discountType === "percent" 
+                          ? (item.unitPrice * item.quantity * (item.discountAmount/100)) 
+                          : item.discountAmount)}
+                      </>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right pr-8 font-medium">
+                    {formatCurrency(item.subtotal)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
+
+        {/* Totals */}
+        <div className="p-8 border-t border-slate-100">
+          <div className="flex flex-col items-end space-y-2">
+            <div className="flex justify-between w-full md:w-1/3 text-sm">
+              <span className="text-slate-500">Subtotal</span>
+              <span>{formatCurrency(sale.subtotal)}</span>
+            </div>
+            {sale.discountAmount > 0 && (
+              <div className="flex justify-between w-full md:w-1/3 text-sm text-red-500">
+                <span>Diskon {sale.discountType === "percent" ? `(${sale.discountAmount}%)` : ""}</span>
+                <span>-{formatCurrency(sale.discountType === "percent" ? (sale.subtotal * sale.discountAmount / 100) : sale.discountAmount)}</span>
+              </div>
+            )}
+             {sale.taxAmount > 0 && (
+              <div className="flex justify-between w-full md:w-1/3 text-sm">
+                <span className="text-slate-500">Pajak ({sale.taxRate}%)</span>
+                <span>{formatCurrency(sale.taxAmount)}</span>
+              </div>
+            )}
+            <Separator className="w-full md:w-1/3 my-2" />
+            <div className="flex justify-between w-full md:w-1/3 text-lg font-bold">
+              <span>Total</span>
+              <span className="text-blue-600">{formatCurrency(sale.totalAmount)}</span>
+            </div>
+            <div className="flex justify-between w-full md:w-1/3 text-sm pt-2">
+              <span className="text-slate-500">Dibayar</span>
+              <span>{formatCurrency(sale.paidAmount)}</span>
+            </div>
+             <div className="flex justify-between w-full md:w-1/3 text-sm font-medium">
+              <span>{sale.outstandingAmount > 0 ? "Sisa Tagihan" : "Kembalian"}</span>
+              <span className={sale.outstandingAmount > 0 ? "text-red-600" : "text-green-600"}>
+                {formatCurrency(sale.outstandingAmount > 0 ? sale.outstandingAmount : (sale.paidAmount - sale.totalAmount))}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Notes */}
+        {sale.notes && (
+          <div className="p-8 bg-slate-50 border-t border-slate-100">
+             <h4 className="text-sm font-medium text-slate-900 mb-1">Catatan</h4>
+             <p className="text-sm text-slate-500">{sale.notes}</p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-

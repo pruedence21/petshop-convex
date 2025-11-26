@@ -300,6 +300,38 @@ export const removeItem = mutation({
   },
 });
 
+// Remove all items from sale (for resetting/overwriting)
+export const clearItems = mutation({
+  args: {
+    saleId: v.id("sales"),
+  },
+  handler: async (ctx, args) => {
+    const sale = await ctx.db.get(args.saleId);
+    if (!sale) throw new Error("Sale not found");
+    if (sale.status !== "Draft") throw new Error("Can only clear items from draft sale");
+
+    const items = await ctx.db
+      .query("saleItems")
+      .withIndex("by_sale", (q) => q.eq("saleId", args.saleId))
+      .collect();
+
+    for (const item of items) {
+      await ctx.db.delete(item._id);
+    }
+
+    await ctx.db.patch(args.saleId, {
+      subtotal: 0,
+      discountAmount: 0,
+      taxAmount: 0,
+      totalAmount: 0,
+      outstandingAmount: 0 - sale.paidAmount, // Should be 0 if paid is 0
+      updatedBy: undefined,
+    });
+
+    return args.saleId;
+  },
+});
+
 // Update transaction-level discount and tax
 export const updateDiscountAndTax = mutation({
   args: {
@@ -336,6 +368,32 @@ export const updateDiscountAndTax = mutation({
       taxAmount,
       totalAmount,
       outstandingAmount: totalAmount - sale.paidAmount,
+      updatedBy: undefined,
+    });
+
+    return args.saleId;
+  },
+});
+
+// Update sale header (customer, branch, notes, date)
+export const updateHeader = mutation({
+  args: {
+    saleId: v.id("sales"),
+    branchId: v.optional(v.id("branches")),
+    customerId: v.optional(v.id("customers")),
+    saleDate: v.optional(v.number()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const sale = await ctx.db.get(args.saleId);
+    if (!sale) throw new Error("Sale not found");
+    if (sale.status !== "Draft") throw new Error("Can only update draft sale");
+
+    await ctx.db.patch(args.saleId, {
+      branchId: args.branchId ?? sale.branchId,
+      customerId: args.customerId ?? sale.customerId,
+      saleDate: args.saleDate ?? sale.saleDate,
+      notes: args.notes ?? sale.notes,
       updatedBy: undefined,
     });
 

@@ -64,7 +64,14 @@ interface NavigationItem {
 
 const navigation: NavigationItem[] = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Penjualan", href: "/dashboard/sales", icon: Receipt },
+    {
+        name: "Penjualan",
+        icon: Receipt,
+        children: [
+            { name: "Daftar Penjualan", href: "/dashboard/sales", icon: Receipt },
+            { name: "Transaksi Baru", href: "/dashboard/sales/create", icon: Zap }, // Using Zap icon for quick transaction/POS
+        ],
+    },
     { name: "Produk", href: "/dashboard/products", icon: Package },
     { name: "Pembelian", href: "/dashboard/purchase-orders", icon: ShoppingCart },
     { name: "Stok", href: "/dashboard/stock", icon: PackageSearch },
