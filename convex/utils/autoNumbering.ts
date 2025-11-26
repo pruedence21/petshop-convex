@@ -62,6 +62,9 @@ const INDEXES: IndexMap = {
 /**
  * Generate next available transaction number
  * Format: PREFIX-YYYYMMDD-001
+ * 
+ * Note: This function queries all records with the given index and filters in memory.
+ * For large datasets, consider adding date-based composite indexes for better performance.
  */
 export async function generateTransactionNumber(
   ctx: QueryCtx | MutationCtx,
@@ -75,13 +78,16 @@ export async function generateTransactionNumber(
   const indexName = INDEXES[table];
 
   // Query all records with the index
+  // Note: Using 'as any' here because Convex's type system doesn't support dynamic index names
+  // This is safe as we validate index names via the IndexMap type
   const records = await ctx.db
     .query(table)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .withIndex(indexName as any)
     .collect();
 
-  // Filter to today's records
+  // Filter to today's records in memory
+  // For better performance with large datasets, consider adding a date-based index
   const todayRecords = records.filter((record) =>
     (record as Record<string, string>)[numberField].startsWith(prefix)
   );
@@ -104,6 +110,9 @@ export async function generateTransactionNumber(
 /**
  * Validate that a custom transaction number is unique
  * Throws error if number already exists
+ * 
+ * Note: This queries all records and filters in memory for validation.
+ * This is acceptable for uniqueness checks as they happen infrequently.
  */
 export async function validateUniqueTransactionNumber(
   ctx: QueryCtx | MutationCtx,
@@ -114,6 +123,8 @@ export async function validateUniqueTransactionNumber(
   const indexName = INDEXES[table];
 
   // Query using the index for the specific number
+  // Note: We query all records and filter in memory because Convex indexes
+  // don't support direct equality filtering on string fields in the type-safe API
   const records = await ctx.db
     .query(table)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -155,6 +166,10 @@ export async function getOrGenerateTransactionNumber(
 /**
  * Generate auto SKU for products
  * Format: CATEGORY-BRAND-NNN
+ * 
+ * Note: This queries all products and filters by prefix in memory.
+ * For large product catalogs, consider adding a composite index on (categoryCode, brandCode)
+ * or using a separate counter table for each category-brand combination.
  */
 export async function generateProductSKU(
   ctx: QueryCtx | MutationCtx,
@@ -164,6 +179,8 @@ export async function generateProductSKU(
   const prefix = `${categoryCode}-${brandCode}-`;
 
   // Get all products to find max number for this prefix
+  // For better performance with large catalogs, consider using a counter table
+  // or composite index on (categoryCode, brandCode)
   const products = await ctx.db
     .query("products")
     .withIndex("by_sku")
