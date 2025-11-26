@@ -74,6 +74,7 @@ export default function PetsPage() {
 
   const petForm = useFormSchema<PetFormData>({
     schema: petFormSchema,
+    validateOnChange: true,
     onSubmit: async (values) => {
       if (!values.customerId || !values.categoryId) {
         toast.error("Mohon lengkapi pemilik dan kategori hewan");

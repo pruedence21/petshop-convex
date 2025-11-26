@@ -76,6 +76,7 @@ export default function SuppliersPage() {
 
   const supplierForm = useFormSchema<SupplierFormData>({
     schema: supplierFormSchema,
+    validateOnChange: true,
     onSubmit: async (values) => {
       try {
         if (editingSupplier) {
@@ -175,8 +176,8 @@ export default function SuppliersPage() {
           <Star
             key={star}
             className={`h-4 w-4 ${star <= rating
-                ? "fill-yellow-400 text-yellow-400"
-                : "fill-slate-200 text-slate-200"
+              ? "fill-yellow-400 text-yellow-400"
+              : "fill-slate-200 text-slate-200"
               }`}
           />
         ))}
@@ -458,8 +459,8 @@ export default function SuppliersPage() {
                       >
                         <Star
                           className={`h-6 w-6 cursor-pointer transition-colors ${star <= supplierForm.values.rating
-                              ? "fill-yellow-400 text-yellow-400"
-                              : "fill-slate-200 text-slate-200 hover:fill-yellow-200 hover:text-yellow-200"
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "fill-slate-200 text-slate-200 hover:fill-yellow-200 hover:text-yellow-200"
                             }`}
                         />
                       </button>

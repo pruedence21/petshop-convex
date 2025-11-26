@@ -93,6 +93,7 @@ export default function ProductsPage() {
       type: { label: "Tipe Produk", required: true, defaultValue: "product" },
       serviceDuration: { label: "Durasi (Menit)", parse: (v) => (v ? Number(v) : 0), defaultValue: 0 },
     },
+    validateOnChange: true,
     onSubmit: async (values) => {
       try {
         if (editingProduct) {
@@ -155,6 +156,7 @@ export default function ProductsPage() {
       purchasePrice: { label: "Harga Beli", required: true, parse: (v) => Number(v), validate: (v) => (v <= 0 ? "Harus > 0" : null), defaultValue: 0 },
       sellingPrice: { label: "Harga Jual", required: true, parse: (v) => Number(v), validate: (v) => (v <= 0 ? "Harus > 0" : null), defaultValue: 0 },
     },
+    validateOnChange: true,
     onSubmit: async (values) => {
       if (!selectedProductForVariants) return;
       try {
