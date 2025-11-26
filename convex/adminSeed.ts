@@ -296,10 +296,6 @@ export const fixAdminProfile = internalMutation({
       .withIndex("by_user_id", (q) => q.eq("userId", user._id))
       .first();
 
-    if (existingProfile) {
-      return `Profile already exists for ${args.email} (ID: ${existingProfile._id})`;
-    }
-
     // Get Admin role
     const adminRole = await ctx.db
       .query("roles")
@@ -310,26 +306,45 @@ export const fixAdminProfile = internalMutation({
       throw new Error("Admin role not found. Run setupAdminRole first.");
     }
 
-    // Create profile
-    const profileId = await ctx.db.insert("userProfiles", {
-      userId: user._id,
-      name: user.name || "Admin",
-      email: user.email || args.email,
-      roleId: adminRole._id,
-      isActive: true,
-      createdBy: "fix-script",
-      updatedBy: "fix-script",
-    });
+    if (existingProfile) {
+      // Update existing profile if it doesn't have a role
+      if (!existingProfile.roleId) {
+        await ctx.db.patch(existingProfile._id, {
+          roleId: adminRole._id,
+          updatedBy: "fix-script",
+        });
+      }
+    } else {
+      // Create profile
+      await ctx.db.insert("userProfiles", {
+        userId: user._id,
+        name: user.name || "Admin",
+        email: user.email || args.email,
+        roleId: adminRole._id,
+        isActive: true,
+        createdBy: "fix-script",
+        updatedBy: "fix-script",
+      });
+    }
 
-    // Assign role
-    await ctx.db.insert("userRoles", {
-      userId: user._id,
-      roleId: adminRole._id,
-      assignedBy: "fix-script",
-      assignedAt: Date.now(),
-      isActive: true,
-    });
+    // Check and create user-role junction
+    const existingUserRole = await ctx.db
+      .query("userRoles")
+      .withIndex("by_user_and_role", (q) =>
+        q.eq("userId", user._id).eq("roleId", adminRole._id)
+      )
+      .first();
 
-    return `Successfully created admin profile for ${args.email}`;
+    if (!existingUserRole) {
+      await ctx.db.insert("userRoles", {
+        userId: user._id,
+        roleId: adminRole._id,
+        assignedBy: "fix-script",
+        assignedAt: Date.now(),
+        isActive: true,
+      });
+    }
+
+    return `Successfully fixed/created admin profile and role for ${args.email}`;
   },
 });
