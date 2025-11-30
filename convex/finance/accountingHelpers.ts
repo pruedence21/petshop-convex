@@ -646,4 +646,301 @@ export async function createPaymentReceivedJournalEntry(
   return journalEntryId;
 }
 
+/**
+ * Create journal entry for Hotel Booking (Check-out) - INVOICE / REVENUE RECOGNITION
+ * 
+ * Entry:
+ * DR Accounts Receivable (Total Amount)
+ *   CR Hotel Revenue     (room total)
+ *   CR Service Revenue   (services total)
+ *   CR Product Sales     (consumables total)
+ *   CR Tax Payable       (tax amount)
+ *   CR/DR Discount       (if any)
+ * DR COGS                (consumables cost)
+ *   CR Inventory         (consumables cost)
+ * 
+ * Note: Payments are recorded separately via createPaymentReceivedJournalEntry
+ */
+export async function createHotelJournalEntry(
+  ctx: any,
+  args: {
+    bookingId: string;
+    bookingNumber: string;
+    checkOutDate: number;
+    branchId: Id<"branches">;
+    totalAmount: number;
+    paidAmount: number; // Unused for JE, but kept for interface
+    outstandingAmount: number; // Unused for JE
+    roomTotal: number;
+    servicesTotal: number;
+    consumablesTotal: number;
+    consumablesCost: number; // COGS for consumables
+    discountAmount: number;
+    taxAmount: number;
+  }
+) {
+  const journalNumber = await generateJournalNumber(ctx);
 
+  const lines: Array<{
+    accountId: Id<"accounts">;
+    branchId: Id<"branches">;
+    description: string;
+    debitAmount: number;
+    creditAmount: number;
+  }> = [];
+
+  // 1. Debit Accounts Receivable (Full Amount)
+  // We treat the checkout as generating an Invoice for the full amount.
+  // Payments (Deposits + Final) will Credit AR.
+  const arAccount = await getAccountByCode(ctx, "1-120"); // Piutang Usaha
+  lines.push({
+    accountId: arAccount,
+    branchId: args.branchId,
+    description: `Tagihan hotel ${args.bookingNumber}`,
+    debitAmount: args.totalAmount,
+    creditAmount: 0,
+  });
+
+  // 2. Record Revenue
+  // Room Revenue
+  if (args.roomTotal > 0) {
+    const roomRevenueAccount = await getAccountByCode(ctx, "4-140"); // Pendapatan Hotel Hewan
+    lines.push({
+      accountId: roomRevenueAccount,
+      branchId: args.branchId,
+      description: `Pendapatan kamar ${args.bookingNumber}`,
+      debitAmount: 0,
+      creditAmount: args.roomTotal,
+    });
+  }
+
+  // Service Revenue
+  if (args.servicesTotal > 0) {
+    const serviceRevenueAccount = await getAccountByCode(ctx, "4-140"); // Use Hotel Revenue for simplicity
+    lines.push({
+      accountId: serviceRevenueAccount,
+      branchId: args.branchId,
+      description: `Pendapatan jasa hotel ${args.bookingNumber}`,
+      debitAmount: 0,
+      creditAmount: args.servicesTotal,
+    });
+  }
+
+  // Consumables Revenue (Sales)
+  if (args.consumablesTotal > 0) {
+    const productRevenueAccount = await getAccountByCode(ctx, "4-111"); // Penjualan Makanan Hewan (Default)
+    lines.push({
+      accountId: productRevenueAccount,
+      branchId: args.branchId,
+      description: `Pendapatan consumables ${args.bookingNumber}`,
+      debitAmount: 0,
+      creditAmount: args.consumablesTotal,
+    });
+  }
+
+  // 3. Record COGS for Consumables
+  if (args.consumablesCost > 0) {
+    const cogsAccount = await getAccountByCode(ctx, "5-101"); // HPP Makanan
+    const inventoryAccount = await getAccountByCode(ctx, "1-131"); // Persediaan Makanan
+
+    lines.push({
+      accountId: cogsAccount,
+      branchId: args.branchId,
+      description: `HPP Consumables ${args.bookingNumber}`,
+      debitAmount: args.consumablesCost,
+      creditAmount: 0,
+    });
+
+    lines.push({
+      accountId: inventoryAccount,
+      branchId: args.branchId,
+      description: `Pengurangan persediaan ${args.bookingNumber}`,
+      debitAmount: 0,
+      creditAmount: args.consumablesCost,
+    });
+  }
+
+  // 4. Record Tax
+  if (args.taxAmount > 0) {
+    const taxAccount = await getAccountByCode(ctx, "2-111"); // PPN Keluaran
+    lines.push({
+      accountId: taxAccount,
+      branchId: args.branchId,
+      description: `PPN ${args.bookingNumber}`,
+      debitAmount: 0,
+      creditAmount: args.taxAmount,
+    });
+  }
+
+  // 5. Handle Discount (Debit)
+  if (args.discountAmount > 0) {
+    const discountAccount = await getAccountByCode(ctx, "5-212"); // Beban Lain-lain (as Sales Discount)
+    lines.push({
+      accountId: discountAccount,
+      branchId: args.branchId,
+      description: `Diskon ${args.bookingNumber}`,
+      debitAmount: args.discountAmount,
+      creditAmount: 0,
+    });
+  }
+
+  // Create journal entry
+  const journalEntryId = await ctx.db.insert("journalEntries", {
+    journalNumber,
+    journalDate: args.checkOutDate,
+    description: `Hotel Checkout Invoice ${args.bookingNumber}`,
+    sourceType: "HOTEL",
+    sourceId: args.bookingId,
+    status: "Posted",
+    totalDebit: lines.reduce((sum, l) => sum + l.debitAmount, 0),
+    totalCredit: lines.reduce((sum, l) => sum + l.creditAmount, 0),
+    postedBy: undefined,
+    postedAt: Date.now(),
+    createdBy: undefined,
+  });
+
+  let sortOrder = 1;
+  for (const line of lines) {
+    await ctx.db.insert("journalEntryLines", {
+      journalEntryId,
+      accountId: line.accountId,
+      branchId: line.branchId,
+      description: line.description,
+      debitAmount: line.debitAmount,
+      creditAmount: line.creditAmount,
+      sortOrder: sortOrder++,
+    });
+  }
+
+  return journalEntryId;
+}
+
+/**
+ * Create journal entry for Stock Adjustment
+ * 
+ * Entry (IN):
+ * DR Inventory
+ *   CR COGS (Recovery) or Other Income
+ * 
+ * Entry (OUT):
+ * DR COGS (Shrinkage) or Expense
+ *   CR Inventory
+ */
+export async function createStockAdjustmentJournalEntry(
+  ctx: any,
+  args: {
+    adjustmentId: string;
+    branchId: Id<"branches">;
+    adjustmentDate: number;
+    description: string;
+    items: Array<{
+      productName: string;
+      category: string;
+      quantity: number; // Positive (IN) or Negative (OUT)
+      cost: number; // Total cost (abs(qty) * avgCost)
+    }>;
+  }
+) {
+  const journalNumber = await generateJournalNumber(ctx);
+
+  const getInventoryAccount = (category: string): string => {
+    if (category.includes("Pet Food") || category.includes("Food")) return "1-131";
+    if (category.includes("Medicine") || category.includes("Vitamin")) return "1-133";
+    if (category.includes("Vaccine")) return "1-134";
+    if (category.includes("Accessories")) return "1-132";
+    if (category.includes("Grooming")) return "1-135";
+    return "1-131";
+  };
+
+  const getCogsAccount = (category: string): string => {
+    if (category.includes("Pet Food") || category.includes("Food")) return "5-101";
+    if (category.includes("Medicine") || category.includes("Vitamin")) return "5-103";
+    if (category.includes("Vaccine")) return "5-104";
+    if (category.includes("Accessories")) return "5-102";
+    return "5-101";
+  };
+
+  const lines: Array<{
+    accountId: Id<"accounts">;
+    branchId: Id<"branches">;
+    description: string;
+    debitAmount: number;
+    creditAmount: number;
+  }> = [];
+
+  for (const item of args.items) {
+    const inventoryCode = getInventoryAccount(item.category);
+    const cogsCode = getCogsAccount(item.category);
+
+    const inventoryAccount = await getAccountByCode(ctx, inventoryCode);
+    const cogsAccount = await getAccountByCode(ctx, cogsCode);
+
+    if (item.quantity > 0) {
+      // ADJUSTMENT IN (Found stock)
+      // DR Inventory
+      lines.push({
+        accountId: inventoryAccount,
+        branchId: args.branchId,
+        description: `Penyesuaian stok masuk: ${item.productName}`,
+        debitAmount: item.cost,
+        creditAmount: 0,
+      });
+      // CR COGS (Reduce cost)
+      lines.push({
+        accountId: cogsAccount,
+        branchId: args.branchId,
+        description: `Koreksi stok masuk: ${item.productName}`,
+        debitAmount: 0,
+        creditAmount: item.cost,
+      });
+    } else {
+      // ADJUSTMENT OUT (Lost/Damaged)
+      // DR COGS (Increase cost/loss)
+      lines.push({
+        accountId: cogsAccount,
+        branchId: args.branchId,
+        description: `Penyesuaian stok keluar: ${item.productName}`,
+        debitAmount: item.cost,
+        creditAmount: 0,
+      });
+      // CR Inventory
+      lines.push({
+        accountId: inventoryAccount,
+        branchId: args.branchId,
+        description: `Koreksi stok keluar: ${item.productName}`,
+        debitAmount: 0,
+        creditAmount: item.cost,
+      });
+    }
+  }
+
+  // Create journal entry
+  const journalEntryId = await ctx.db.insert("journalEntries", {
+    journalNumber,
+    journalDate: args.adjustmentDate,
+    description: args.description,
+    sourceType: "ADJUSTMENT",
+    sourceId: args.adjustmentId,
+    status: "Posted",
+    totalDebit: lines.reduce((sum, l) => sum + l.debitAmount, 0),
+    totalCredit: lines.reduce((sum, l) => sum + l.creditAmount, 0),
+    postedBy: undefined,
+    postedAt: Date.now(),
+    createdBy: undefined,
+  });
+
+  let sortOrder = 1;
+  for (const line of lines) {
+    await ctx.db.insert("journalEntryLines", {
+      journalEntryId,
+      accountId: line.accountId,
+      branchId: line.branchId,
+      description: line.description,
+      debitAmount: line.debitAmount,
+      creditAmount: line.creditAmount,
+      sortOrder: sortOrder++,
+    });
+  }
+
+  return journalEntryId;
+}

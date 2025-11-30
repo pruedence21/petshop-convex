@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import { calculateLine, LineItemInput } from "../../lib/finance";
+import { createHotelJournalEntry, createPaymentReceivedJournalEntry } from "../finance/accountingHelpers";
 
 // Generate Booking Number (HTL-YYYYMMDD-001)
 async function generateBookingNumber(ctx: any): Promise<string> {
@@ -404,7 +405,7 @@ export const checkOut = mutation({
     const paymentDate = Date.now();
 
     for (const payment of args.payments) {
-      await ctx.db.insert("hotelPayments", {
+      const paymentId = await ctx.db.insert("hotelPayments", {
         bookingId: args.id,
         paymentType: "FullPayment",
         amount: payment.amount,
@@ -413,6 +414,17 @@ export const checkOut = mutation({
         paymentDate,
         notes: payment.notes,
         createdBy: undefined, // TODO: auth integration
+      });
+
+      // Create Journal Entry for Payment
+      await createPaymentReceivedJournalEntry(ctx, {
+        paymentId,
+        paymentDate,
+        amount: payment.amount,
+        paymentMethod: payment.paymentMethod,
+        referenceNumber: payment.referenceNumber,
+        customerId: updatedBooking.customerId,
+        branchId: updatedBooking.branchId,
       });
 
       totalPaymentAmount += payment.amount;
@@ -432,6 +444,48 @@ export const checkOut = mutation({
     // Update room status back to Available
     await ctx.db.patch(booking.roomId, {
       status: "Available",
+    });
+
+    // Calculate COGS for consumables
+    const consumables = await ctx.db
+      .query("hotelConsumables")
+      .withIndex("by_booking", (q) => q.eq("bookingId", args.id))
+      .collect();
+
+    let consumablesCost = 0;
+    for (const consumable of consumables.filter((c) => !c.deletedAt)) {
+      // Find stock to get average cost
+      const stocks = await ctx.db
+        .query("productStock")
+        .withIndex("by_branch_product", (q) =>
+          q.eq("branchId", booking.branchId).eq("productId", consumable.productId)
+        )
+        .collect();
+
+      const stock = stocks.find((s) =>
+        consumable.variantId ? s.variantId === consumable.variantId : !s.variantId
+      );
+
+      if (stock) {
+        consumablesCost += consumable.quantity * stock.averageCost;
+      }
+    }
+
+    // Create Journal Entry
+    await createHotelJournalEntry(ctx, {
+      bookingId: updatedBooking._id,
+      bookingNumber: updatedBooking.bookingNumber,
+      checkOutDate: actualCheckOutDate,
+      branchId: updatedBooking.branchId,
+      totalAmount: updatedBooking.totalAmount,
+      paidAmount: updatedBooking.paidAmount,
+      outstandingAmount: updatedBooking.outstandingAmount,
+      roomTotal: updatedBooking.roomTotal,
+      servicesTotal: updatedBooking.servicesTotal,
+      consumablesTotal: updatedBooking.consumablesTotal,
+      consumablesCost,
+      discountAmount: updatedBooking.discountAmount,
+      taxAmount: updatedBooking.taxAmount,
     });
 
     return null;

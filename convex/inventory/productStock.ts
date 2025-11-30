@@ -2,6 +2,7 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
 import { buildError } from "../../lib/errors";
+import { createStockAdjustmentJournalEntry } from "../finance/accountingHelpers";
 
 // Get stock by branch
 export const getByBranch = query({
@@ -194,7 +195,7 @@ export const adjustStock = mutation({
       });
 
       // Log movement
-      await ctx.db.insert("stockMovements", {
+      const movementId = await ctx.db.insert("stockMovements", {
         branchId: args.branchId,
         productId: args.productId,
         variantId: args.variantId,
@@ -205,6 +206,23 @@ export const adjustStock = mutation({
         movementDate: now,
         notes: args.notes,
         createdBy: undefined, // TODO: auth integration
+      });
+
+      // Accounting Integration
+      const category = await ctx.db.get(product.categoryId);
+      const cost = Math.abs(args.quantity) * existingStock.averageCost;
+
+      await createStockAdjustmentJournalEntry(ctx, {
+        adjustmentId: movementId,
+        branchId: args.branchId,
+        adjustmentDate: now,
+        description: args.notes || `Stock Adjustment ${movementType}`,
+        items: [{
+          productName: product.name,
+          category: category?.name || "Uncategorized",
+          quantity: args.quantity,
+          cost,
+        }]
       });
 
       return existingStock._id;
@@ -232,7 +250,7 @@ export const adjustStock = mutation({
       });
 
       // Log movement
-      await ctx.db.insert("stockMovements", {
+      const movementId = await ctx.db.insert("stockMovements", {
         branchId: args.branchId,
         productId: args.productId,
         variantId: args.variantId,
@@ -242,7 +260,24 @@ export const adjustStock = mutation({
         referenceId: stockId,
         movementDate: now,
         notes: args.notes,
-        createdBy: undefined,
+        createdBy: undefined, // TODO: auth integration
+      });
+
+      // Accounting Integration
+      const category = await ctx.db.get(product.categoryId);
+      const cost = Math.abs(args.quantity) * initialCost;
+
+      await createStockAdjustmentJournalEntry(ctx, {
+        adjustmentId: movementId,
+        branchId: args.branchId,
+        adjustmentDate: now,
+        description: args.notes || `Stock Adjustment ${movementType}`,
+        items: [{
+          productName: product.name,
+          category: category?.name || "Uncategorized",
+          quantity: args.quantity,
+          cost,
+        }]
       });
 
       return stockId;

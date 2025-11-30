@@ -1,5 +1,6 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
+import { createPaymentReceivedJournalEntry } from "../finance/accountingHelpers";
 
 // Create payment
 export const create = mutation({
@@ -37,6 +38,17 @@ export const create = mutation({
       paymentDate: args.paymentDate,
       notes: args.notes,
       createdBy: undefined, // TODO: auth integration
+    });
+
+    // Accounting Integration
+    await createPaymentReceivedJournalEntry(ctx, {
+      paymentId,
+      paymentDate: args.paymentDate,
+      amount: args.amount,
+      paymentMethod: args.paymentMethod,
+      referenceNumber: args.referenceNumber,
+      customerId: sale.customerId,
+      branchId: sale.branchId,
     });
 
     // Update sale paid amount and outstanding

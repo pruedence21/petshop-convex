@@ -1,6 +1,7 @@
 import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
+import { createPaymentReceivedJournalEntry } from "../finance/accountingHelpers";
 
 // List payments for a booking
 export const list = query({
@@ -99,6 +100,17 @@ export const add = mutation({
       paymentDate,
       notes: args.notes,
       createdBy: undefined, // TODO: auth integration
+    });
+
+    // Create Journal Entry
+    await createPaymentReceivedJournalEntry(ctx, {
+      paymentId,
+      paymentDate,
+      amount: args.amount,
+      paymentMethod: args.paymentMethod,
+      referenceNumber: args.referenceNumber,
+      customerId: booking.customerId,
+      branchId: booking.branchId,
     });
 
     // Update booking paid amount

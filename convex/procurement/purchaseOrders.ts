@@ -260,6 +260,7 @@ export const receive = mutation({
         receivedQuantity: v.number(),
       })
     ),
+    isPaid: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const po = await ctx.db.get(args.purchaseOrderId);
@@ -313,49 +314,44 @@ export const receive = mutation({
 
     // Create journal entry for accounting integration (only when fully received)
     if (allItemsFullyReceived) {
-      try {
-        // Get all items for journal entry
-        const allItems = await ctx.db
-          .query("purchaseOrderItems")
-          .withIndex("by_purchase_order", (q) =>
-            q.eq("purchaseOrderId", args.purchaseOrderId)
-          )
-          .collect();
+      // Get all items for journal entry
+      const allItems = await ctx.db
+        .query("purchaseOrderItems")
+        .withIndex("by_purchase_order", (q) =>
+          q.eq("purchaseOrderId", args.purchaseOrderId)
+        )
+        .collect();
 
-        const itemsData = await Promise.all(
-          allItems.map(async (item) => {
-            const product = await ctx.db.get(item.productId);
+      const itemsData = await Promise.all(
+        allItems.map(async (item) => {
+          const product = await ctx.db.get(item.productId);
 
-            // Get category name
-            let categoryName = "Pet Food"; // Default
-            if (product?.categoryId) {
-              const category = await ctx.db.get(product.categoryId);
-              categoryName = category?.name || "Pet Food";
-            }
+          // Get category name
+          let categoryName = "Pet Food"; // Default
+          if (product?.categoryId) {
+            const category = await ctx.db.get(product.categoryId);
+            categoryName = category?.name || "Pet Food";
+          }
 
-            return {
-              productName: product?.name || "Unknown Product",
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              category: categoryName,
-            };
-          })
-        );
+          return {
+            productName: product?.name || "Unknown Product",
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            category: categoryName,
+          };
+        })
+      );
 
-        await createPurchaseJournalEntry(ctx, {
-          purchaseOrderId: args.purchaseOrderId,
-          poNumber: po.poNumber,
-          orderDate: po.orderDate,
-          branchId: po.branchId,
-          totalAmount: po.totalAmount,
-          items: itemsData,
-          taxAmount: 0, // TODO: Calculate if needed
-          paid: false, // Default to accounts payable
-        });
-      } catch (error: any) {
-        // Log error but don't fail the receiving process
-        console.error("Failed to create journal entry:", error.message);
-      }
+      await createPurchaseJournalEntry(ctx, {
+        purchaseOrderId: args.purchaseOrderId,
+        poNumber: po.poNumber,
+        orderDate: po.orderDate,
+        branchId: po.branchId,
+        totalAmount: po.totalAmount,
+        items: itemsData,
+        taxAmount: 0, // TODO: Calculate if needed
+        paid: args.isPaid || false,
+      });
     }
 
     return { purchaseOrderId: args.purchaseOrderId, status: newStatus };

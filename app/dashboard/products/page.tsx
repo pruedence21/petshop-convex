@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Search, Package, Settings } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Settings, Stethoscope, Syringe, Sparkles, Box } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
 import { useFormSchema } from "@/components/forms/useFormSchema";
@@ -79,6 +79,7 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Id<"productCategories"> | "all">("all");
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [creationStep, setCreationStep] = useState<"type-selection" | "form">("type-selection");
 
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [isAddBrandOpen, setIsAddBrandOpen] = useState(false);
@@ -250,6 +251,7 @@ export default function ProductsPage() {
   const handleOpenDialog = (product?: Product) => {
     if (product) {
       setEditingProduct(product);
+      setCreationStep("form"); // Direct to form for editing
       productForm.reset();
       productForm.setField("sku", product.sku);
       productForm.setField("name", product.name);
@@ -267,9 +269,26 @@ export default function ProductsPage() {
       productForm.setField("serviceDuration", ((product as any).serviceDuration || "") as any);
     } else {
       setEditingProduct(null);
+      setCreationStep("type-selection"); // Start with type selection for new
       productForm.reset();
     }
     setIsDialogOpen(true);
+  };
+
+  const handleTypeSelection = (type: string) => {
+    productForm.setField("type", type);
+
+    // Set defaults based on type
+    if (type === "service" || type === "procedure") {
+      productForm.setField("minStock", 0);
+      productForm.setField("maxStock", 0);
+      productForm.setField("hasVariants", false);
+    } else {
+      productForm.setField("minStock", 10);
+      productForm.setField("maxStock", 100);
+    }
+
+    setCreationStep("form");
   };
 
   const handleCloseDialog = () => {
@@ -510,252 +529,318 @@ export default function ProductsPage() {
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
-              <DialogTitle>
-                {editingProduct ? "Edit Produk" : "Tambah Produk"}
-              </DialogTitle>
-              <DialogDescription>
-                {editingProduct
-                  ? "Ubah informasi produk"
-                  : "Tambahkan produk baru ke katalog"}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField label="SKU" required error={productForm.errors.sku || null}>
-                  <Input
-                    id="sku"
-                    value={productForm.values.sku as any}
-                    onChange={(e) => productForm.setField("sku", e.target.value)}
-                    onBlur={() => productForm.handleBlur("sku")}
-                    placeholder="PRD-001"
-                  />
-                </FormField>
-                <FormField label="Nama Produk" required error={productForm.errors.name || null}>
-                  <Input
-                    id="name"
-                    value={productForm.values.name as any}
-                    onChange={(e) => productForm.setField("name", e.target.value)}
-                    onBlur={() => productForm.handleBlur("name")}
-                    placeholder="Royal Canin Adult 2kg"
-                  />
-                </FormField>
-              </div>
-              <FormField label="Deskripsi" error={productForm.errors.description || null}>
-                <Textarea
-                  id="description"
-                  value={productForm.values.description as any}
-                  onChange={(e) => productForm.setField("description", e.target.value)}
-                  onBlur={() => productForm.handleBlur("description")}
-                  placeholder="Deskripsi produk..."
-                  rows={2}
-                />
-              </FormField>
-              <div className="grid grid-cols-3 gap-4">
-                <FormField label="Tipe Produk" required error={productForm.errors.type || null}>
-                  <Select
-                    value={productForm.values.type as any}
-                    onValueChange={(value) => productForm.setField("type", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="product">Produk</SelectItem>
-                      <SelectItem value="medicine">Obat</SelectItem>
-                      <SelectItem value="procedure">Tindakan</SelectItem>
-                      <SelectItem value="service">Layanan</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormField>
-                <FormField label="Kategori" required error={productForm.errors.categoryId || null}>
-                  <Select
-                    value={productForm.values.categoryId as any}
-                    onValueChange={(value) => {
-                      if (value === "ADD_NEW") {
-                        setIsAddCategoryOpen(true);
-                        return;
-                      }
-                      productForm.setField("categoryId", value);
-                      productForm.setField("subcategoryId", "");
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih kategori" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories?.map((category) => (
-                        <SelectItem key={category._id} value={category._id}>
-                          {category.icon} {category.name}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="ADD_NEW" className="font-medium text-blue-600 border-t mt-1 pt-1">
-                        + Tambah Kategori Baru
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormField>
-                <FormField label="Sub Kategori" error={productForm.errors.subcategoryId || null}>
-                  <Select
-                    value={productForm.values.subcategoryId as any}
-                    onValueChange={(value) => productForm.setField("subcategoryId", value)}
-                    disabled={!productForm.values.categoryId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih sub kategori" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subcategories?.map((sub) => (
-                        <SelectItem key={sub._id} value={sub._id}>
-                          {sub.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormField>
-                <FormField label="Merek" required error={productForm.errors.brandId || null}>
-                  <Select
-                    value={productForm.values.brandId as any}
-                    onValueChange={(value) => {
-                      if (value === "ADD_NEW") {
-                        setIsAddBrandOpen(true);
-                        return;
-                      }
-                      productForm.setField("brandId", value);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih merek" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {brands?.map((brand) => (
-                        <SelectItem key={brand._id} value={brand._id}>
-                          {brand.name}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="ADD_NEW" className="font-medium text-blue-600 border-t mt-1 pt-1">
-                        + Tambah Merek Baru
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormField>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <FormField label="Satuan" required error={productForm.errors.unitId || null}>
-                  <Select
-                    value={productForm.values.unitId as any}
-                    onValueChange={(value) => {
-                      if (value === "ADD_NEW") {
-                        setIsAddUnitOpen(true);
-                        return;
-                      }
-                      productForm.setField("unitId", value);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih satuan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {units?.map((unit) => (
-                        <SelectItem key={unit._id} value={unit._id}>
-                          {unit.code} - {unit.name}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="ADD_NEW" className="font-medium text-blue-600 border-t mt-1 pt-1">
-                        + Tambah Satuan Baru
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormField>
-                <FormField label="Harga Beli" required error={productForm.errors.purchasePrice || null}>
-                  <Input
-                    id="purchasePrice"
-                    type="number"
-                    value={productForm.values.purchasePrice as any}
-                    onChange={(e) => productForm.setField("purchasePrice", e.target.value)}
-                    onBlur={() => productForm.handleBlur("purchasePrice")}
-                    placeholder="50000"
-                  />
-                </FormField>
-                <FormField label="Harga Jual" required error={productForm.errors.sellingPrice || null}>
-                  <Input
-                    id="sellingPrice"
-                    type="number"
-                    value={productForm.values.sellingPrice as any}
-                    onChange={(e) => productForm.setField("sellingPrice", e.target.value)}
-                    onBlur={() => productForm.handleBlur("sellingPrice")}
-                    placeholder="75000"
-                  />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <FormField label="Stok Minimum" required error={productForm.errors.minStock || null}>
-                  <Input
-                    id="minStock"
-                    type="number"
-                    value={productForm.values.minStock as any}
-                    onChange={(e) => productForm.setField("minStock", e.target.value)}
-                    onBlur={() => productForm.handleBlur("minStock")}
-                    placeholder="10"
-                  />
-                </FormField>
-                <FormField label="Stok Maximum" required error={productForm.errors.maxStock || null}>
-                  <Input
-                    id="maxStock"
-                    type="number"
-                    value={productForm.values.maxStock as any}
-                    onChange={(e) => productForm.setField("maxStock", e.target.value)}
-                    onBlur={() => productForm.handleBlur("maxStock")}
-                    placeholder="100"
-                  />
-                </FormField>
-                <FormField label="Memiliki Varian" error={productForm.errors.hasVariants || null}>
-                  <div className="flex items-center gap-2 h-10">
-                    <input
-                      type="checkbox"
-                      id="hasVariants"
-                      checked={productForm.values.hasVariants as any}
-                      onChange={(e) => productForm.setField("hasVariants", e.target.checked)}
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor="hasVariants" className="cursor-pointer">
-                      Memiliki Varian
-                    </Label>
+          {creationStep === "type-selection" ? (
+            <div className="p-6">
+              <DialogHeader>
+                <DialogTitle>Pilih Tipe Item</DialogTitle>
+                <DialogDescription>
+                  Pilih jenis item yang ingin Anda tambahkan ke katalog
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                <div
+                  className="border rounded-xl p-6 hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all group"
+                  onClick={() => handleTypeSelection("product")}
+                >
+                  <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mb-4 group-hover:bg-blue-200">
+                    <Box className="h-6 w-6 text-blue-600" />
                   </div>
-                </FormField>
-              </div>
-              {(productForm.values.type === "service" || productForm.values.type === "procedure") && (
-                <div className="grid gap-2">
-                  <Label htmlFor="serviceDuration">
-                    Durasi (Menit) {productForm.values.type === "service" || productForm.values.type === "procedure" ? <span className="text-red-500">*</span> : ""}
-                  </Label>
-                  <Input
-                    id="serviceDuration"
-                    type="number"
-                    value={productForm.values.serviceDuration as any}
-                    onChange={(e) => productForm.setField("serviceDuration", e.target.value)}
-                    placeholder="30"
-                  />
-                  <p className="text-xs text-slate-500">
-                    Durasi waktu untuk layanan/tindakan dalam menit
-                  </p>
+                  <h3 className="font-semibold text-lg mb-1">Produk Fisik</h3>
+                  <p className="text-sm text-slate-500">Barang fisik dengan stok (makanan, aksesoris, mainan)</p>
                 </div>
-              )}
+
+                <div
+                  className="border rounded-xl p-6 hover:border-green-500 hover:bg-green-50 cursor-pointer transition-all group"
+                  onClick={() => handleTypeSelection("medicine")}
+                >
+                  <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4 group-hover:bg-green-200">
+                    <Syringe className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-1">Obat & Vaksin</h3>
+                  <p className="text-sm text-slate-500">Obat-obatan dan vaksin untuk keperluan medis</p>
+                </div>
+
+                <div
+                  className="border rounded-xl p-6 hover:border-purple-500 hover:bg-purple-50 cursor-pointer transition-all group"
+                  onClick={() => handleTypeSelection("service")}
+                >
+                  <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center mb-4 group-hover:bg-purple-200">
+                    <Sparkles className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-1">Layanan</h3>
+                  <p className="text-sm text-slate-500">Jasa grooming, penitipan, dan layanan non-medis</p>
+                </div>
+
+                <div
+                  className="border rounded-xl p-6 hover:border-rose-500 hover:bg-rose-50 cursor-pointer transition-all group"
+                  onClick={() => handleTypeSelection("procedure")}
+                >
+                  <div className="h-12 w-12 rounded-full bg-rose-100 flex items-center justify-center mb-4 group-hover:bg-rose-200">
+                    <Stethoscope className="h-6 w-6 text-rose-600" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-1">Tindakan Medis</h3>
+                  <p className="text-sm text-slate-500">Pemeriksaan, operasi, dan tindakan dokter hewan</p>
+                </div>
+              </div>
             </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCloseDialog}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={!productForm.isValid}>
-                {editingProduct ? "Simpan" : "Tambah"}
-              </Button>
-            </DialogFooter>
-          </form>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingProduct ? "Edit Produk" : "Tambah Produk"}
+                  <Badge className="ml-2" variant="outline">
+                    {productForm.values.type === "product" ? "Produk Fisik" :
+                      productForm.values.type === "medicine" ? "Obat" :
+                        productForm.values.type === "service" ? "Layanan" : "Tindakan"}
+                  </Badge>
+                </DialogTitle>
+                <DialogDescription>
+                  {editingProduct
+                    ? "Ubah informasi produk"
+                    : "Lengkapi informasi item baru"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="SKU" required error={productForm.errors.sku || null}>
+                    <Input
+                      id="sku"
+                      value={productForm.values.sku as any}
+                      onChange={(e) => productForm.setField("sku", e.target.value)}
+                      onBlur={() => productForm.handleBlur("sku")}
+                      placeholder="PRD-001"
+                    />
+                  </FormField>
+                  <FormField label="Nama Item" required error={productForm.errors.name || null}>
+                    <Input
+                      id="name"
+                      value={productForm.values.name as any}
+                      onChange={(e) => productForm.setField("name", e.target.value)}
+                      onBlur={() => productForm.handleBlur("name")}
+                      placeholder="Nama produk/layanan..."
+                    />
+                  </FormField>
+                </div>
+                <FormField label="Deskripsi" error={productForm.errors.description || null}>
+                  <Textarea
+                    id="description"
+                    value={productForm.values.description as any}
+                    onChange={(e) => productForm.setField("description", e.target.value)}
+                    onBlur={() => productForm.handleBlur("description")}
+                    placeholder="Deskripsi lengkap..."
+                    rows={2}
+                  />
+                </FormField>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="Kategori" required error={productForm.errors.categoryId || null}>
+                    <Select
+                      value={productForm.values.categoryId as any}
+                      onValueChange={(value) => {
+                        if (value === "ADD_NEW") {
+                          setIsAddCategoryOpen(true);
+                          return;
+                        }
+                        productForm.setField("categoryId", value);
+                        productForm.setField("subcategoryId", "");
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih kategori" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories?.map((category) => (
+                          <SelectItem key={category._id} value={category._id}>
+                            {category.icon} {category.name}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="ADD_NEW" className="font-medium text-blue-600 border-t mt-1 pt-1">
+                          + Tambah Kategori Baru
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                  <FormField label="Sub Kategori" error={productForm.errors.subcategoryId || null}>
+                    <Select
+                      value={productForm.values.subcategoryId as any}
+                      onValueChange={(value) => productForm.setField("subcategoryId", value)}
+                      disabled={!productForm.values.categoryId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih sub kategori" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subcategories?.map((sub) => (
+                          <SelectItem key={sub._id} value={sub._id}>
+                            {sub.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="Merek" required error={productForm.errors.brandId || null}>
+                    <Select
+                      value={productForm.values.brandId as any}
+                      onValueChange={(value) => {
+                        if (value === "ADD_NEW") {
+                          setIsAddBrandOpen(true);
+                          return;
+                        }
+                        productForm.setField("brandId", value);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih merek" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {brands?.map((brand) => (
+                          <SelectItem key={brand._id} value={brand._id}>
+                            {brand.name}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="ADD_NEW" className="font-medium text-blue-600 border-t mt-1 pt-1">
+                          + Tambah Merek Baru
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                  <FormField label="Satuan" required error={productForm.errors.unitId || null}>
+                    <Select
+                      value={productForm.values.unitId as any}
+                      onValueChange={(value) => {
+                        if (value === "ADD_NEW") {
+                          setIsAddUnitOpen(true);
+                          return;
+                        }
+                        productForm.setField("unitId", value);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih satuan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {units?.map((unit) => (
+                          <SelectItem key={unit._id} value={unit._id}>
+                            {unit.code} - {unit.name}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="ADD_NEW" className="font-medium text-blue-600 border-t mt-1 pt-1">
+                          + Tambah Satuan Baru
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="Harga Beli" required error={productForm.errors.purchasePrice || null}>
+                    <Input
+                      id="purchasePrice"
+                      type="number"
+                      value={productForm.values.purchasePrice as any}
+                      onChange={(e) => productForm.setField("purchasePrice", e.target.value)}
+                      onBlur={() => productForm.handleBlur("purchasePrice")}
+                      placeholder="0"
+                    />
+                  </FormField>
+                  <FormField label="Harga Jual" required error={productForm.errors.sellingPrice || null}>
+                    <Input
+                      id="sellingPrice"
+                      type="number"
+                      value={productForm.values.sellingPrice as any}
+                      onChange={(e) => productForm.setField("sellingPrice", e.target.value)}
+                      onBlur={() => productForm.handleBlur("sellingPrice")}
+                      placeholder="0"
+                    />
+                  </FormField>
+                </div>
+
+                {/* Stock & Variants - Only for Goods */}
+                {(productForm.values.type === "product" || productForm.values.type === "medicine") && (
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormField label="Stok Minimum" required error={productForm.errors.minStock || null}>
+                      <Input
+                        id="minStock"
+                        type="number"
+                        value={productForm.values.minStock as any}
+                        onChange={(e) => productForm.setField("minStock", e.target.value)}
+                        onBlur={() => productForm.handleBlur("minStock")}
+                        placeholder="10"
+                      />
+                    </FormField>
+                    <FormField label="Stok Maximum" required error={productForm.errors.maxStock || null}>
+                      <Input
+                        id="maxStock"
+                        type="number"
+                        value={productForm.values.maxStock as any}
+                        onChange={(e) => productForm.setField("maxStock", e.target.value)}
+                        onBlur={() => productForm.handleBlur("maxStock")}
+                        placeholder="100"
+                      />
+                    </FormField>
+                    <FormField label="Memiliki Varian" error={productForm.errors.hasVariants || null}>
+                      <div className="flex items-center gap-2 h-10">
+                        <input
+                          type="checkbox"
+                          id="hasVariants"
+                          checked={productForm.values.hasVariants as any}
+                          onChange={(e) => productForm.setField("hasVariants", e.target.checked)}
+                          className="w-4 h-4"
+                        />
+                        <Label htmlFor="hasVariants" className="cursor-pointer">
+                          Memiliki Varian
+                        </Label>
+                      </div>
+                    </FormField>
+                  </div>
+                )}
+
+                {/* Service Duration - Only for Services */}
+                {(productForm.values.type === "service" || productForm.values.type === "procedure") && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="serviceDuration">
+                      Durasi (Menit) <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="serviceDuration"
+                      type="number"
+                      value={productForm.values.serviceDuration as any}
+                      onChange={(e) => productForm.setField("serviceDuration", e.target.value)}
+                      placeholder="30"
+                    />
+                    <p className="text-xs text-slate-500">
+                      Durasi waktu untuk layanan/tindakan dalam menit
+                    </p>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                {!editingProduct && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCreationStep("type-selection")}
+                    className="mr-auto"
+                  >
+                    Kembali
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCloseDialog}
+                >
+                  Batal
+                </Button>
+                <Button type="submit" disabled={!productForm.isValid}>
+                  {editingProduct ? "Simpan" : "Tambah"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
 

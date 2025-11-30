@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -33,12 +33,16 @@ import {
   Trash2,
   User,
   Package,
-  ArrowLeft
+  ArrowLeft,
+  ScanBarcode,
+  Keyboard
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency, parseErrorMessage } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AddCustomerDialog } from "@/components/dialogs/AddCustomerDialog";
+import { useHotkeys } from 'react-hotkeys-hook';
+import { useBarcodeScanner } from '@/hooks/use-barcode-scanner';
 
 // Types
 type CartItem = {
@@ -119,6 +123,98 @@ export default function SalesPOSPage() {
   const updateDiscountAndTax = useMutation(api.sales.sales.updateDiscountAndTax);
   const submitSale = useMutation(api.sales.sales.submitSale);
   const createDefaultCustomer = useMutation(api.master_data.customers.createDefaultCustomer);
+
+  // -- Handlers (Defined before hooks that use them) --
+  const addToCart = (product: any, variant?: any) => {
+    setCart(prev => {
+      const existing = prev.find(item =>
+        item.productId === product._id && item.variantId === variant?._id
+      );
+
+      if (existing) {
+        return prev.map(item =>
+          (item.productId === product._id && item.variantId === variant?._id)
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+
+      return [...prev, {
+        productId: product._id,
+        variantId: variant?._id,
+        name: product.name,
+        variantName: variant?.variantName ? `${variant.variantName}: ${variant.variantValue}` : undefined,
+        quantity: 1,
+        unitPrice: variant ? variant.sellingPrice : product.sellingPrice,
+        discountAmount: 0,
+        discountType: "nominal",
+        maxStock: 100,
+      }];
+    });
+
+    if (variant) {
+      setSelectedProductForVariantSelection(null);
+      toast.success(`Ditambahkan: ${product.name} - ${variant.variantValue}`);
+    } else {
+      toast.success(`Ditambahkan: ${product.name}`);
+    }
+  };
+
+  const handleProductClick = (product: any) => {
+    if (product.hasVariants) {
+      setSelectedProductForVariantSelection(product);
+    } else {
+      addToCart(product);
+    }
+  };
+
+  // -- Hooks --
+
+  // Barcode Scanner
+  useBarcodeScanner({
+    onScan: (barcode) => {
+      if (!products) return;
+      // Search by SKU or Barcode (assuming SKU is used as barcode for now)
+      const match = products.find(p => p.sku === barcode);
+
+      if (match) {
+        handleProductClick(match);
+        // toast.success(`Scanned: ${match.name}`); // addToCart already toasts
+      } else {
+        toast.error(`Produk tidak ditemukan: ${barcode}`);
+      }
+    }
+  });
+
+  // Hotkeys
+  useHotkeys('f2', (e) => {
+    e.preventDefault();
+    document.getElementById('product-search')?.focus();
+  });
+
+  useHotkeys('f4', (e) => {
+    e.preventDefault();
+    if (cart.length > 0) setIsPaymentDialogOpen(true);
+  });
+
+  useHotkeys('esc', (e) => {
+    // Only close if dialog is open
+    if (isPaymentDialogOpen) {
+      e.preventDefault();
+      setIsPaymentDialogOpen(false);
+    } else if (selectedProductForVariantSelection) {
+      e.preventDefault();
+      setSelectedProductForVariantSelection(null);
+    }
+  });
+
+  // Payment Dialog Hotkeys
+  useHotkeys('f1', (e) => {
+    if (isPaymentDialogOpen) {
+      e.preventDefault();
+      setCurrentPayment(prev => ({ ...prev, amount: grandTotal }));
+    }
+  }, { enableOnFormTags: true });
 
   // -- Effects --
 
@@ -217,50 +313,7 @@ export default function SalesPOSPage() {
   const changeAmount = Math.max(0, totalPaid - grandTotal);
   const outstandingAmount = Math.max(0, grandTotal - totalPaid);
 
-  // -- Handlers --
-
-  const handleProductClick = (product: any) => {
-    if (product.hasVariants) {
-      setSelectedProductForVariantSelection(product);
-    } else {
-      addToCart(product);
-    }
-  };
-
-  const addToCart = (product: any, variant?: any) => {
-    setCart(prev => {
-      const existing = prev.find(item =>
-        item.productId === product._id && item.variantId === variant?._id
-      );
-
-      if (existing) {
-        return prev.map(item =>
-          (item.productId === product._id && item.variantId === variant?._id)
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-
-      return [...prev, {
-        productId: product._id,
-        variantId: variant?._id,
-        name: product.name,
-        variantName: variant?.variantName ? `${variant.variantName}: ${variant.variantValue}` : undefined,
-        quantity: 1,
-        unitPrice: variant ? variant.sellingPrice : product.sellingPrice,
-        discountAmount: 0,
-        discountType: "nominal",
-        maxStock: 100,
-      }];
-    });
-
-    if (variant) {
-      setSelectedProductForVariantSelection(null);
-      toast.success(`Ditambahkan: ${product.name} - ${variant.variantValue}`);
-    } else {
-      toast.success(`Ditambahkan: ${product.name}`);
-    }
-  };
+  // -- More Handlers --
 
   const updateCartItemQty = (index: number, delta: number) => {
     setCart(prev => {
@@ -298,19 +351,15 @@ export default function SalesPOSPage() {
 
       if (saleId) {
         // -- EDIT MODE --
-        // 1. Update Header
         await updateHeader({
           saleId,
           customerId: customerId as Id<"customers">,
           branchId: selectedBranch as Id<"branches">,
           notes: transactionNotes || undefined,
         });
-
-        // 2. Clear existing items
         await clearItems({ saleId });
       } else {
         // -- CREATE MODE --
-        // 1. Create Sale Header
         const sale = await createSale({
           customerId: customerId as Id<"customers">,
           branchId: selectedBranch as Id<"branches">,
@@ -322,7 +371,6 @@ export default function SalesPOSPage() {
 
       if (!saleId) throw new Error("Sale ID missing");
 
-      // 3. Add Items (for both modes)
       for (const item of cart) {
         await addItem({
           saleId: saleId,
@@ -336,7 +384,6 @@ export default function SalesPOSPage() {
         });
       }
 
-      // 4. Update Global Discount/Tax
       await updateDiscountAndTax({
         saleId: saleId,
         discountAmount: globalDiscount.amount,
@@ -344,7 +391,6 @@ export default function SalesPOSPage() {
         taxRate: taxRate,
       });
 
-      // 5. Submit Payments & Finalize
       const result = await submitSale({
         saleId: saleId,
         payments: payments.map(p => ({
@@ -357,11 +403,9 @@ export default function SalesPOSPage() {
 
       toast.success(`Transaksi Berhasil! Kembalian: ${formatCurrency(result.change)}`);
 
-      // Reset or Redirect
       if (editSaleId) {
-        router.push("/dashboard/sales"); // Back to list
+        router.push("/dashboard/sales");
       } else {
-        // Reset form for next sale
         setCart([]);
         setPayments([]);
         setTransactionNotes("");
@@ -397,12 +441,16 @@ export default function SalesPOSPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Cari produk..."
+                id="product-search"
+                placeholder="Cari produk (F2)..."
                 className="pl-9 bg-slate-50 border-slate-200"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
               />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
+                <Badge variant="outline" className="text-[10px] text-slate-400 h-5 px-1">F2</Badge>
+              </div>
             </div>
             <Select value={selectedBranch as string} onValueChange={(v) => setSelectedBranch(v as Id<"branches">)}>
               <SelectTrigger className="w-[140px] md:w-[200px]">
@@ -527,6 +575,10 @@ export default function SalesPOSPage() {
               <ShoppingCart className="h-16 w-16 mb-4 opacity-20" />
               <p className="font-medium">Keranjang Kosong</p>
               <p className="text-sm mt-1">Pilih produk di sebelah kiri untuk memulai transaksi</p>
+              <div className="mt-8 flex gap-4 text-xs text-slate-400">
+                <div className="flex items-center gap-1"><Keyboard className="h-3 w-3" /> <span>F2: Cari</span></div>
+                <div className="flex items-center gap-1"><ScanBarcode className="h-3 w-3" /> <span>Scan Barcode</span></div>
+              </div>
             </div>
           ) : (
             <ScrollArea className="flex-1">
@@ -602,7 +654,7 @@ export default function SalesPOSPage() {
             <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="w-full bg-blue-600 hover:bg-blue-700" disabled={cart.length === 0}>
-                  Bayar
+                  Bayar (F4)
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
@@ -614,7 +666,15 @@ export default function SalesPOSPage() {
                 <div className="space-y-4 py-4">
                   {/* Quick Cash Buttons */}
                   <div className="grid grid-cols-3 gap-2">
-                    {[grandTotal, 50000, 100000].map(amount => (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPayment({ ...currentPayment, amount: grandTotal })}
+                      className="border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                    >
+                      Uang Pas (F1)
+                    </Button>
+                    {[50000, 100000].map(amount => (
                       <Button
                         key={amount}
                         variant="outline"
@@ -651,6 +711,7 @@ export default function SalesPOSPage() {
                       type="number"
                       value={currentPayment.amount || ""}
                       onChange={(e) => setCurrentPayment({ ...currentPayment, amount: parseFloat(e.target.value) || 0 })}
+                      autoFocus
                     />
                   </div>
 
