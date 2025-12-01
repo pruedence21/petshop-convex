@@ -33,10 +33,13 @@ export async function getCurrentUserProfile(ctx: QueryCtx | MutationCtx) {
     return null;
   }
 
+  // Parse userId from identity.subject (it might be "userId|sessionId")
+  const userId = identity.subject.split("|")[0];
+
   // Get user profile
   const userProfile = await ctx.db
     .query("userProfiles")
-    .withIndex("by_user_id", (q) => q.eq("userId", identity.subject))
+    .withIndex("by_user_id", (q) => q.eq("userId", userId))
     .first();
 
   if (!userProfile) {
@@ -65,9 +68,12 @@ export async function getCurrentUserProfile(ctx: QueryCtx | MutationCtx) {
 export async function requireUserProfile(ctx: QueryCtx | MutationCtx) {
   const identity = await requireAuth(ctx);
 
+  // Parse userId from identity.subject (it might be "userId|sessionId")
+  const userId = identity.subject.split("|")[0];
+
   const userProfile = await ctx.db
     .query("userProfiles")
-    .withIndex("by_user_id", (q) => q.eq("userId", identity.subject))
+    .withIndex("by_user_id", (q) => q.eq("userId", userId))
     .first();
 
   if (!userProfile) {
@@ -81,7 +87,7 @@ export async function requireUserProfile(ctx: QueryCtx | MutationCtx) {
       );
     }
     console.log("DEBUG: User profile not found for identity:", JSON.stringify(identity, null, 2));
-    throw new Error("User profile not found. Please contact administrator.");
+    throw new Error(`User profile not found. Identity: ${identity.subject} (${identity.email}). Please contact administrator.`);
   }
 
   if (!userProfile.isActive) {
