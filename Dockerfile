@@ -4,7 +4,7 @@
 # ============================================================================
 # Stage 1: Dependencies - Install all dependencies
 # ============================================================================
-FROM node:18-alpine AS deps
+FROM node:20-alpine AS deps
 
 # Install dependencies required for native modules
 RUN apk add --no-cache libc6-compat
@@ -20,7 +20,7 @@ RUN npm ci --legacy-peer-deps
 # ============================================================================
 # Stage 2: Builder - Build the Next.js application
 # ============================================================================
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -42,7 +42,7 @@ RUN npm run build
 # ============================================================================
 # Stage 3: Runner - Production runtime
 # ============================================================================
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 
 WORKDIR /app
 
@@ -82,7 +82,7 @@ CMD ["node", "server.js"]
 # ============================================================================
 # Stage 4: Development - For local development with hot reload
 # ============================================================================
-FROM node:18-alpine AS development
+FROM node:20-alpine AS development
 
 WORKDIR /app
 
