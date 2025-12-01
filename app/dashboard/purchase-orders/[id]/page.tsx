@@ -35,7 +35,7 @@ type ReceiveItem = {
   itemId: Id<"purchaseOrderItems">;
   receivedQuantity: number;
   batchNumber?: string;
-  expiredDate?: number;
+  expiredDate?: string;
 };
 
 type ReceivingItemState = {
@@ -53,7 +53,15 @@ export default function PurchaseOrderDetailPage({
   const [poId, setPoId] = useState<Id<"purchaseOrders"> | null>(null);
 
   const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false);
+
   const [receivingItems, setReceivingItems] = useState<Record<string, ReceivingItemState>>({});
+
+  // Payment State for Receiving
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState("CASH");
+  const [paymentRef, setPaymentRef] = useState("");
+  const [paymentNotes, setPaymentNotes] = useState("");
+  const [dueDate, setDueDate] = useState<number | undefined>(undefined);
 
   // Resolve params Promise
   useState(() => {
@@ -122,6 +130,25 @@ export default function PurchaseOrderDetailPage({
       }
     });
     setReceivingItems(initialReceiving);
+
+    // Calculate estimated total for default payment
+    const estimatedTotal = po.items.reduce((sum: number, item: any) => {
+      const remaining = item.quantity - item.receivedQuantity;
+      if (remaining <= 0) return sum;
+      // Simple calculation: (price * qty) - discount + tax
+      // Note: This assumes discount/tax are per unit or proportional. 
+      // If they are fixed amounts for the whole line, this logic might need adjustment.
+      // For now, let's assume unitPrice is net or we just use unitPrice * qty.
+      // Ideally, we should use the item's subtotal / quantity * remaining.
+      const unitCost = item.subtotal / item.quantity;
+      return sum + (unitCost * remaining);
+    }, 0);
+
+    setPaymentAmount(estimatedTotal);
+    setPaymentMethod("CASH");
+    setPaymentRef("");
+    setPaymentNotes("");
+    setDueDate(undefined);
     setIsReceiveDialogOpen(true);
   };
 
@@ -136,7 +163,7 @@ export default function PurchaseOrderDetailPage({
         itemId: itemId as Id<"purchaseOrderItems">,
         receivedQuantity: state.quantity,
         batchNumber: state.batchNumber || undefined,
-        expiredDate: state.expiredDate ? new Date(state.expiredDate).getTime() : undefined,
+        expiredDate: state.expiredDate || undefined,
       }));
 
     if (receivedItems.length === 0) {
@@ -147,7 +174,14 @@ export default function PurchaseOrderDetailPage({
     try {
       const result = await receivePO({
         purchaseOrderId: poId,
-        receivedItems,
+        items: receivedItems,
+        payments: paymentAmount > 0 ? [{
+          amount: paymentAmount,
+          paymentMethod,
+          referenceNumber: paymentRef || undefined,
+          notes: paymentNotes || undefined,
+        }] : [],
+        dueDate,
       });
 
       toast.success(
@@ -481,6 +515,52 @@ export default function PurchaseOrderDetailPage({
                 </TableBody>
               </Table>
             </div>
+
+            <div className="py-4 border-t border-border space-y-4">
+              <h3 className="font-medium">Pembayaran (Opsional)</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Metode Pembayaran</Label>
+                  <select
+                    className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
+                    <option value="CASH">Tunai</option>
+                    <option value="BANK_TRANSFER">Transfer Bank</option>
+                    <option value="CREDIT">Kredit (Hutang)</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Jumlah Bayar</Label>
+                  <Input
+                    type="number"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+
+              {paymentMethod !== "CASH" && (
+                <div className="space-y-2">
+                  <Label>No. Referensi / Catatan</Label>
+                  <Input
+                    value={paymentRef}
+                    onChange={(e) => setPaymentRef(e.target.value)}
+                    placeholder="Contoh: No. Transfer / No. Invoice Supplier"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Jatuh Tempo (Jika Kredit)</Label>
+                <Input
+                  type="date"
+                  value={dueDate ? new Date(dueDate).toISOString().split('T')[0] : ""}
+                  onChange={(e) => setDueDate(e.target.value ? new Date(e.target.value).getTime() : undefined)}
+                />
+              </div>
+            </div>
             <DialogFooter>
               <Button
                 type="button"
@@ -496,7 +576,7 @@ export default function PurchaseOrderDetailPage({
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 }
 

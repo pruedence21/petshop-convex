@@ -362,7 +362,8 @@ describe('createPurchaseJournalEntry', () => {
                 },
             ],
             taxAmount: 10000,
-            paid: true,
+            paidAmount: 110000,
+            outstandingAmount: 0,
         });
 
         const journalEntry = await db.get(journalEntryId);
@@ -386,7 +387,8 @@ describe('createPurchaseJournalEntry', () => {
                 },
             ],
             taxAmount: 10000,
-            paid: false,
+            paidAmount: 0,
+            outstandingAmount: 110000,
         });
 
         const journalEntry = await db.get(journalEntryId);

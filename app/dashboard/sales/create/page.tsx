@@ -95,7 +95,9 @@ export default function SalesPOSPage() {
   const [customerId, setCustomerId] = useState<Id<"customers"> | "">("");
   const [transactionNotes, setTransactionNotes] = useState("");
   const [globalDiscount, setGlobalDiscount] = useState({ amount: 0, type: "nominal" as "percent" | "nominal" });
+
   const [taxRate, setTaxRate] = useState(0);
+  const [dueDate, setDueDate] = useState<number | undefined>(undefined);
 
   // Payment State
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
@@ -390,43 +392,44 @@ export default function SalesPOSPage() {
     setCart(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handlePaymentSubmit = async () => {
-    if (!customerId || !selectedBranch) {
-      toast.error("Data customer atau cabang tidak valid");
-      return;
-    }
-    if (payments.length === 0) {
-      toast.error("Belum ada pembayaran");
-      return;
-    }
+  const addPayment = () => {
+    if (currentPayment.amount <= 0) return;
+    setPayments(prev => [...prev, currentPayment]);
+    setCurrentPayment({
+      amount: 0,
+      paymentMethod: "CASH",
+      referenceNumber: "",
+      notes: "",
+    });
+  };
 
+  const handlePaymentSubmit = async () => {
+    if (!selectedBranch || !customerId || cart.length === 0) return;
     setIsSubmitting(true);
     try {
-      let saleId = editSaleId;
+      // 1. Create Sale Header
+      const { saleId } = await createSale({
+        branchId: selectedBranch as Id<"branches">,
+        customerId: customerId as Id<"customers">,
+        saleDate: Date.now(),
+        dueDate: dueDate,
+        notes: transactionNotes,
+      });
 
-      if (saleId) {
-        await updateHeader({
+      // 1b. Update Discount & Tax
+      if (globalDiscount.amount > 0 || taxRate > 0) {
+        await updateDiscountAndTax({
           saleId,
-          customerId: customerId as Id<"customers">,
-          branchId: selectedBranch as Id<"branches">,
-          notes: transactionNotes || undefined,
+          discountAmount: globalDiscount.amount,
+          discountType: globalDiscount.type,
+          taxRate: taxRate,
         });
-        await clearItems({ saleId });
-      } else {
-        const sale = await createSale({
-          customerId: customerId as Id<"customers">,
-          branchId: selectedBranch as Id<"branches">,
-          saleDate: Date.now(),
-          notes: transactionNotes || undefined,
-        });
-        saleId = sale.saleId;
       }
 
-      if (!saleId) throw new Error("Sale ID missing");
-
+      // 2. Add Items
       for (const item of cart) {
         await addItem({
-          saleId: saleId,
+          saleId,
           productId: item.productId,
           variantId: item.variantId,
           quantity: item.quantity,
@@ -437,34 +440,15 @@ export default function SalesPOSPage() {
         });
       }
 
-      await updateDiscountAndTax({
-        saleId: saleId,
-        discountAmount: globalDiscount.amount,
-        discountType: globalDiscount.type,
-        taxRate: taxRate,
-      });
+      // 3. Complete Sale (this handles stock & journal)
+      await submitSale({ saleId, payments });
 
-      const result = await submitSale({
-        saleId: saleId,
-        payments: payments.map(p => ({
-          amount: p.amount,
-          paymentMethod: p.paymentMethod,
-          referenceNumber: p.referenceNumber || undefined,
-          notes: p.notes || undefined,
-        })),
-      });
+      toast.success("Transaksi berhasil disimpan!");
+      setCart([]);
+      setPayments([]);
+      setCustomerId(umumCustomer?._id || "");
+      setIsPaymentDialogOpen(false);
 
-      toast.success(`Transaksi Berhasil! Kembalian: ${formatCurrency(result.change)}`);
-
-      if (editSaleId) {
-        router.push("/dashboard/sales");
-      } else {
-        setCart([]);
-        setPayments([]);
-        setTransactionNotes("");
-        setGlobalDiscount({ amount: 0, type: "nominal" });
-        setIsPaymentDialogOpen(false);
-      }
     } catch (error: any) {
       toast.error(formatErrorMessage(error));
     } finally {
@@ -472,33 +456,22 @@ export default function SalesPOSPage() {
     }
   };
 
-  const addPayment = () => {
-    if (currentPayment.amount <= 0) return;
-    setPayments([...payments, currentPayment]);
-    setCurrentPayment({ ...currentPayment, amount: 0, referenceNumber: "", notes: "" });
-  };
-
   return (
-    <div className="h-[calc(100vh-4rem)] lg:h-screen flex flex-col md:flex-row bg-muted/40 overflow-hidden w-full border-x border-border shadow-sm">
-      {/* LEFT SIDE: Product Catalog */}
-      <div className="flex-1 flex flex-col border-r border-border h-full min-w-0">
-        {/* Header / Filter Bar */}
-        <div className="p-4 bg-card border-b border-border space-y-4">
-          <div className="flex gap-4 items-center">
-            {editSaleId && (
-              <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            )}
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-background">
+      {/* LEFT SIDE: Product List */}
+      <div className="flex-1 flex flex-col min-w-0 border-r border-border">
+        {/* Search & Filter Bar */}
+        <div className="p-4 border-b border-border bg-card space-y-4">
+          <div className="flex gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                id="product-search"
                 placeholder="Cari produk (F2)..."
-                className="pl-9 bg-muted border-input"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
+                id="product-search"
+                className="pl-9"
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
                 <Badge variant="outline" className="text-[10px] text-muted-foreground h-5 px-1 border-border">F2</Badge>
@@ -643,64 +616,66 @@ export default function SalesPOSPage() {
 
         {/* Cart Items */}
         <div className="flex-1 overflow-hidden flex flex-col bg-card">
-          {cart.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8 text-center">
-              <ShoppingCart className="h-16 w-16 mb-4 opacity-20" />
-              <p className="font-medium">Keranjang Kosong</p>
-              <p className="text-sm mt-1">Pilih produk di sebelah kiri untuk memulai transaksi</p>
-              <div className="mt-8 flex gap-4 text-xs text-muted-foreground/70">
-                <div className="flex items-center gap-1"><Keyboard className="h-3 w-3" /> <span>F2: Cari</span></div>
-                <div className="flex items-center gap-1"><ScanBarcode className="h-3 w-3" /> <span>Scan Barcode</span></div>
+          {
+            cart.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8 text-center">
+                <ShoppingCart className="h-16 w-16 mb-4 opacity-20" />
+                <p className="font-medium">Keranjang Kosong</p>
+                <p className="text-sm mt-1">Pilih produk di sebelah kiri untuk memulai transaksi</p>
+                <div className="mt-8 flex gap-4 text-xs text-muted-foreground/70">
+                  <div className="flex items-center gap-1"><Keyboard className="h-3 w-3" /> <span>F2: Cari</span></div>
+                  <div className="flex items-center gap-1"><ScanBarcode className="h-3 w-3" /> <span>Scan Barcode</span></div>
+                </div>
               </div>
-            </div>
-          ) : (
-            <ScrollArea className="flex-1">
-              <div className="p-4 space-y-3">
-                {cart.map((item, index) => (
-                  <div key={`${item.productId}-${item.variantId}`} className="flex gap-2 lg:gap-3 bg-card border border-border p-2 lg:p-3 rounded-lg shadow-sm">
-                    <div className="h-12 w-12 bg-muted rounded-md flex items-center justify-center flex-shrink-0">
-                      <Package className="h-6 w-6 text-muted-foreground/50" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm truncate text-card-foreground">{item.name}</h4>
-                      {item.variantName && (
-                        <p className="text-xs text-muted-foreground truncate">{item.variantName}</p>
-                      )}
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center gap-3 bg-muted/50 rounded-md p-1">
-                          <button
-                            onClick={() => updateCartItemQty(index, -1)}
-                            className="h-6 w-6 flex items-center justify-center hover:bg-background rounded-md transition-colors text-muted-foreground hover:text-foreground"
-                          >
-                            <Minus className="h-3 w-3" />
-                          </button>
-                          <span className="text-sm font-medium w-4 text-center text-foreground">{item.quantity}</span>
-                          <button
-                            onClick={() => updateCartItemQty(index, 1)}
-                            className="h-6 w-6 flex items-center justify-center hover:bg-background rounded-md transition-colors text-muted-foreground hover:text-foreground"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </button>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium text-sm text-foreground">{formatCurrency(item.unitPrice * item.quantity)}</p>
-                          {item.quantity > 1 && (
-                            <p className="text-[10px] text-muted-foreground">@{formatCurrency(item.unitPrice)}</p>
-                          )}
+            ) : (
+              <ScrollArea className="flex-1">
+                <div className="p-4 space-y-3">
+                  {cart.map((item, index) => (
+                    <div key={`${item.productId}-${item.variantId}`} className="flex gap-2 lg:gap-3 bg-card border border-border p-2 lg:p-3 rounded-lg shadow-sm">
+                      <div className="h-12 w-12 bg-muted rounded-md flex items-center justify-center flex-shrink-0">
+                        <Package className="h-6 w-6 text-muted-foreground/50" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate text-card-foreground">{item.name}</h4>
+                        {item.variantName && (
+                          <p className="text-xs text-muted-foreground truncate">{item.variantName}</p>
+                        )}
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-3 bg-muted/50 rounded-md p-1">
+                            <button
+                              onClick={() => updateCartItemQty(index, -1)}
+                              className="h-6 w-6 flex items-center justify-center hover:bg-background rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </button>
+                            <span className="text-sm font-medium w-4 text-center text-foreground">{item.quantity}</span>
+                            <button
+                              onClick={() => updateCartItemQty(index, 1)}
+                              className="h-6 w-6 flex items-center justify-center hover:bg-background rounded-md transition-colors text-muted-foreground hover:text-foreground"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </button>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium text-sm text-foreground">{formatCurrency(item.unitPrice * item.quantity)}</p>
+                            {item.quantity > 1 && (
+                              <p className="text-[10px] text-muted-foreground">@{formatCurrency(item.unitPrice)}</p>
+                            )}
+                          </div>
                         </div>
                       </div>
+                      <button
+                        onClick={() => removeCartItem(index)}
+                        className="text-muted-foreground hover:text-destructive transition-colors self-start"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => removeCartItem(index)}
-                      className="text-muted-foreground hover:text-destructive transition-colors self-start"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          )}
+                  ))}
+                </div>
+              </ScrollArea>
+            )
+          }
         </div>
 
         {/* Totals & Actions */}
@@ -802,32 +777,51 @@ export default function SalesPOSPage() {
                     </div>
                   )}
 
-                  <Button onClick={addPayment} className="w-full" variant="secondary">
-                    Tambah Pembayaran
-                  </Button>
+                  <div className="space-y-2">
+                    <Label className="text-foreground">Jatuh Tempo (Opsional)</Label>
+                    <Input
+                      type="date"
+                      value={dueDate ? new Date(dueDate).toISOString().split('T')[0] : ""}
+                      onChange={(e) => {
+                        const date = e.target.value ? new Date(e.target.value).getTime() : undefined;
+                        setDueDate(date);
+                      }}
+                      className="bg-background border-input"
+                    />
+                  </div>
 
-                  {/* Payment List */}
-                  {payments.length > 0 && (
-                    <div className="bg-muted p-3 rounded-md space-y-2 mt-4">
-                      {payments.map((p, i) => (
-                        <div key={i} className="flex justify-between text-sm text-foreground">
-                          <span>{p.paymentMethod}</span>
-                          <span>{formatCurrency(p.amount)}</span>
-                        </div>
-                      ))}
-                      <div className="border-t border-border pt-2 flex justify-between font-bold text-foreground">
-                        <span>Total Dibayar</span>
-                        <span>{formatCurrency(totalPaid)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-foreground">{changeAmount > 0 ? "Kembalian" : "Kurang Bayar"}</span>
-                        <span className={changeAmount > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>
-                          {formatCurrency(changeAmount > 0 ? changeAmount : outstandingAmount)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  <div className="pt-2">
+                    <Button
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                      onClick={addPayment}
+                      disabled={currentPayment.amount <= 0}
+                    >
+                      Tambah Pembayaran
+                    </Button>
+                  </div>
                 </div>
+
+                {/* Payment List */}
+                {payments.length > 0 && (
+                  <div className="bg-muted p-3 rounded-md space-y-2 mt-4">
+                    {payments.map((p, i) => (
+                      <div key={i} className="flex justify-between text-sm text-foreground">
+                        <span>{p.paymentMethod}</span>
+                        <span>{formatCurrency(p.amount)}</span>
+                      </div>
+                    ))}
+                    <div className="border-t border-border pt-2 flex justify-between font-bold text-foreground">
+                      <span>Total Dibayar</span>
+                      <span>{formatCurrency(totalPaid)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-foreground">{changeAmount > 0 ? "Kembalian" : "Kurang Bayar"}</span>
+                      <span className={changeAmount > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>
+                        {formatCurrency(changeAmount > 0 ? changeAmount : outstandingAmount)}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <Button
                   onClick={handlePaymentSubmit}

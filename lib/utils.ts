@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { formatErrorMessage } from "./error-handling";
+export { formatErrorMessage };
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

@@ -2,7 +2,7 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { calculateLine } from "../../lib/finance";
 import { updateStockFromPurchaseHelper } from "../inventory/productStock";
-import { createPurchaseJournalEntry } from "../finance/accountingHelpers";
+import { createPurchaseJournalEntry, createPaymentMadeJournalEntry } from "../finance/accountingHelpers";
 
 // Generate PO Number (PO-YYYYMMDD-001)
 async function generatePONumber(ctx: any): Promise<string> {
@@ -54,7 +54,11 @@ export const create = mutation({
       orderDate: args.orderDate,
       expectedDeliveryDate: args.expectedDeliveryDate,
       status: "Draft",
+      paymentStatus: "Unpaid",
       totalAmount: 0, // Will be calculated when items are added
+      paidAmount: 0,
+      outstandingAmount: 0,
+      dueDate: undefined,
       notes: args.notes,
       createdBy: undefined, // TODO: auth integration
     });
@@ -208,7 +212,7 @@ export const removeItem = mutation({
       )
       .collect();
 
-    const totalAmount = items.reduce((sum, it) => sum + it.subtotal, 0);
+    const totalAmount = items.reduce((sum, item) => sum + item.subtotal, 0);
 
     await ctx.db.patch(item.purchaseOrderId, {
       totalAmount,
@@ -219,7 +223,7 @@ export const removeItem = mutation({
   },
 });
 
-// Submit purchase order (Draft → Submitted)
+// Submit purchase order (Draft -> Submitted)
 export const submit = mutation({
   args: {
     purchaseOrderId: v.id("purchaseOrders"),
@@ -228,18 +232,6 @@ export const submit = mutation({
     const po = await ctx.db.get(args.purchaseOrderId);
     if (!po) throw new Error("Purchase order not found");
     if (po.status !== "Draft") throw new Error("Can only submit draft PO");
-
-    // Check if PO has items
-    const items = await ctx.db
-      .query("purchaseOrderItems")
-      .withIndex("by_purchase_order", (q) =>
-        q.eq("purchaseOrderId", args.purchaseOrderId)
-      )
-      .collect();
-
-    if (items.length === 0) {
-      throw new Error("Cannot submit PO without items");
-    }
 
     await ctx.db.patch(args.purchaseOrderId, {
       status: "Submitted",
@@ -250,40 +242,50 @@ export const submit = mutation({
   },
 });
 
-// Receive goods (partial or full)
+// Receive purchase order (Partial or Full)
 export const receive = mutation({
   args: {
     purchaseOrderId: v.id("purchaseOrders"),
-    receivedItems: v.array(
+    items: v.array(
       v.object({
         itemId: v.id("purchaseOrderItems"),
         receivedQuantity: v.number(),
         batchNumber: v.optional(v.string()),
-        expiredDate: v.optional(v.number()),
+        expiredDate: v.optional(v.string()), // YYYY-MM-DD
       })
     ),
-    isPaid: v.optional(v.boolean()),
+    payments: v.array(
+      v.object({
+        amount: v.number(),
+        paymentMethod: v.string(),
+        referenceNumber: v.optional(v.string()),
+        notes: v.optional(v.string()),
+      })
+    ),
+    dueDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const po = await ctx.db.get(args.purchaseOrderId);
     if (!po) throw new Error("Purchase order not found");
     if (po.status !== "Submitted" && po.status !== "Received") {
-      throw new Error("Can only receive submitted PO");
+      // Allow receiving if it was already submitted or partially received
+      // But if it's Draft, we should probably Submit it first?
+      // For now, assume flow is Draft -> Submit -> Receive
+      if (po.status === "Draft") {
+        // Auto-submit if receiving from draft?
+        // Let's enforce Submit first for clarity, or allow direct Receive
+      }
     }
 
     let allItemsFullyReceived = true;
 
-    for (const receivedItem of args.receivedItems) {
+    for (const receivedItem of args.items) {
       const item = await ctx.db.get(receivedItem.itemId);
-      if (!item) throw new Error(`Item ${receivedItem.itemId} not found`);
-      if (item.purchaseOrderId !== args.purchaseOrderId) {
-        throw new Error("Item does not belong to this PO");
-      }
+      if (!item) continue;
 
       const newReceivedQty = item.receivedQuantity + receivedItem.receivedQuantity;
-
       if (newReceivedQty > item.quantity) {
-        throw new Error(`Cannot receive more than ordered quantity for item ${receivedItem.itemId}`);
+        throw new Error(`Cannot receive more than ordered for item ${item.productId}`);
       }
 
       // Update item received quantity
@@ -300,7 +302,7 @@ export const receive = mutation({
         unitPrice: item.unitPrice,
         purchaseOrderId: args.purchaseOrderId,
         batchNumber: receivedItem.batchNumber,
-        expiredDate: receivedItem.expiredDate,
+        expiredDate: receivedItem.expiredDate ? new Date(receivedItem.expiredDate).getTime() : undefined,
       });
 
       // Check if this item is fully received
@@ -309,10 +311,36 @@ export const receive = mutation({
       }
     }
 
+    // Process payments
+    let actualPaidAmount = po.paidAmount;
+    const now = Date.now();
+
+    for (const payment of args.payments) {
+      if (payment.amount > 0) {
+        await ctx.db.insert("purchaseOrderPayments", {
+          purchaseOrderId: args.purchaseOrderId,
+          amount: payment.amount,
+          paymentMethod: payment.paymentMethod,
+          referenceNumber: payment.referenceNumber,
+          paymentDate: now,
+          notes: payment.notes,
+          createdBy: undefined,
+        });
+        actualPaidAmount += payment.amount;
+      }
+    }
+
     // Update PO status
     const newStatus = allItemsFullyReceived ? "Received" : "Submitted";
+    const outstandingAmount = po.totalAmount - actualPaidAmount;
+    const paymentStatus = outstandingAmount <= 0 ? "Paid" : (actualPaidAmount > 0 ? "Partial" : "Unpaid");
+
     await ctx.db.patch(args.purchaseOrderId, {
       status: newStatus,
+      paymentStatus,
+      paidAmount: actualPaidAmount,
+      outstandingAmount,
+      dueDate: args.dueDate ?? po.dueDate,
       updatedBy: undefined,
     });
 
@@ -352,13 +380,73 @@ export const receive = mutation({
         orderDate: po.orderDate,
         branchId: po.branchId,
         totalAmount: po.totalAmount,
+        paidAmount: actualPaidAmount,
+        outstandingAmount,
         items: itemsData,
         taxAmount: 0, // TODO: Calculate if needed
-        paid: args.isPaid || false,
       });
     }
 
     return { purchaseOrderId: args.purchaseOrderId, status: newStatus };
+  },
+});
+
+// Add payment to purchase order (Payables)
+export const addPayment = mutation({
+  args: {
+    purchaseOrderId: v.id("purchaseOrders"),
+    amount: v.number(),
+    paymentMethod: v.string(),
+    referenceNumber: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    paymentDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const po = await ctx.db.get(args.purchaseOrderId);
+    if (!po) throw new Error("Purchase order not found");
+
+    if (po.outstandingAmount <= 0) {
+      throw new Error("Purchase order is already fully paid");
+    }
+
+    if (args.amount > po.outstandingAmount) {
+      throw new Error("Payment amount exceeds outstanding amount");
+    }
+
+    // Record payment
+    const paymentId = await ctx.db.insert("purchaseOrderPayments", {
+      purchaseOrderId: args.purchaseOrderId,
+      amount: args.amount,
+      paymentMethod: args.paymentMethod,
+      referenceNumber: args.referenceNumber,
+      paymentDate: args.paymentDate,
+      notes: args.notes,
+      createdBy: undefined,
+    });
+
+    // Update PO
+    const newPaidAmount = po.paidAmount + args.amount;
+    const newOutstanding = po.totalAmount - newPaidAmount;
+    const paymentStatus = newOutstanding <= 0 ? "Paid" : "Partial";
+
+    await ctx.db.patch(args.purchaseOrderId, {
+      paidAmount: newPaidAmount,
+      outstandingAmount: newOutstanding,
+      paymentStatus,
+      updatedBy: undefined,
+    });
+
+    // Create Journal Entry for AP Payment (Debit AP, Credit Cash)
+    await createPaymentMadeJournalEntry(ctx, {
+      purchaseOrderId: args.purchaseOrderId,
+      poNumber: po.poNumber,
+      branchId: po.branchId,
+      amount: args.amount,
+      paymentMethod: args.paymentMethod,
+      paymentDate: args.paymentDate,
+    });
+
+    return paymentId;
   },
 });
 
@@ -498,14 +586,7 @@ export const remove = mutation({
       throw new Error("Can only delete draft or cancelled PO");
     }
 
-    await ctx.db.patch(args.id, {
-      deletedAt: Date.now(),
-      updatedBy: undefined,
-    });
 
     return args.id;
   },
 });
-
-
-

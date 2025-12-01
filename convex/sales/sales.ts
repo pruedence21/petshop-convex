@@ -2,7 +2,7 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
 import { reduceStockForSaleHelper } from "../inventory/productStock";
-import { createSaleJournalEntry } from "../finance/accountingHelpers";
+import { createSaleJournalEntry, createPaymentReceivedJournalEntry } from "../finance/accountingHelpers";
 import { calculateLine, calculateTotals, LineItemInput } from "../../lib/finance";
 import { buildError } from "../../lib/errors";
 import { requirePermission, requireUserProfile } from "../users/authHelpers";
@@ -48,6 +48,7 @@ export const create = mutation({
     branchId: v.id("branches"),
     customerId: v.id("customers"),
     saleDate: v.number(),
+    dueDate: v.optional(v.number()),
     notes: v.optional(v.string()),
   },
   returns: v.object({
@@ -65,6 +66,7 @@ export const create = mutation({
       branchId: args.branchId,
       customerId: args.customerId,
       saleDate: args.saleDate,
+      dueDate: args.dueDate,
       status: "Draft",
       subtotal: 0,
       discountAmount: 0,
@@ -382,6 +384,7 @@ export const updateHeader = mutation({
     branchId: v.optional(v.id("branches")),
     customerId: v.optional(v.id("customers")),
     saleDate: v.optional(v.number()),
+    dueDate: v.optional(v.number()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -393,6 +396,7 @@ export const updateHeader = mutation({
       branchId: args.branchId ?? sale.branchId,
       customerId: args.customerId ?? sale.customerId,
       saleDate: args.saleDate ?? sale.saleDate,
+      dueDate: args.dueDate ?? sale.dueDate,
       notes: args.notes ?? sale.notes,
       updatedBy: undefined,
     });
@@ -546,6 +550,7 @@ export const submitSale = mutation({
         notes: v.optional(v.string()),
       })
     ),
+    dueDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const sale = await ctx.db.get(args.saleId);
@@ -646,6 +651,7 @@ export const submitSale = mutation({
       status: "Completed",
       paidAmount: actualPaidAmount,
       outstandingAmount,
+      dueDate: args.dueDate ?? sale.dueDate,
       updatedBy: undefined,
     });
 
@@ -749,5 +755,60 @@ export const getOutstandingByCustomer = query({
   },
 });
 
+// Add payment to sale (Receivables)
+export const addPayment = mutation({
+  args: {
+    saleId: v.id("sales"),
+    amount: v.number(),
+    paymentMethod: v.string(),
+    referenceNumber: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    paymentDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const sale = await ctx.db.get(args.saleId);
+    if (!sale) throw new Error("Sale not found");
 
+    if (sale.outstandingAmount <= 0) {
+      throw new Error("Sale is already fully paid");
+    }
 
+    if (args.amount > sale.outstandingAmount) {
+      throw new Error("Payment amount exceeds outstanding amount");
+    }
+
+    // Record payment
+    const paymentId = await ctx.db.insert("salePayments", {
+      saleId: args.saleId,
+      amount: args.amount,
+      paymentMethod: args.paymentMethod,
+      referenceNumber: args.referenceNumber,
+      paymentDate: args.paymentDate,
+      notes: args.notes,
+      createdBy: undefined,
+    });
+
+    // Update Sale
+    const newPaidAmount = sale.paidAmount + args.amount;
+    const newOutstanding = sale.totalAmount - newPaidAmount;
+
+    await ctx.db.patch(args.saleId, {
+      paidAmount: newPaidAmount,
+      outstandingAmount: newOutstanding,
+      updatedBy: undefined,
+    });
+
+    // Create Journal Entry for AR Payment (Debit Cash, Credit AR)
+    await createPaymentReceivedJournalEntry(ctx, {
+      paymentId,
+      customerId: sale.customerId,
+      branchId: sale.branchId,
+      amount: args.amount,
+      paymentMethod: args.paymentMethod,
+      paymentDate: args.paymentDate,
+      referenceNumber: args.referenceNumber,
+    });
+
+    return paymentId;
+  },
+});

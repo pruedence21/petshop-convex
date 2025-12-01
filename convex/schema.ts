@@ -274,7 +274,11 @@ export default defineSchema({
     orderDate: v.number(),
     expectedDeliveryDate: v.optional(v.number()),
     status: v.string(), // Draft, Submitted, Received, Cancelled
+    paymentStatus: v.string(), // Unpaid, Partial, Paid
     totalAmount: v.number(),
+    paidAmount: v.number(),
+    outstandingAmount: v.number(),
+    dueDate: v.optional(v.number()),
     notes: v.optional(v.string()),
     createdBy: v.optional(v.id("users")),
     updatedBy: v.optional(v.id("users")),
@@ -302,6 +306,21 @@ export default defineSchema({
     .index("by_purchase_order", ["purchaseOrderId"])
     .index("by_product", ["productId"])
     .index("by_variant", ["variantId"]),
+
+  // Purchase Order Payments
+  purchaseOrderPayments: defineTable({
+    purchaseOrderId: v.id("purchaseOrders"),
+    amount: v.number(),
+    paymentMethod: v.string(), // CASH, BANK_TRANSFER
+    referenceNumber: v.optional(v.string()),
+    paymentDate: v.number(),
+    notes: v.optional(v.string()),
+    createdBy: v.optional(v.id("users")),
+    updatedBy: v.optional(v.id("users")),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_purchase_order", ["purchaseOrderId"])
+    .index("by_payment_date", ["paymentDate"]),
 
   // Stock Movements (Audit Log)
   stockMovements: defineTable({
@@ -761,6 +780,7 @@ export default defineSchema({
     totalAmount: v.number(), // Final amount after discount and tax
     paidAmount: v.number(), // Sum of payments received
     outstandingAmount: v.number(), // Remaining balance (for credit)
+    dueDate: v.optional(v.number()), // For credit sales
     notes: v.optional(v.string()),
     createdBy: v.optional(v.id("users")),
     updatedBy: v.optional(v.id("users")),

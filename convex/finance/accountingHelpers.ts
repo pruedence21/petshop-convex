@@ -267,6 +267,8 @@ export async function createPurchaseJournalEntry(
     orderDate: number;
     branchId: Id<"branches">;
     totalAmount: number;
+    paidAmount: number;
+    outstandingAmount: number;
     items: Array<{
       productName: string;
       quantity: number;
@@ -274,7 +276,6 @@ export async function createPurchaseJournalEntry(
       category: string;
     }>;
     taxAmount: number;
-    paid: boolean; // true = cash payment, false = accounts payable
   }
 ) {
   const journalNumber = await generateJournalNumber(ctx);
@@ -337,24 +338,27 @@ export async function createPurchaseJournalEntry(
     });
   }
 
-  // 3. Record cash payment or accounts payable
-  if (args.paid) {
+  // 3. Record cash payment
+  if (args.paidAmount > 0) {
     const cashAccount = await getAccountByCode(ctx, "1-101"); // Kas Besar
     lines.push({
       accountId: cashAccount,
       branchId: args.branchId,
       description: `Pembayaran pembelian ${args.poNumber}`,
       debitAmount: 0,
-      creditAmount: args.totalAmount,
+      creditAmount: args.paidAmount,
     });
-  } else {
+  }
+
+  // 4. Record accounts payable
+  if (args.outstandingAmount > 0) {
     const apAccount = await getAccountByCode(ctx, "2-101"); // Hutang Usaha
     lines.push({
       accountId: apAccount,
       branchId: args.branchId,
       description: `Hutang pembelian ${args.poNumber}`,
       debitAmount: 0,
-      creditAmount: args.totalAmount,
+      creditAmount: args.outstandingAmount,
     });
   }
 
@@ -1117,6 +1121,87 @@ export async function createInitialStockJournalEntry(
     status: "Posted",
     totalDebit: totalAmount,
     totalCredit: totalAmount,
+    postedBy: undefined,
+    postedAt: Date.now(),
+    createdBy: undefined,
+  });
+
+  let sortOrder = 1;
+  for (const line of lines) {
+    await ctx.db.insert("journalEntryLines", {
+      journalEntryId,
+      accountId: line.accountId,
+      branchId: line.branchId,
+      description: line.description,
+      debitAmount: line.debitAmount,
+      creditAmount: line.creditAmount,
+      sortOrder: sortOrder++,
+    });
+  }
+
+  return journalEntryId;
+}
+
+/**
+ * Create journal entry for Payment Made (AP Payment)
+ * 
+ * Entry:
+ * DR Accounts Payable (Hutang Usaha)
+ *   CR Cash/Bank
+ */
+export async function createPaymentMadeJournalEntry(
+  ctx: any,
+  args: {
+    purchaseOrderId: Id<"purchaseOrders">;
+    poNumber: string;
+    branchId: Id<"branches">;
+    amount: number;
+    paymentMethod: string;
+    paymentDate: number;
+  }
+) {
+  const journalNumber = await generateJournalNumber(ctx);
+
+  // Get accounts
+  const apAccount = await getAccountByCode(ctx, "2-100"); // Hutang Usaha
+  const cashAccount = await getAccountByCode(ctx, "1-101"); // Default to Cash
+
+  const lines: Array<{
+    accountId: Id<"accounts">;
+    branchId: Id<"branches">;
+    description: string;
+    debitAmount: number;
+    creditAmount: number;
+  }> = [];
+
+  // DR Accounts Payable
+  lines.push({
+    accountId: apAccount,
+    branchId: args.branchId,
+    description: `Pembayaran hutang ${args.poNumber}`,
+    debitAmount: args.amount,
+    creditAmount: 0,
+  });
+
+  // CR Cash/Bank
+  lines.push({
+    accountId: cashAccount,
+    branchId: args.branchId,
+    description: `Pengeluaran kas untuk ${args.poNumber}`,
+    debitAmount: 0,
+    creditAmount: args.amount,
+  });
+
+  // Create journal entry
+  const journalEntryId = await ctx.db.insert("journalEntries", {
+    journalNumber,
+    journalDate: args.paymentDate,
+    description: `Pembayaran Hutang ${args.poNumber}`,
+    sourceType: "PAYMENT",
+    sourceId: args.purchaseOrderId, // Using PO ID as source for now, ideally payment ID
+    status: "Posted",
+    totalDebit: args.amount,
+    totalCredit: args.amount,
     postedBy: undefined,
     postedAt: Date.now(),
     createdBy: undefined,

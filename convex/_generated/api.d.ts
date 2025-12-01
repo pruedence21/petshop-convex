@@ -31,6 +31,7 @@ import type * as finance_accountingHelpers from "../finance/accountingHelpers.js
 import type * as finance_accountingPeriods from "../finance/accountingPeriods.js";
 import type * as finance_accountingSeed from "../finance/accountingSeed.js";
 import type * as finance_accounts from "../finance/accounts.js";
+import type * as finance_accountsPayable from "../finance/accountsPayable.js";
 import type * as finance_accountsReceivable from "../finance/accountsReceivable.js";
 import type * as finance_bankAccounts from "../finance/bankAccounts.js";
 import type * as finance_bankSeed from "../finance/bankSeed.js";
@@ -110,6 +111,7 @@ declare const fullApi: ApiFromModules<{
   "finance/accountingPeriods": typeof finance_accountingPeriods;
   "finance/accountingSeed": typeof finance_accountingSeed;
   "finance/accounts": typeof finance_accounts;
+  "finance/accountsPayable": typeof finance_accountsPayable;
   "finance/accountsReceivable": typeof finance_accountsReceivable;
   "finance/bankAccounts": typeof finance_bankAccounts;
   "finance/bankSeed": typeof finance_bankSeed;
