@@ -2,7 +2,7 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
 import { buildError } from "../../lib/errors";
-import { createStockAdjustmentJournalEntry } from "../finance/accountingHelpers";
+import { createStockAdjustmentJournalEntry, createInitialStockJournalEntry } from "../finance/accountingHelpers";
 
 // Get stock by branch
 export const getByBranch = query({
@@ -750,5 +750,131 @@ export const reduceStockForSale = mutation({
   },
   handler: async (ctx, args) => {
     return await reduceStockForSaleHelper(ctx, args);
+  },
+});
+
+// Add Initial Stock (Capital Injection)
+export const addInitialStock = mutation({
+  args: {
+    branchId: v.id("branches"),
+    productId: v.id("products"),
+    variantId: v.optional(v.id("productVariants")),
+    quantity: v.number(),
+    unitCost: v.number(),
+    batchNumber: v.optional(v.string()),
+    expiredDate: v.optional(v.number()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (args.quantity <= 0) {
+      throw new Error(JSON.stringify(buildError({
+        code: "INVALID_QUANTITY",
+        message: "Quantity must be positive"
+      })));
+    }
+
+    const now = Date.now();
+    const product = await ctx.db.get(args.productId);
+    if (!product) {
+      throw new Error("Product not found");
+    }
+
+    // Check if product type allows stock tracking
+    const isInventoryItem = !product.type || product.type === "product" || product.type === "medicine";
+    if (!isInventoryItem) {
+      throw new Error(`Cannot add stock for item type: ${product.type}`);
+    }
+
+    // Find existing stock or create new
+    const existingStocks = await ctx.db
+      .query("productStock")
+      .withIndex("by_branch_product", (q) =>
+        q.eq("branchId", args.branchId).eq("productId", args.productId)
+      )
+      .collect();
+
+    const existingStock = existingStocks.find((s) =>
+      args.variantId ? s.variantId === args.variantId : !s.variantId
+    );
+
+    let stockId: Id<"productStock">;
+
+    if (existingStock) {
+      // Update weighted average cost
+      const currentQty = existingStock.quantity;
+      const currentAvgCost = existingStock.averageCost;
+      const newQty = currentQty + args.quantity;
+      const newAvgCost =
+        (currentQty * currentAvgCost + args.quantity * args.unitCost) / newQty;
+
+      await ctx.db.patch(existingStock._id, {
+        quantity: newQty,
+        averageCost: newAvgCost,
+        lastUpdated: now,
+        updatedBy: undefined,
+      });
+      stockId = existingStock._id;
+    } else {
+      stockId = await ctx.db.insert("productStock", {
+        branchId: args.branchId,
+        productId: args.productId,
+        variantId: args.variantId,
+        quantity: args.quantity,
+        averageCost: args.unitCost,
+        lastUpdated: now,
+        updatedBy: undefined,
+      });
+    }
+
+    // Log movement
+    const movementId = await ctx.db.insert("stockMovements", {
+      branchId: args.branchId,
+      productId: args.productId,
+      variantId: args.variantId,
+      movementType: "INITIAL_STOCK",
+      quantity: args.quantity,
+      referenceType: "InitialStock",
+      referenceId: stockId,
+      movementDate: now,
+      notes: args.notes || "Initial Stock Input",
+      createdBy: undefined,
+    });
+
+    // Handle Batch Logic
+    if (product.hasExpiry) {
+      if (!args.batchNumber || !args.expiredDate) {
+        throw new Error("Batch number and expiry date are required for this product");
+      }
+      await ctx.db.insert("productStockBatches", {
+        branchId: args.branchId,
+        productId: args.productId,
+        variantId: args.variantId,
+        batchNumber: args.batchNumber,
+        expiredDate: args.expiredDate,
+        quantity: args.quantity,
+        initialQuantity: args.quantity,
+        receivedDate: now,
+        createdBy: undefined,
+      });
+    }
+
+    // Accounting Integration
+    const category = await ctx.db.get(product.categoryId);
+    const totalCost = args.quantity * args.unitCost;
+
+    await createInitialStockJournalEntry(ctx, {
+      stockId: movementId,
+      branchId: args.branchId,
+      date: now,
+      description: args.notes || `Stok Awal: ${product.name}`,
+      items: [{
+        productName: product.name,
+        category: category?.name || "Uncategorized",
+        quantity: args.quantity,
+        cost: totalCost,
+      }]
+    });
+
+    return stockId;
   },
 });

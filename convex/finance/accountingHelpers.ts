@@ -1035,3 +1035,105 @@ export async function createPrescriptionJournalEntry(
 
   return journalEntryId;
 }
+
+/**
+ * Create journal entry for Initial Stock (Capital Injection)
+ * 
+ * Entry:
+ * DR Inventory (Asset)
+ *   CR Capital (Equity)
+ */
+export async function createInitialStockJournalEntry(
+  ctx: any,
+  args: {
+    stockId: string;
+    branchId: Id<"branches">;
+    date: number;
+    description: string;
+    items: Array<{
+      productName: string;
+      category: string;
+      quantity: number;
+      cost: number; // Total cost
+    }>;
+  }
+) {
+  const journalNumber = await generateJournalNumber(ctx);
+
+  const getInventoryAccount = (category: string): string => {
+    if (category.includes("Pet Food") || category.includes("Food")) return "1-131";
+    if (category.includes("Medicine") || category.includes("Vitamin")) return "1-133";
+    if (category.includes("Vaccine")) return "1-134";
+    if (category.includes("Accessories")) return "1-132";
+    if (category.includes("Grooming")) return "1-135";
+    return "1-131";
+  };
+
+  const lines: Array<{
+    accountId: Id<"accounts">;
+    branchId: Id<"branches">;
+    description: string;
+    debitAmount: number;
+    creditAmount: number;
+  }> = [];
+
+  // Credit Account: Modal (Capital)
+  const capitalAccount = await getAccountByCode(ctx, "3-100");
+
+  let totalAmount = 0;
+
+  for (const item of args.items) {
+    const inventoryCode = getInventoryAccount(item.category);
+    const inventoryAccount = await getAccountByCode(ctx, inventoryCode);
+
+    // DR Inventory
+    lines.push({
+      accountId: inventoryAccount,
+      branchId: args.branchId,
+      description: `Stok Awal: ${item.productName}`,
+      debitAmount: item.cost,
+      creditAmount: 0,
+    });
+
+    totalAmount += item.cost;
+  }
+
+  // CR Capital
+  lines.push({
+    accountId: capitalAccount,
+    branchId: args.branchId,
+    description: `Modal Stok Awal`,
+    debitAmount: 0,
+    creditAmount: totalAmount,
+  });
+
+  // Create journal entry
+  const journalEntryId = await ctx.db.insert("journalEntries", {
+    journalNumber,
+    journalDate: args.date,
+    description: args.description,
+    sourceType: "INITIAL_STOCK",
+    sourceId: args.stockId,
+    status: "Posted",
+    totalDebit: totalAmount,
+    totalCredit: totalAmount,
+    postedBy: undefined,
+    postedAt: Date.now(),
+    createdBy: undefined,
+  });
+
+  let sortOrder = 1;
+  for (const line of lines) {
+    await ctx.db.insert("journalEntryLines", {
+      journalEntryId,
+      accountId: line.accountId,
+      branchId: line.branchId,
+      description: line.description,
+      debitAmount: line.debitAmount,
+      creditAmount: line.creditAmount,
+      sortOrder: sortOrder++,
+    });
+  }
+
+  return journalEntryId;
+}

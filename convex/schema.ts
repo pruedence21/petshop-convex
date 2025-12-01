@@ -308,7 +308,7 @@ export default defineSchema({
     branchId: v.id("branches"),
     productId: v.id("products"),
     variantId: v.optional(v.id("productVariants")),
-    movementType: v.string(), // PURCHASE_IN, ADJUSTMENT_IN, ADJUSTMENT_OUT, SALE_OUT, TRANSFER_IN, TRANSFER_OUT, RETURN_IN, DAMAGE_OUT
+    movementType: v.string(), // PURCHASE_IN, ADJUSTMENT_IN, ADJUSTMENT_OUT, SALE_OUT, TRANSFER_IN, TRANSFER_OUT, RETURN_IN, DAMAGE_OUT, INITIAL_STOCK
     quantity: v.number(), // Positive for IN, negative for OUT
     referenceType: v.string(), // PurchaseOrder, Adjustment, Transfer, Sale, etc
     referenceId: v.string(), // ID of related document

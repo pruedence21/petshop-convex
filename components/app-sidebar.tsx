@@ -37,6 +37,7 @@ import {
     LucideIcon,
     ChevronDown,
     AlertTriangle,
+    Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -80,6 +81,7 @@ const navigation: NavigationItem[] = [
         icon: PackageSearch,
         children: [
             { name: "Manajemen Stok", href: "/dashboard/stock", icon: PackageSearch },
+            { name: "Input Stok Awal", href: "/dashboard/stock/initial", icon: Plus },
             { name: "Monitoring Kadaluarsa", href: "/dashboard/expiry", icon: AlertTriangle },
         ],
     },

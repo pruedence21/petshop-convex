@@ -491,3 +491,88 @@ export const seedAll = action({
         return results;
     },
 });
+
+// ==================== INITIAL STOCK SEEDING ====================
+
+export const seedInitialStock = action({
+    args: {},
+    handler: async (ctx) => {
+        const results = {
+            success: true,
+            processed: 0,
+            errors: [] as string[],
+        };
+
+        try {
+            // 1. Get PUSAT Branch
+            const branches = await ctx.runQuery(api.master_data.branches.list, {});
+            const pusatBranch = branches.find((b: any) => b.code === "PUSAT");
+
+            if (!pusatBranch) {
+                throw new Error("Branch PUSAT not found");
+            }
+
+            const branchId = pusatBranch._id;
+
+            // 2. Get All Products
+            const allProducts = await ctx.runQuery(api.inventory.products.list, { includeInactive: false });
+
+            // Filter for "product" and "medicine" types
+            const targetProducts = allProducts.filter(
+                (p: any) => p.type === "product" || p.type === "medicine"
+            );
+
+            console.log(`Found ${targetProducts.length} products to seed stock for.`);
+
+            // 3. Iterate and Add Stock
+            for (const product of targetProducts) {
+                try {
+                    const isMedicine = product.type === "medicine";
+                    const batchNumber = isMedicine ? "BATCH-INIT-001" : undefined;
+                    // 1 year from now for expiry
+                    const expiredDate = isMedicine ? Date.now() + 365 * 24 * 60 * 60 * 1000 : undefined;
+
+                    if (product.hasVariants) {
+                        // Fetch variants
+                        const variants = await ctx.runQuery(api.inventory.products.getVariants, { productId: product._id });
+
+                        for (const variant of variants) {
+                            await ctx.runMutation(api.inventory.productStock.addInitialStock, {
+                                branchId,
+                                productId: product._id,
+                                variantId: variant._id,
+                                quantity: 100,
+                                unitCost: variant.purchasePrice || product.purchasePrice || 0,
+                                batchNumber,
+                                expiredDate,
+                                notes: "Initial Stock Seeding",
+                            });
+                            results.processed++;
+                        }
+                    } else {
+                        // No variants
+                        await ctx.runMutation(api.inventory.productStock.addInitialStock, {
+                            branchId,
+                            productId: product._id,
+                            quantity: 100,
+                            unitCost: product.purchasePrice || 0,
+                            batchNumber,
+                            expiredDate,
+                            notes: "Initial Stock Seeding",
+                        });
+                        results.processed++;
+                    }
+                } catch (err: any) {
+                    console.error(`Failed to seed stock for product ${product.name}:`, err);
+                    results.errors.push(`Product ${product.name}: ${err.message}`);
+                }
+            }
+
+        } catch (error: any) {
+            results.success = false;
+            results.errors.push(`Fatal error: ${error.message}`);
+        }
+
+        return results;
+    },
+});
