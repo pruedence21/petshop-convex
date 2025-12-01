@@ -252,7 +252,7 @@ export const listUsers = query({
           phone: profile.phone,
           branchId: profile.branchId,
           roleId: profile.roleId,
-          isActive: profile.isActive,
+          isActive: profile.isActive ?? false,
           lastLoginAt: profile.lastLoginAt,
           branchName,
           roleName,
@@ -361,13 +361,14 @@ export const getUserDetails = query({
           roleId: ur.roleId,
           roleName: roleDoc?.name || "Unknown",
           assignedAt: ur.assignedAt,
-          isActive: ur.isActive,
+          isActive: ur.isActive ?? false,
         };
       })
     );
 
     return {
       ...profile,
+      isActive: profile.isActive ?? false,
       branch,
       role,
       assignedRoles,
@@ -607,7 +608,10 @@ export const getCurrentUser = query({
     return {
       userId: userProfile.userId,
       email: userProfile.email,
-      profile: userProfile.profile,
+      profile: {
+        ...userProfile.profile,
+        isActive: userProfile.profile.isActive ?? false,
+      },
       role: userProfile.role,
       permissions: userProfile.permissions,
       branch,
