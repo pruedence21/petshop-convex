@@ -110,8 +110,8 @@ jobs:
           build-args: |
             NEXT_PUBLIC_CONVEX_URL=${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
           secrets: |
-            "convex_deployment=${{ secrets.CONVEX_DEPLOYMENT }}"
-            "jwt_private_key=${{ secrets.JWT_PRIVATE_KEY }}"
+            convex_deployment=${{ secrets.CONVEX_DEPLOYMENT }}
+            jwt_private_key=${{ secrets.JWT_PRIVATE_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           
