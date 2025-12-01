@@ -491,14 +491,14 @@ export default function SalesPOSPage() {
 
         {/* Product Grid */}
         <ScrollArea className="flex-1 p-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 pb-20">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 lg:gap-3 pb-20">
             {filteredProducts.map(product => (
               <Card
                 key={product._id}
                 className="cursor-pointer hover:shadow-md transition-all active:scale-95 border-slate-200 overflow-hidden group flex flex-col"
                 onClick={() => handleProductClick(product)}
               >
-                <div className="h-36 bg-slate-100 flex items-center justify-center relative">
+                <div className="h-28 lg:h-36 bg-slate-100 flex items-center justify-center relative">
                   {/* Placeholder for image */}
                   <Package className="h-10 w-10 text-slate-300" />
                   {product.hasVariants && (
@@ -507,8 +507,8 @@ export default function SalesPOSPage() {
                     </Badge>
                   )}
                 </div>
-                <div className="p-2.5 flex flex-col flex-1">
-                  <h3 className="font-medium text-sm line-clamp-2 leading-tight mb-auto min-h-[2.5em]">
+                <div className="p-2 lg:p-2.5 flex flex-col flex-1">
+                  <h3 className="font-medium text-xs lg:text-sm line-clamp-2 leading-tight mb-auto min-h-[2.5em]">
                     {product.name}
                   </h3>
                   <div className="flex items-center justify-between mt-2">
@@ -530,7 +530,7 @@ export default function SalesPOSPage() {
       </div>
 
       {/* RIGHT SIDE: Cart / Transaction */}
-      <div className="w-full md:w-[400px] lg:w-[450px] bg-white flex flex-col h-full shadow-xl z-10 border-l border-slate-200">
+      <div className="w-full md:w-[340px] lg:w-[380px] xl:w-[420px] bg-white flex flex-col h-full shadow-xl z-10 border-l border-slate-200">
         {/* Customer Selector */}
         <div className="p-4 border-b border-slate-100 bg-slate-50/50">
           <div className="flex items-center justify-between mb-2">
@@ -584,7 +584,7 @@ export default function SalesPOSPage() {
             <ScrollArea className="flex-1">
               <div className="p-4 space-y-3">
                 {cart.map((item, index) => (
-                  <div key={`${item.productId}-${item.variantId}`} className="flex gap-3 bg-white border border-slate-100 p-3 rounded-lg shadow-sm">
+                  <div key={`${item.productId}-${item.variantId}`} className="flex gap-2 lg:gap-3 bg-white border border-slate-100 p-2 lg:p-3 rounded-lg shadow-sm">
                     <div className="h-12 w-12 bg-slate-100 rounded-md flex items-center justify-center flex-shrink-0">
                       <Package className="h-6 w-6 text-slate-300" />
                     </div>
@@ -632,7 +632,7 @@ export default function SalesPOSPage() {
 
         {/* Totals & Actions */}
         <div className="p-4 bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-          <div className="space-y-2 mb-4">
+          <div className="space-y-1.5 lg:space-y-2 mb-3 lg:mb-4">
             <div className="flex justify-between text-sm">
               <span className="text-slate-500">Subtotal</span>
               <span>{formatCurrency(cartSubtotal)}</span>
