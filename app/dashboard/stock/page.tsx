@@ -35,6 +35,7 @@ import {
 import { Search, Package, AlertTriangle, Plus, Minus, ArrowRightLeft } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
+import { formatErrorMessage } from "@/lib/error-handling";
 
 type DialogType = "adjust" | "transfer" | null;
 
@@ -116,7 +117,7 @@ export default function StockPage() {
       toast.success("Stok berhasil disesuaikan");
       handleCloseDialog();
     } catch (error: any) {
-      toast.error(error.message || "Terjadi kesalahan");
+      toast.error(formatErrorMessage(error));
     }
   };
 
@@ -148,7 +149,7 @@ export default function StockPage() {
       toast.success("Stok berhasil ditransfer");
       handleCloseDialog();
     } catch (error: any) {
-      toast.error(error.message || "Terjadi kesalahan");
+      toast.error(formatErrorMessage(error));
     }
   };
 
