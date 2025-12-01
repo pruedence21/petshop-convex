@@ -24,7 +24,6 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  NODE_ENV: production
   SETUP_SCRIPT_RAN: 1
 
 jobs:
