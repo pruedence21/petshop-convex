@@ -147,15 +147,15 @@ export default function BrandsPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Merek Produk</h1>
-        <p className="text-slate-500 mt-1">Kelola data merek produk</p>
+        <h1 className="text-3xl font-bold text-foreground">Merek Produk</h1>
+        <p className="text-muted-foreground mt-1">Kelola data merek produk</p>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
+      <div className="bg-card rounded-lg border border-border shadow-sm">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 max-w-sm relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Cari merek..."
                 value={searchQuery}
@@ -184,13 +184,13 @@ export default function BrandsPage() {
           <TableBody>
             {!filteredBrands ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Memuat data...
                 </TableCell>
               </TableRow>
             ) : filteredBrands.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Belum ada data merek
                 </TableCell>
               </TableRow>
@@ -199,11 +199,11 @@ export default function BrandsPage() {
                 <TableRow key={brand._id}>
                   <TableCell className="font-medium">{brand.code}</TableCell>
                   <TableCell>{brand.name}</TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="text-muted-foreground">
                     {brand.contactPerson || "-"}
-                    {brand.phone && <div className="text-sm text-slate-500">{brand.phone}</div>}
+                    {brand.phone && <div className="text-sm text-muted-foreground">{brand.phone}</div>}
                   </TableCell>
-                  <TableCell className="text-slate-600">{brand.email || "-"}</TableCell>
+                  <TableCell className="text-muted-foreground">{brand.email || "-"}</TableCell>
                   <TableCell>
                     <Badge variant={brand.isActive ? "default" : "secondary"}>
                       {brand.isActive ? "Aktif" : "Nonaktif"}
@@ -223,7 +223,7 @@ export default function BrandsPage() {
                         size="sm"
                         onClick={() => handleDelete(brand._id)}
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </TableCell>
@@ -251,7 +251,7 @@ export default function BrandsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="code">
-                    Kode Merek <span className="text-red-500">*</span>
+                    Kode Merek <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="code"
@@ -265,7 +265,7 @@ export default function BrandsPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="name">
-                    Nama Merek <span className="text-red-500">*</span>
+                    Nama Merek <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="name"

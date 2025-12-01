@@ -20,7 +20,7 @@ export default function SignIn() {
             width={90}
             height={90}
           />
-          <div className="w-px h-20 bg-slate-300 dark:bg-slate-600"></div>
+          <div className="w-px h-20 bg-border"></div>
           <Image
             src="/nextjs-icon-light-background.svg"
             alt="Next.js Logo"
@@ -36,15 +36,15 @@ export default function SignIn() {
             className="hidden dark:block"
           />
         </div>
-        <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-200">
+        <h1 className="text-3xl font-bold text-foreground">
           PetShop Management System
         </h1>
-        <p className="text-slate-600 dark:text-slate-400">
+        <p className="text-muted-foreground">
           Sign in to access the system. User accounts are created by administrators only.
         </p>
       </div>
       <form
-        className="flex flex-col gap-4 w-full bg-slate-100 dark:bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-300 dark:border-slate-600"
+        className="flex flex-col gap-4 w-full bg-card p-8 rounded-2xl shadow-xl border border-border"
         onSubmit={(e) => {
           e.preventDefault();
           setLoading(true);
@@ -62,21 +62,21 @@ export default function SignIn() {
         }}
       >
         <input
-          className="bg-white dark:bg-slate-900 text-foreground rounded-lg p-3 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 outline-none transition-all placeholder:text-slate-400"
+          className="bg-background text-foreground rounded-lg p-3 border border-input focus:border-ring focus:ring-2 focus:ring-ring/20 outline-none transition-all placeholder:text-muted-foreground"
           type="email"
           name="email"
           placeholder="Email"
           required
         />
         <input
-          className="bg-white dark:bg-slate-900 text-foreground rounded-lg p-3 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 outline-none transition-all placeholder:text-slate-400"
+          className="bg-background text-foreground rounded-lg p-3 border border-input focus:border-ring focus:ring-2 focus:ring-ring/20 outline-none transition-all placeholder:text-muted-foreground"
           type="password"
           name="password"
           placeholder="Password"
           required
         />
         <button
-          className="bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-white font-semibold rounded-lg py-3 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg py-3 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           type="submit"
           disabled={loading}
         >
@@ -84,12 +84,12 @@ export default function SignIn() {
         </button>
         {error && (
           <div className="bg-rose-500/10 border border-rose-500/30 dark:border-rose-500/50 rounded-lg p-4">
-            <p className="text-rose-700 dark:text-rose-300 font-medium text-sm break-words">
+            <p className="text-destructive font-medium text-sm break-words">
               Error: {error}
             </p>
           </div>
         )}
-        <p className="text-xs text-center text-slate-500 dark:text-slate-400 mt-2">
+        <p className="text-xs text-center text-muted-foreground mt-2">
           Don&apos;t have an account? Contact your administrator.
         </p>
       </form>

@@ -179,33 +179,42 @@ export default function AppointmentsPage() {
     }
   }
 
-  if (!mounted) {
-    return null; // Avoid hydration mismatch
-  }
+  if (!mounted) return null;
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Appointment Klinik</h1>
-        <p className="text-slate-500 mt-1">Kelola jadwal appointment klinik hewan</p>
+    <div className="p-8 space-y-8">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Appointments</h1>
+          <p className="text-muted-foreground mt-1">
+            Kelola jadwal appointment klinik
+          </p>
+        </div>
+        <Button onClick={handleOpenDialog}>
+          <Plus className="h-4 w-4 mr-2" />
+          Buat Appointment
+        </Button>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
+      <div className="bg-card rounded-lg border border-border shadow-sm">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="flex-1 max-w-sm relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Cari appointment..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Semua Status" />
+            <div className="flex-1 max-w-sm relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Cari appointment..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 bg-muted/50 border-border"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={selectedStatus}
+                onValueChange={setSelectedStatus}
+              >
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Status</SelectItem>
@@ -216,14 +225,10 @@ export default function AppointmentsPage() {
               </Select>
               <Select
                 value={selectedBranch === "all" ? "all" : selectedBranch}
-                onValueChange={(value) =>
-                  setSelectedBranch(
-                    value === "all" ? "all" : (value as Id<"branches">)
-                  )
-                }
+                onValueChange={(v) => setSelectedBranch(v as Id<"branches"> | "all")}
               >
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Semua Cabang" />
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Cabang" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Cabang</SelectItem>
@@ -235,69 +240,69 @@ export default function AppointmentsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleOpenDialog} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Buat Appointment
-            </Button>
           </div>
         </div>
 
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead>No. Appointment</TableHead>
+              <TableHead>No. Apt</TableHead>
               <TableHead>Tanggal & Waktu</TableHead>
-              <TableHead>Hewan Peliharaan</TableHead>
-              <TableHead>Pemilik</TableHead>
-              <TableHead>Staff</TableHead>
+              <TableHead>Pasien</TableHead>
+              <TableHead>Dokter</TableHead>
               <TableHead>Cabang</TableHead>
-              <TableHead>Total</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredAppointments === undefined ? (
+            {!filteredAppointments ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8">
-                  Loading...
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  Memuat data...
                 </TableCell>
               </TableRow>
             ) : filteredAppointments.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={9}
-                  className="text-center py-8 text-slate-500"
-                >
-                  Tidak ada data appointment
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  Tidak ada appointment ditemukan
                 </TableCell>
               </TableRow>
             ) : (
               filteredAppointments.map((apt) => (
-                <TableRow key={apt._id}>
-                  <TableCell className="font-medium">
+                <TableRow key={apt._id} className="hover:bg-muted/50 transition-colors">
+                  <TableCell className="font-medium text-foreground">
                     {apt.appointmentNumber}
                   </TableCell>
-                  <TableCell>
-                    {formatDate(apt.appointmentDate)} - {apt.appointmentTime}
+                  <TableCell className="text-muted-foreground">
+                    <div className="flex flex-col">
+                      <span>{formatDate(apt.appointmentDate)}</span>
+                      <span className="text-xs">{apt.appointmentTime}</span>
+                    </div>
                   </TableCell>
-                  <TableCell>{apt.pet?.name || "-"}</TableCell>
-                  <TableCell>{apt.customer?.name || "-"}</TableCell>
-                  <TableCell>{apt.staff?.name || "-"}</TableCell>
-                  <TableCell>{apt.branch?.name || "-"}</TableCell>
-                  <TableCell>{formatCurrency(apt.totalAmount)}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-foreground">{apt.pet?.name}</span>
+                      <span className="text-xs text-muted-foreground">{apt.customer?.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {apt.staff?.name}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {apt.branch?.name}
+                  </TableCell>
                   <TableCell>{getStatusBadge(apt.status)}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link href={`/dashboard/clinic/appointments/${apt._id}`}>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </Link>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       {apt.status === "Scheduled" && (
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
                           onClick={() => handleCancel(apt._id)}
                         >
                           <X className="h-4 w-4" />
@@ -312,7 +317,6 @@ export default function AppointmentsPage() {
         </Table>
       </div>
 
-      {/* Create Appointment Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -327,7 +331,7 @@ export default function AppointmentsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="branch">
-                    Cabang <span className="text-red-500">*</span>
+                    Cabang <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={formData.branchId}
@@ -350,7 +354,7 @@ export default function AppointmentsPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="customer">
-                    Pemilik <span className="text-red-500">*</span>
+                    Pemilik <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={formData.customerId}
@@ -373,7 +377,7 @@ export default function AppointmentsPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="pet">
-                    Hewan Peliharaan <span className="text-red-500">*</span>
+                    Hewan Peliharaan <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={formData.petId}
@@ -397,7 +401,7 @@ export default function AppointmentsPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="staff">
-                    Staff/Dokter <span className="text-red-500">*</span>
+                    Staff/Dokter <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={formData.staffId}

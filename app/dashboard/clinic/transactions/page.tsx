@@ -81,7 +81,7 @@ const VitalSignInput = ({ icon: Icon, label, value, unit, onChange, min, max, pl
 
   return (
     <div className="relative">
-      <Label className="text-xs text-slate-500 mb-1.5 flex items-center gap-1.5">
+      <Label className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1.5">
         <Icon className="h-3.5 w-3.5" />
         {label}
       </Label>
@@ -93,7 +93,7 @@ const VitalSignInput = ({ icon: Icon, label, value, unit, onChange, min, max, pl
           className={`pr-8 ${isOutOfRange ? "border-red-300 bg-red-50 text-red-700" : ""}`}
           placeholder={placeholder}
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium">
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
           {unit}
         </span>
       </div>
@@ -357,9 +357,9 @@ export default function ClinicTransactionPage() {
   // Initial Dialog
   if (!appointmentId) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-muted/50 flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl shadow-xl">
-          <CardHeader className="border-b border-slate-100 bg-white rounded-t-xl">
+          <CardHeader className="border-b border-border bg-card rounded-t-xl">
             <CardTitle className="flex items-center gap-2 text-xl">
               <Stethoscope className="h-6 w-6 text-blue-600" />
               Mulai Sesi Pemeriksaan
@@ -489,16 +489,16 @@ export default function ClinicTransactionPage() {
 
   // Main Workspace
   return (
-    <div className="h-[calc(100vh-4rem)] flex overflow-hidden bg-slate-50">
+    <div className="h-[calc(100vh-4rem)] flex overflow-hidden bg-muted/50">
       {/* LEFT SIDEBAR: Patient Context (Sticky) */}
-      <div className="w-80 bg-white border-r border-slate-200 flex flex-col h-full shadow-sm z-10">
-        <div className="p-6 border-b border-slate-100 text-center">
+      <div className="w-80 bg-card border-r border-border flex flex-col h-full shadow-sm z-10">
+        <div className="p-6 border-b border-border text-center">
           <div className="w-20 h-20 bg-blue-100 rounded-full mx-auto mb-4 flex items-center justify-center text-blue-600">
             <Heart className="h-10 w-10" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900">{appointment?.pet?.name}</h2>
-          <p className="text-sm text-slate-500">{appointment?.pet?.breed} • {appointment?.pet?.gender}</p>
-          <Badge variant="outline" className="mt-2 bg-slate-50">
+          <h2 className="text-xl font-bold text-foreground">{appointment?.pet?.name}</h2>
+          <p className="text-sm text-muted-foreground">{appointment?.pet?.breed} • {appointment?.pet?.gender}</p>
+          <Badge variant="outline" className="mt-2 bg-muted/50">
             {appointment?.customer?.name}
           </Badge>
         </div>
@@ -506,7 +506,7 @@ export default function ClinicTransactionPage() {
         <ScrollArea className="flex-1 p-6">
           <div className="space-y-6">
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <AlertCircle className="h-3 w-3" />
                 Alerts & Notes
               </h3>
@@ -521,16 +521,16 @@ export default function ClinicTransactionPage() {
             <Separator />
 
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <Clock className="h-3 w-3" />
                 Riwayat Kunjungan
               </h3>
               {[1, 2, 3].map((_, i) => (
                 <div key={i} className="flex gap-3 items-start text-sm">
-                  <div className="mt-1 min-w-[4px] h-[4px] rounded-full bg-slate-300" />
+                  <div className="mt-1 min-w-[4px] h-[4px] rounded-full bg-muted-foreground/30" />
                   <div>
-                    <p className="font-medium text-slate-700">10 Okt 2024</p>
-                    <p className="text-slate-500 text-xs">Vaksinasi Rabies</p>
+                    <p className="font-medium text-foreground">10 Okt 2024</p>
+                    <p className="text-muted-foreground text-xs">Vaksinasi Rabies</p>
                   </div>
                 </div>
               ))}
@@ -538,7 +538,7 @@ export default function ClinicTransactionPage() {
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t border-slate-200 bg-slate-50">
+        <div className="p-4 border-t border-border bg-muted/50">
           <Button variant="outline" className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => router.push("/dashboard/clinic/appointments")}>
             <X className="h-4 w-4 mr-2" />
             Tutup Sesi
@@ -549,21 +549,21 @@ export default function ClinicTransactionPage() {
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0">
+        <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 flex-shrink-0">
           <div className="flex items-center gap-4">
             <Badge variant="secondary" className="h-8 px-3 text-sm font-medium">
               {appointment?.appointmentNumber}
             </Badge>
-            <div className="h-4 w-[1px] bg-slate-200" />
-            <p className="text-sm text-slate-500 flex items-center gap-2">
+            <div className="h-4 w-[1px] bg-border" />
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               {formatDate(appointment?.appointmentDate || 0)}
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <p className="text-sm font-medium text-slate-600 mr-2">
-              Total: <span className="text-slate-900 text-lg">{formatCurrency(totalBill)}</span>
+            <p className="text-sm font-medium text-muted-foreground mr-2">
+              Total: <span className="text-foreground text-lg">{formatCurrency(totalBill)}</span>
             </p>
             <Button
               variant="default"
@@ -578,38 +578,38 @@ export default function ClinicTransactionPage() {
 
         {/* Workspace Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <div className="px-6 pt-4 bg-white border-b border-slate-200">
+          <div className="px-6 pt-4 bg-card border-b border-border">
             <TabsList className="bg-transparent p-0 h-auto gap-6">
               <TabsTrigger
                 value="clinical"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none px-2 py-3 text-slate-500 data-[state=active]:text-blue-600 transition-all"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none px-2 py-3 text-muted-foreground data-[state=active]:text-blue-600 transition-all"
               >
                 Data Klinis
               </TabsTrigger>
               <TabsTrigger
                 value="services"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none px-2 py-3 text-slate-500 data-[state=active]:text-blue-600 transition-all"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none px-2 py-3 text-muted-foreground data-[state=active]:text-blue-600 transition-all"
               >
                 Tindakan & Resep
               </TabsTrigger>
               <TabsTrigger
                 value="payment"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none px-2 py-3 text-slate-500 data-[state=active]:text-blue-600 transition-all"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none px-2 py-3 text-muted-foreground data-[state=active]:text-blue-600 transition-all"
               >
                 Pembayaran
               </TabsTrigger>
             </TabsList>
           </div>
 
-          <div className="flex-1 overflow-hidden bg-slate-50/50">
+          <div className="flex-1 overflow-hidden bg-muted/50">
             <ScrollArea className="h-full">
               <div className="p-6 max-w-5xl mx-auto pb-20">
 
                 {/* TAB: CLINICAL DATA */}
                 <TabsContent value="clinical" className="space-y-6 mt-0">
                   {/* Subjective */}
-                  <Card className="border-slate-200 shadow-sm">
-                    <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
+                  <Card className="border-border shadow-sm">
+                    <CardHeader className="bg-muted/50 border-b border-border pb-4">
                       <CardTitle className="text-base flex items-center gap-2">
                         <FileText className="h-4 w-4 text-blue-500" />
                         Anamnesa (Subjective)
@@ -628,8 +628,8 @@ export default function ClinicTransactionPage() {
                   </Card>
 
                   {/* Objective (Vitals) */}
-                  <Card className="border-slate-200 shadow-sm">
-                    <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
+                  <Card className="border-border shadow-sm">
+                    <CardHeader className="bg-muted/50 border-b border-border pb-4">
                       <CardTitle className="text-base flex items-center gap-2">
                         <Activity className="h-4 w-4 text-green-500" />
                         Pemeriksaan Fisik (Objective)
@@ -677,8 +677,8 @@ export default function ClinicTransactionPage() {
 
                   {/* Assessment & Plan */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="border-slate-200 shadow-sm">
-                      <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
+                    <Card className="border-border shadow-sm">
+                      <CardHeader className="bg-muted/50 border-b border-border pb-4">
                         <CardTitle className="text-base flex items-center gap-2">
                           <Stethoscope className="h-4 w-4 text-purple-500" />
                           Diagnosa (Assessment)
@@ -694,8 +694,8 @@ export default function ClinicTransactionPage() {
                       </CardContent>
                     </Card>
 
-                    <Card className="border-slate-200 shadow-sm">
-                      <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
+                    <Card className="border-border shadow-sm">
+                      <CardHeader className="bg-muted/50 border-b border-border pb-4">
                         <CardTitle className="text-base flex items-center gap-2">
                           <Pill className="h-4 w-4 text-orange-500" />
                           Rencana Terapi (Plan)
@@ -739,21 +739,21 @@ export default function ClinicTransactionPage() {
                     </CardHeader>
                     <CardContent className="p-0">
                       {appointmentServices?.length === 0 ? (
-                        <div className="p-8 text-center text-slate-400">
+                        <div className="p-8 text-center text-muted-foreground">
                           <Pill className="h-12 w-12 mx-auto mb-3 opacity-20" />
                           <p>Belum ada item ditambahkan</p>
                         </div>
                       ) : (
-                        <div className="divide-y divide-slate-100">
+                        <div className="divide-y divide-border/50">
                           {appointmentServices?.map((item: any) => (
-                            <div key={item._id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors group">
+                            <div key={item._id} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors group">
                               <div className="flex items-center gap-4">
                                 <div className={`h-10 w-10 rounded-full flex items-center justify-center ${item.isPrescription ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
                                   {item.isPrescription ? <Pill className="h-5 w-5" /> : <Syringe className="h-5 w-5" />}
                                 </div>
                                 <div>
-                                  <h4 className="font-medium text-slate-900">{item.service?.name || item.product?.name}</h4>
-                                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                                  <h4 className="font-medium text-foreground">{item.service?.name || item.product?.name}</h4>
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                     <span>{item.quantity} x {formatCurrency(item.unitPrice)}</span>
                                     {item.isPrescription && (
                                       <Badge variant="outline" className="text-[10px] h-5">Resep</Badge>
@@ -762,11 +762,11 @@ export default function ClinicTransactionPage() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-6">
-                                <span className="font-bold text-slate-700">{formatCurrency(item.subtotal)}</span>
+                                <span className="font-bold text-foreground">{formatCurrency(item.subtotal)}</span>
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                                  className="text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
                                   onClick={() => handleRemoveServiceItem(item._id)}
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -789,14 +789,14 @@ export default function ClinicTransactionPage() {
                           <CardTitle>Rincian Tagihan</CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
-                          <div className="divide-y divide-slate-100">
+                          <div className="divide-y divide-border/50">
                             {appointmentServices?.map((item: any) => (
                               <div key={item._id} className="p-4 flex justify-between text-sm">
-                                <span>{item.service?.name || item.product?.name} <span className="text-slate-400">x{item.quantity}</span></span>
+                                <span>{item.service?.name || item.product?.name} <span className="text-muted-foreground">x{item.quantity}</span></span>
                                 <span className="font-medium">{formatCurrency(item.subtotal)}</span>
                               </div>
                             ))}
-                            <div className="p-4 bg-slate-50 flex justify-between font-bold text-lg border-t border-slate-200">
+                            <div className="p-4 bg-muted/50 flex justify-between font-bold text-lg border-t border-border">
                               <span>Total Tagihan</span>
                               <span className="text-blue-600">{formatCurrency(totalBill)}</span>
                             </div>

@@ -88,7 +88,7 @@ export default function JournalEntriesPage() {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { className: string; label: string }> = {
-      Draft: { className: "bg-slate-100 text-slate-800", label: "Draft" },
+      Draft: { className: "bg-muted text-muted-foreground", label: "Draft" },
       Posted: { className: "bg-green-100 text-green-800", label: "Posted" },
       Voided: { className: "bg-red-100 text-red-800", label: "Void" },
     };
@@ -208,7 +208,7 @@ export default function JournalEntriesPage() {
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading journal entries...</p>
+          <p className="text-muted-foreground">Loading journal entries...</p>
         </div>
       </div>
     );
@@ -224,8 +224,8 @@ export default function JournalEntriesPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Jurnal Umum</h1>
-          <p className="text-slate-600 mt-1">
+          <h1 className="text-3xl font-bold text-foreground">Jurnal Umum</h1>
+          <p className="text-muted-foreground mt-1">
             Daftar transaksi jurnal dan entry manual
           </p>
         </div>
@@ -240,7 +240,7 @@ export default function JournalEntriesPage() {
         <CardContent className="pt-6">
           <div className="flex gap-4 items-center">
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-slate-600" />
+              <Filter className="w-4 h-4 text-muted-foreground" />
               <Label>Status:</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-40">
@@ -280,7 +280,7 @@ export default function JournalEntriesPage() {
             <TableBody>
               {filteredEntries.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12 text-slate-500">
+                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                     <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>Belum ada jurnal entry</p>
                   </TableCell>
@@ -503,21 +503,21 @@ export default function JournalEntriesPage() {
               </div>
 
               {/* Totals */}
-              <div className="flex justify-end gap-8 p-4 bg-slate-50 rounded-lg">
+              <div className="flex justify-end gap-8 p-4 bg-muted/50 rounded-lg">
                 <div className="text-right">
-                  <p className="text-sm text-slate-600">Total Debit</p>
+                  <p className="text-sm text-muted-foreground">Total Debit</p>
                   <p className="text-lg font-semibold">
                     {formatCurrency(getTotalDebit())}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-slate-600">Total Credit</p>
+                  <p className="text-sm text-muted-foreground">Total Credit</p>
                   <p className="text-lg font-semibold">
                     {formatCurrency(getTotalCredit())}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-slate-600">Selisih</p>
+                  <p className="text-sm text-muted-foreground">Selisih</p>
                   <p
                     className={`text-lg font-semibold ${isBalanced() ? "text-green-600" : "text-red-600"
                       }`}
@@ -551,27 +551,27 @@ export default function JournalEntriesPage() {
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-slate-600">Nomor Jurnal</Label>
+                  <Label className="text-muted-foreground">Nomor Jurnal</Label>
                   <p className="font-mono font-semibold">
                     {selectedEntry.journalNumber}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-slate-600">Status</Label>
+                  <Label className="text-muted-foreground">Status</Label>
                   <div className="mt-1">{getStatusBadge(selectedEntry.status)}</div>
                 </div>
                 <div>
-                  <Label className="text-slate-600">Tanggal</Label>
+                  <Label className="text-muted-foreground">Tanggal</Label>
                   <p>{formatDate(selectedEntry.journalDate)}</p>
                 </div>
                 <div>
-                  <Label className="text-slate-600">Sumber</Label>
+                  <Label className="text-muted-foreground">Sumber</Label>
                   <Badge variant="outline">{selectedEntry.sourceType}</Badge>
                 </div>
               </div>
 
               <div>
-                <Label className="text-slate-600">Deskripsi</Label>
+                <Label className="text-muted-foreground">Deskripsi</Label>
                 <p>{selectedEntry.description}</p>
               </div>
 
@@ -584,7 +584,7 @@ export default function JournalEntriesPage() {
 
               <div>
                 <Label className="mb-2 block">Baris Jurnal</Label>
-                <div className="text-sm text-slate-500 mb-2">
+                <div className="text-sm text-muted-foreground mb-2">
                   (Detail lines akan ditampilkan setelah query ready)
                 </div>
               </div>

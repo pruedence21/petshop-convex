@@ -60,7 +60,7 @@ export default function SaleDetailPage() {
   }
 
   if (sale === undefined) {
-    return <div className="p-8 text-center text-slate-500">Memuat data transaksi...</div>;
+    return <div className="p-8 text-center text-muted-foreground">Memuat data transaksi...</div>;
   }
 
   if (sale === null) {
@@ -131,36 +131,36 @@ export default function SaleDetailPage() {
       </div>
 
       {/* Invoice Content */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden print:shadow-none print:border-none">
+      <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden print:shadow-none print:border-none">
         {/* Header Section */}
-        <div className="p-8 border-b border-slate-100">
+        <div className="p-8 border-b border-border">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Invoice</h1>
-              <p className="text-slate-500 mt-1">#{sale.saleNumber}</p>
+              <h1 className="text-2xl font-bold text-foreground">Invoice</h1>
+              <p className="text-muted-foreground mt-1">#{sale.saleNumber}</p>
               <div className="mt-4 space-y-1 text-sm">
                 <div className="flex gap-2">
-                  <span className="text-slate-500 w-24">Tanggal:</span>
+                  <span className="text-muted-foreground w-24">Tanggal:</span>
                   <span className="font-medium">{formatDate(sale.saleDate)}</span>
                 </div>
                 <div className="flex gap-2">
-                  <span className="text-slate-500 w-24">Status:</span>
+                  <span className="text-muted-foreground w-24">Status:</span>
                   <Badge variant={sale.status === "Completed" ? "default" : sale.status === "Cancelled" ? "destructive" : "secondary"}>
                     {sale.status}
                   </Badge>
                 </div>
                 <div className="flex gap-2">
-                  <span className="text-slate-500 w-24">Kasir:</span>
+                  <span className="text-muted-foreground w-24">Kasir:</span>
                   <span>-</span> {/* TODO: Add user info */}
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <div className="font-bold text-xl text-blue-600">PetShop</div>
-              <div className="text-sm text-slate-500 mt-1 max-w-[200px]">
+              <div className="font-bold text-xl text-primary">PetShop</div>
+              <div className="text-sm text-muted-foreground mt-1 max-w-[200px]">
                 {sale.branch?.address || "Alamat Cabang"}
               </div>
-              <div className="text-sm text-slate-500">
+              <div className="text-sm text-muted-foreground">
                 {sale.branch?.phone}
               </div>
             </div>
@@ -168,25 +168,25 @@ export default function SaleDetailPage() {
         </div>
 
         {/* Customer Section */}
-        <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex flex-col md:flex-row gap-8">
+        <div className="p-8 bg-muted/50 border-b border-border flex flex-col md:flex-row gap-8">
           <div className="flex-1">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Bill To</h3>
-            <div className="font-medium text-slate-900">{sale.customer?.name}</div>
-            <div className="text-sm text-slate-500 mt-1">{sale.customer?.address || "-"}</div>
-            <div className="text-sm text-slate-500 mt-1">{sale.customer?.phone || "-"}</div>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Bill To</h3>
+            <div className="font-medium text-foreground">{sale.customer?.name}</div>
+            <div className="text-sm text-muted-foreground mt-1">{sale.customer?.address || "-"}</div>
+            <div className="text-sm text-muted-foreground mt-1">{sale.customer?.phone || "-"}</div>
           </div>
           <div className="flex-1">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Payment Details</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Payment Details</h3>
             {/* Payment Summary */}
             <div className="space-y-1 text-sm">
               {sale.payments?.map((p: any, i: number) => (
-                <div key={i} className="flex justify-between border-b border-slate-200/50 pb-1 mb-1 last:border-0">
+                <div key={i} className="flex justify-between border-b border-border/50 pb-1 mb-1 last:border-0">
                   <span>{p.paymentMethod}</span>
                   <span className="font-medium">{formatCurrency(p.amount)}</span>
                 </div>
               ))}
               {(!sale.payments || sale.payments.length === 0) && (
-                <div className="text-slate-400 italic">Belum ada pembayaran</div>
+                <div className="text-muted-foreground italic">Belum ada pembayaran</div>
               )}
             </div>
           </div>
@@ -195,7 +195,7 @@ export default function SaleDetailPage() {
         {/* Items Table */}
         <div className="p-0">
           <Table>
-            <TableHeader className="bg-slate-50">
+            <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead className="pl-8">Produk</TableHead>
                 <TableHead className="text-right">Harga</TableHead>
@@ -210,7 +210,7 @@ export default function SaleDetailPage() {
                   <TableCell className="pl-8">
                     <div className="font-medium">{item.product?.name}</div>
                     {item.variant && (
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-muted-foreground">
                         {item.variant.variantName}: {item.variant.variantValue}
                       </div>
                     )}
@@ -240,10 +240,10 @@ export default function SaleDetailPage() {
         </div>
 
         {/* Totals */}
-        <div className="p-8 border-t border-slate-100">
+        <div className="p-8 border-t border-border">
           <div className="flex flex-col items-end space-y-2">
             <div className="flex justify-between w-full md:w-1/3 text-sm">
-              <span className="text-slate-500">Subtotal</span>
+              <span className="text-muted-foreground">Subtotal</span>
               <span>{formatCurrency(sale.subtotal)}</span>
             </div>
             {sale.discountAmount > 0 && (
@@ -254,17 +254,17 @@ export default function SaleDetailPage() {
             )}
             {sale.taxAmount > 0 && (
               <div className="flex justify-between w-full md:w-1/3 text-sm">
-                <span className="text-slate-500">Pajak ({sale.taxRate}%)</span>
+                <span className="text-muted-foreground">Pajak ({sale.taxRate}%)</span>
                 <span>{formatCurrency(sale.taxAmount)}</span>
               </div>
             )}
             <Separator className="w-full md:w-1/3 my-2" />
             <div className="flex justify-between w-full md:w-1/3 text-lg font-bold">
               <span>Total</span>
-              <span className="text-blue-600">{formatCurrency(sale.totalAmount)}</span>
+              <span className="text-primary">{formatCurrency(sale.totalAmount)}</span>
             </div>
             <div className="flex justify-between w-full md:w-1/3 text-sm pt-2">
-              <span className="text-slate-500">Dibayar</span>
+              <span className="text-muted-foreground">Dibayar</span>
               <span>{formatCurrency(sale.paidAmount)}</span>
             </div>
             <div className="flex justify-between w-full md:w-1/3 text-sm font-medium">
@@ -278,9 +278,9 @@ export default function SaleDetailPage() {
 
         {/* Notes */}
         {sale.notes && (
-          <div className="p-8 bg-slate-50 border-t border-slate-100">
-            <h4 className="text-sm font-medium text-slate-900 mb-1">Catatan</h4>
-            <p className="text-sm text-slate-500">{sale.notes}</p>
+          <div className="p-8 bg-muted/30 border-t border-border">
+            <h4 className="text-sm font-medium text-foreground mb-1">Catatan</h4>
+            <p className="text-sm text-muted-foreground">{sale.notes}</p>
           </div>
         )}
       </div>

@@ -97,6 +97,10 @@ export default function SalesPOSPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Keyboard Navigation State
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  const productGridRef = useRef<HTMLDivElement>(null);
+
   // -- Queries --
   const branches = useQuery(api.master_data.branches.list, { includeInactive: false });
   const products = useQuery(api.inventory.products.list, { includeInactive: false });
@@ -124,7 +128,7 @@ export default function SalesPOSPage() {
   const submitSale = useMutation(api.sales.sales.submitSale);
   const createDefaultCustomer = useMutation(api.master_data.customers.createDefaultCustomer);
 
-  // -- Handlers (Defined before hooks that use them) --
+  // -- Handlers --
   const addToCart = (product: any, variant?: any) => {
     setCart(prev => {
       const existing = prev.find(item =>
@@ -167,108 +171,6 @@ export default function SalesPOSPage() {
       addToCart(product);
     }
   };
-
-  // -- Hooks --
-
-  // Barcode Scanner
-  useBarcodeScanner({
-    onScan: (barcode) => {
-      if (!products) return;
-      // Search by SKU or Barcode (assuming SKU is used as barcode for now)
-      const match = products.find(p => p.sku === barcode);
-
-      if (match) {
-        handleProductClick(match);
-        // toast.success(`Scanned: ${match.name}`); // addToCart already toasts
-      } else {
-        toast.error(`Produk tidak ditemukan: ${barcode}`);
-      }
-    }
-  });
-
-  // Hotkeys
-  useHotkeys('f2', (e) => {
-    e.preventDefault();
-    document.getElementById('product-search')?.focus();
-  });
-
-  useHotkeys('f4', (e) => {
-    e.preventDefault();
-    if (cart.length > 0) setIsPaymentDialogOpen(true);
-  });
-
-  useHotkeys('esc', (e) => {
-    // Only close if dialog is open
-    if (isPaymentDialogOpen) {
-      e.preventDefault();
-      setIsPaymentDialogOpen(false);
-    } else if (selectedProductForVariantSelection) {
-      e.preventDefault();
-      setSelectedProductForVariantSelection(null);
-    }
-  });
-
-  // Payment Dialog Hotkeys
-  useHotkeys('f1', (e) => {
-    if (isPaymentDialogOpen) {
-      e.preventDefault();
-      setCurrentPayment(prev => ({ ...prev, amount: grandTotal }));
-    }
-  }, { enableOnFormTags: true });
-
-  // -- Effects --
-
-  // Initialize from existing sale
-  useEffect(() => {
-    if (existingSale) {
-      setSelectedBranch(existingSale.branchId);
-      setCustomerId(existingSale.customerId);
-      setTransactionNotes(existingSale.notes || "");
-      setGlobalDiscount({
-        amount: existingSale.discountAmount,
-        type: existingSale.discountType as "percent" | "nominal"
-      });
-      setTaxRate(existingSale.taxRate);
-
-      // Map items to cart
-      if (existingSale.items) {
-        const mappedItems: CartItem[] = existingSale.items.map((item: any) => ({
-          productId: item.productId,
-          variantId: item.variantId,
-          name: item.product?.name || "Unknown",
-          variantName: item.variant ? `${item.variant.variantName}: ${item.variant.variantValue}` : undefined,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          discountAmount: item.discountAmount,
-          discountType: item.discountType as "percent" | "nominal",
-          notes: undefined,
-          maxStock: 100, // TODO: fetch
-        }));
-        setCart(mappedItems);
-      }
-    }
-  }, [existingSale]);
-
-  // Auto-select first branch (only if not editing)
-  useEffect(() => {
-    if (!editSaleId && branches && branches.length > 0 && !selectedBranch) {
-      setSelectedBranch(branches[0]._id);
-    }
-  }, [branches, editSaleId]);
-
-  // Auto-select UMUM customer (only if not editing)
-  useEffect(() => {
-    if (!editSaleId && umumCustomer && !customerId) {
-      setCustomerId(umumCustomer._id);
-    }
-  }, [umumCustomer, editSaleId]);
-
-  // Auto-create UMUM if missing
-  useEffect(() => {
-    if (customers !== undefined && umumCustomer === null) {
-      createDefaultCustomer({});
-    }
-  }, [customers, umumCustomer]);
 
   // -- Computed --
   const filteredProducts = useMemo(() => {
@@ -313,18 +215,168 @@ export default function SalesPOSPage() {
   const changeAmount = Math.max(0, totalPaid - grandTotal);
   const outstandingAmount = Math.max(0, grandTotal - totalPaid);
 
-  // -- More Handlers --
+  // -- Hooks & Effects --
 
+  // Reset selection when search or category changes
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [searchQuery, selectedCategory]);
+
+  const scrollSelectedIntoView = (index: number) => {
+    const element = document.getElementById(`product-card-${index}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
+  // Keyboard Navigation for Product Grid
+  useHotkeys('down', (e) => {
+    e.preventDefault();
+    setSelectedIndex(prev => {
+      const next = Math.min(prev + 1, filteredProducts.length - 1);
+      scrollSelectedIntoView(next);
+      return next;
+    });
+  }, { enableOnFormTags: true }, [filteredProducts]);
+
+  useHotkeys('up', (e) => {
+    e.preventDefault();
+    setSelectedIndex(prev => {
+      const next = Math.max(prev - 1, 0);
+      scrollSelectedIntoView(next);
+      return next;
+    });
+  }, { enableOnFormTags: true }, [filteredProducts]);
+
+  useHotkeys('right', (e) => {
+    e.preventDefault();
+    setSelectedIndex(prev => {
+      const next = Math.min(prev + 1, filteredProducts.length - 1);
+      scrollSelectedIntoView(next);
+      return next;
+    });
+  }, { enableOnFormTags: true }, [filteredProducts]);
+
+  useHotkeys('left', (e) => {
+    e.preventDefault();
+    setSelectedIndex(prev => {
+      const next = Math.max(prev - 1, 0);
+      scrollSelectedIntoView(next);
+      return next;
+    });
+  }, { enableOnFormTags: true }, [filteredProducts]);
+
+  useHotkeys('enter', (e) => {
+    if (selectedIndex >= 0 && selectedIndex < filteredProducts.length && !isPaymentDialogOpen && !selectedProductForVariantSelection) {
+      e.preventDefault();
+      handleProductClick(filteredProducts[selectedIndex]);
+    }
+  }, { enableOnFormTags: true }, [selectedIndex, filteredProducts, isPaymentDialogOpen, selectedProductForVariantSelection]);
+
+  // Barcode Scanner
+  useBarcodeScanner({
+    onScan: (barcode) => {
+      if (!products) return;
+      const match = products.find(p => p.sku === barcode);
+      if (match) {
+        handleProductClick(match);
+      } else {
+        toast.error(`Produk tidak ditemukan: ${barcode}`);
+      }
+    }
+  });
+
+  // Hotkeys
+  useHotkeys('f2', (e) => {
+    e.preventDefault();
+    document.getElementById('product-search')?.focus();
+    setSelectedIndex(-1);
+  });
+
+  useHotkeys('f4', (e) => {
+    e.preventDefault();
+    if (cart.length > 0) setIsPaymentDialogOpen(true);
+  });
+
+  useHotkeys('esc', (e) => {
+    if (isPaymentDialogOpen) {
+      e.preventDefault();
+      setIsPaymentDialogOpen(false);
+    } else if (selectedProductForVariantSelection) {
+      e.preventDefault();
+      setSelectedProductForVariantSelection(null);
+    } else {
+      setSelectedIndex(-1);
+      document.getElementById('product-search')?.blur();
+    }
+  });
+
+  // Payment Dialog Hotkeys
+  useHotkeys('f1', (e) => {
+    if (isPaymentDialogOpen) {
+      e.preventDefault();
+      setCurrentPayment(prev => ({ ...prev, amount: grandTotal }));
+    }
+  }, { enableOnFormTags: true });
+
+  // Initialize from existing sale
+  useEffect(() => {
+    if (existingSale) {
+      setSelectedBranch(existingSale.branchId);
+      setCustomerId(existingSale.customerId);
+      setTransactionNotes(existingSale.notes || "");
+      setGlobalDiscount({
+        amount: existingSale.discountAmount,
+        type: existingSale.discountType as "percent" | "nominal"
+      });
+      setTaxRate(existingSale.taxRate);
+
+      if (existingSale.items) {
+        const mappedItems: CartItem[] = existingSale.items.map((item: any) => ({
+          productId: item.productId,
+          variantId: item.variantId,
+          name: item.product?.name || "Unknown",
+          variantName: item.variant ? `${item.variant.variantName}: ${item.variant.variantValue}` : undefined,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discountAmount: item.discountAmount,
+          discountType: item.discountType as "percent" | "nominal",
+          notes: undefined,
+          maxStock: 100,
+        }));
+        setCart(mappedItems);
+      }
+    }
+  }, [existingSale]);
+
+  // Auto-select first branch
+  useEffect(() => {
+    if (!editSaleId && branches && branches.length > 0 && !selectedBranch) {
+      setSelectedBranch(branches[0]._id);
+    }
+  }, [branches, editSaleId]);
+
+  // Auto-select UMUM customer
+  useEffect(() => {
+    if (!editSaleId && umumCustomer && !customerId) {
+      setCustomerId(umumCustomer._id);
+    }
+  }, [umumCustomer, editSaleId]);
+
+  // Auto-create UMUM if missing
+  useEffect(() => {
+    if (customers !== undefined && umumCustomer === null) {
+      createDefaultCustomer({});
+    }
+  }, [customers, umumCustomer]);
+
+  // -- More Handlers --
   const updateCartItemQty = (index: number, delta: number) => {
     setCart(prev => {
       const newCart = [...prev];
       const item = newCart[index];
       const newQty = item.quantity + delta;
-
-      if (newQty <= 0) {
-        return prev.filter((_, i) => i !== index);
-      }
-
+      if (newQty <= 0) return prev.filter((_, i) => i !== index);
       newCart[index] = { ...item, quantity: newQty };
       return newCart;
     });
@@ -339,7 +391,6 @@ export default function SalesPOSPage() {
       toast.error("Data customer atau cabang tidak valid");
       return;
     }
-
     if (payments.length === 0) {
       toast.error("Belum ada pembayaran");
       return;
@@ -350,7 +401,6 @@ export default function SalesPOSPage() {
       let saleId = editSaleId;
 
       if (saleId) {
-        // -- EDIT MODE --
         await updateHeader({
           saleId,
           customerId: customerId as Id<"customers">,
@@ -359,7 +409,6 @@ export default function SalesPOSPage() {
         });
         await clearItems({ saleId });
       } else {
-        // -- CREATE MODE --
         const sale = await createSale({
           customerId: customerId as Id<"customers">,
           branchId: selectedBranch as Id<"branches">,
@@ -412,7 +461,6 @@ export default function SalesPOSPage() {
         setGlobalDiscount({ amount: 0, type: "nominal" });
         setIsPaymentDialogOpen(false);
       }
-
     } catch (error: any) {
       toast.error(parseErrorMessage(error));
     } finally {
@@ -427,11 +475,11 @@ export default function SalesPOSPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] lg:h-screen flex flex-col md:flex-row bg-slate-50 overflow-hidden">
+    <div className="h-[calc(100vh-4rem)] lg:h-screen flex flex-col md:flex-row bg-muted/40 overflow-hidden max-w-[1400px] mx-auto border-x border-border shadow-sm">
       {/* LEFT SIDE: Product Catalog */}
-      <div className="flex-1 flex flex-col border-r border-slate-200 h-full">
+      <div className="flex-1 flex flex-col border-r border-border h-full">
         {/* Header / Filter Bar */}
-        <div className="p-4 bg-white border-b border-slate-200 space-y-4">
+        <div className="p-4 bg-card border-b border-border space-y-4">
           <div className="flex gap-4 items-center">
             {editSaleId && (
               <Button variant="ghost" size="icon" onClick={() => router.back()}>
@@ -439,17 +487,17 @@ export default function SalesPOSPage() {
               </Button>
             )}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="product-search"
                 placeholder="Cari produk (F2)..."
-                className="pl-9 bg-slate-50 border-slate-200"
+                className="pl-9 bg-muted border-input"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
-                <Badge variant="outline" className="text-[10px] text-slate-400 h-5 px-1">F2</Badge>
+                <Badge variant="outline" className="text-[10px] text-muted-foreground h-5 px-1 border-border">F2</Badge>
               </div>
             </div>
             <Select value={selectedBranch as string} onValueChange={(v) => setSelectedBranch(v as Id<"branches">)}>
@@ -491,35 +539,38 @@ export default function SalesPOSPage() {
 
         {/* Product Grid */}
         <ScrollArea className="flex-1 p-4">
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2 lg:gap-3 pb-20">
-            {filteredProducts.map(product => (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2 lg:gap-3 pb-20" ref={productGridRef}>
+            {filteredProducts.map((product, index) => (
               <Card
                 key={product._id}
-                className="cursor-pointer hover:shadow-md transition-all active:scale-95 border-slate-200 overflow-hidden group flex flex-col"
+                id={`product-card-${index}`}
+                className={`cursor-pointer hover:shadow-md transition-all active:scale-95 overflow-hidden group flex flex-col ${selectedIndex === index ? "ring-2 ring-primary shadow-md scale-[1.02]" : "border-border"
+                  }`}
                 onClick={() => handleProductClick(product)}
               >
-                <div className="h-28 lg:h-36 bg-slate-100 flex items-center justify-center relative">
+                <div className="h-28 lg:h-36 bg-muted flex items-center justify-center relative">
                   {/* Placeholder for image */}
-                  <Package className="h-10 w-10 text-slate-300" />
+                  <Package className="h-10 w-10 text-muted-foreground/50" />
                   {product.hasVariants && (
-                    <Badge className="absolute top-2 right-2 bg-blue-500 hover:bg-blue-600 text-[10px] px-1.5 h-5">
+                    <Badge className="absolute top-2 right-2 bg-primary hover:bg-primary/90 text-[10px] px-1.5 h-5 text-primary-foreground">
                       Varian
                     </Badge>
                   )}
                 </div>
-                <div className="p-2 lg:p-2.5 flex flex-col flex-1">
-                  <h3 className="font-medium text-xs lg:text-sm line-clamp-2 leading-tight mb-auto min-h-[2.5em]">
+                <div className="p-2 lg:p-2.5 flex flex-col flex-1 bg-card">
+                  <h3 className="font-medium text-xs lg:text-sm line-clamp-2 leading-tight mb-auto min-h-[2.5em] text-card-foreground">
                     {product.name}
                   </h3>
                   <div className="flex items-center justify-between mt-2">
-                    <span className="font-bold text-blue-600 text-sm">
+                    <span className="font-bold text-primary text-sm">
                       {formatCurrency(product.sellingPrice)}
                     </span>
-                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full bg-blue-50 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button size="icon" variant="ghost" className={`h-6 w-6 rounded-full bg-primary/10 text-primary transition-opacity ${selectedIndex === index ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                      }`}>
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1 truncate">
+                  <p className="text-[10px] text-muted-foreground mt-1 truncate">
                     SKU: {product.sku}
                   </p>
                 </div>
@@ -530,16 +581,16 @@ export default function SalesPOSPage() {
       </div>
 
       {/* RIGHT SIDE: Cart / Transaction */}
-      <div className="w-full md:w-[340px] lg:w-[380px] xl:w-[420px] bg-white flex flex-col h-full shadow-xl z-10 border-l border-slate-200">
+      <div className="w-full md:w-[340px] lg:w-[380px] xl:w-[420px] bg-card flex flex-col h-full shadow-xl z-10 border-l border-border">
         {/* Customer Selector */}
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="p-4 border-b border-border bg-muted/30">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-slate-500" />
-              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</Label>
+              <User className="h-4 w-4 text-muted-foreground" />
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Customer</Label>
             </div>
             {editSaleId && (
-              <Badge variant="outline" className="text-xs">Editing: {existingSale?.saleNumber}</Badge>
+              <Badge variant="outline" className="text-xs border-border text-muted-foreground">Editing: {existingSale?.saleNumber}</Badge>
             )}
           </div>
           <Select
@@ -552,7 +603,7 @@ export default function SalesPOSPage() {
               setCustomerId(v as Id<"customers">);
             }}
           >
-            <SelectTrigger className="bg-white">
+            <SelectTrigger className="bg-background border-input">
               <SelectValue placeholder="Pilih Customer" />
             </SelectTrigger>
             <SelectContent>
@@ -561,7 +612,7 @@ export default function SalesPOSPage() {
                   {c.name} {c.code === "UMUM" && "(Walk-in)"}
                 </SelectItem>
               ))}
-              <SelectItem value="ADD_NEW" className="font-medium text-blue-600 border-t mt-1 pt-1">
+              <SelectItem value="ADD_NEW" className="font-medium text-primary border-t border-border mt-1 pt-1">
                 + Tambah Pelanggan Baru
               </SelectItem>
             </SelectContent>
@@ -569,13 +620,13 @@ export default function SalesPOSPage() {
         </div>
 
         {/* Cart Items */}
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-hidden flex flex-col bg-card">
           {cart.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8 text-center">
               <ShoppingCart className="h-16 w-16 mb-4 opacity-20" />
               <p className="font-medium">Keranjang Kosong</p>
               <p className="text-sm mt-1">Pilih produk di sebelah kiri untuk memulai transaksi</p>
-              <div className="mt-8 flex gap-4 text-xs text-slate-400">
+              <div className="mt-8 flex gap-4 text-xs text-muted-foreground/70">
                 <div className="flex items-center gap-1"><Keyboard className="h-3 w-3" /> <span>F2: Cari</span></div>
                 <div className="flex items-center gap-1"><ScanBarcode className="h-3 w-3" /> <span>Scan Barcode</span></div>
               </div>
@@ -584,42 +635,42 @@ export default function SalesPOSPage() {
             <ScrollArea className="flex-1">
               <div className="p-4 space-y-3">
                 {cart.map((item, index) => (
-                  <div key={`${item.productId}-${item.variantId}`} className="flex gap-2 lg:gap-3 bg-white border border-slate-100 p-2 lg:p-3 rounded-lg shadow-sm">
-                    <div className="h-12 w-12 bg-slate-100 rounded-md flex items-center justify-center flex-shrink-0">
-                      <Package className="h-6 w-6 text-slate-300" />
+                  <div key={`${item.productId}-${item.variantId}`} className="flex gap-2 lg:gap-3 bg-card border border-border p-2 lg:p-3 rounded-lg shadow-sm">
+                    <div className="h-12 w-12 bg-muted rounded-md flex items-center justify-center flex-shrink-0">
+                      <Package className="h-6 w-6 text-muted-foreground/50" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm truncate">{item.name}</h4>
+                      <h4 className="font-medium text-sm truncate text-card-foreground">{item.name}</h4>
                       {item.variantName && (
-                        <p className="text-xs text-slate-500 truncate">{item.variantName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{item.variantName}</p>
                       )}
                       <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center gap-3 bg-slate-50 rounded-md p-1">
+                        <div className="flex items-center gap-3 bg-muted/50 rounded-md p-1">
                           <button
                             onClick={() => updateCartItemQty(index, -1)}
-                            className="h-6 w-6 flex items-center justify-center hover:bg-white rounded-md transition-colors text-slate-600"
+                            className="h-6 w-6 flex items-center justify-center hover:bg-background rounded-md transition-colors text-muted-foreground hover:text-foreground"
                           >
                             <Minus className="h-3 w-3" />
                           </button>
-                          <span className="text-sm font-medium w-4 text-center">{item.quantity}</span>
+                          <span className="text-sm font-medium w-4 text-center text-foreground">{item.quantity}</span>
                           <button
                             onClick={() => updateCartItemQty(index, 1)}
-                            className="h-6 w-6 flex items-center justify-center hover:bg-white rounded-md transition-colors text-slate-600"
+                            className="h-6 w-6 flex items-center justify-center hover:bg-background rounded-md transition-colors text-muted-foreground hover:text-foreground"
                           >
                             <Plus className="h-3 w-3" />
                           </button>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium text-sm">{formatCurrency(item.unitPrice * item.quantity)}</p>
+                          <p className="font-medium text-sm text-foreground">{formatCurrency(item.unitPrice * item.quantity)}</p>
                           {item.quantity > 1 && (
-                            <p className="text-[10px] text-slate-400">@{formatCurrency(item.unitPrice)}</p>
+                            <p className="text-[10px] text-muted-foreground">@{formatCurrency(item.unitPrice)}</p>
                           )}
                         </div>
                       </div>
                     </div>
                     <button
                       onClick={() => removeCartItem(index)}
-                      className="text-slate-300 hover:text-red-500 transition-colors self-start"
+                      className="text-muted-foreground hover:text-destructive transition-colors self-start"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -631,36 +682,36 @@ export default function SalesPOSPage() {
         </div>
 
         {/* Totals & Actions */}
-        <div className="p-4 bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <div className="p-4 bg-card border-t border-border shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
           <div className="space-y-1.5 lg:space-y-2 mb-3 lg:mb-4">
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Subtotal</span>
-              <span>{formatCurrency(cartSubtotal)}</span>
+              <span className="text-muted-foreground">Subtotal</span>
+              <span className="text-foreground">{formatCurrency(cartSubtotal)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Tax ({taxRate}%)</span>
-              <span>{formatCurrency(taxAmount)}</span>
+              <span className="text-muted-foreground">Tax ({taxRate}%)</span>
+              <span className="text-foreground">{formatCurrency(taxAmount)}</span>
             </div>
-            <div className="flex justify-between text-lg font-bold pt-2 border-t border-dashed border-slate-200">
-              <span>Total</span>
-              <span className="text-blue-600">{formatCurrency(grandTotal)}</span>
+            <div className="flex justify-between text-lg font-bold pt-2 border-t border-dashed border-border">
+              <span className="text-foreground">Total</span>
+              <span className="text-primary">{formatCurrency(grandTotal)}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" className="w-full border-slate-300" onClick={() => editSaleId ? router.back() : setCart([])}>
+            <Button variant="outline" className="w-full border-input hover:bg-accent hover:text-accent-foreground" onClick={() => editSaleId ? router.back() : setCart([])}>
               Batal
             </Button>
             <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="w-full bg-blue-600 hover:bg-blue-700" disabled={cart.length === 0}>
+                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={cart.length === 0}>
                   Bayar (F4)
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md bg-card border-border">
                 <DialogHeader>
-                  <DialogTitle>Pembayaran</DialogTitle>
-                  <DialogDescription>Total Tagihan: {formatCurrency(grandTotal)}</DialogDescription>
+                  <DialogTitle className="text-card-foreground">Pembayaran</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">Total Tagihan: {formatCurrency(grandTotal)}</DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
@@ -670,7 +721,7 @@ export default function SalesPOSPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentPayment({ ...currentPayment, amount: grandTotal })}
-                      className="border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                      className="border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
                     >
                       Uang Pas (F1)
                     </Button>
@@ -680,6 +731,7 @@ export default function SalesPOSPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => setCurrentPayment({ ...currentPayment, amount })}
+                        className="border-input hover:bg-accent hover:text-accent-foreground"
                       >
                         {formatCurrency(amount)}
                       </Button>
@@ -687,12 +739,12 @@ export default function SalesPOSPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Metode Pembayaran</Label>
+                    <Label className="text-foreground">Metode Pembayaran</Label>
                     <Select
                       value={currentPayment.paymentMethod}
                       onValueChange={(v: any) => setCurrentPayment({ ...currentPayment, paymentMethod: v })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-background border-input">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -706,22 +758,24 @@ export default function SalesPOSPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Jumlah Bayar</Label>
+                    <Label className="text-foreground">Jumlah Bayar</Label>
                     <Input
                       type="number"
                       value={currentPayment.amount || ""}
                       onChange={(e) => setCurrentPayment({ ...currentPayment, amount: parseFloat(e.target.value) || 0 })}
                       autoFocus
+                      className="bg-background border-input"
                     />
                   </div>
 
                   {currentPayment.paymentMethod !== "CASH" && (
                     <div className="space-y-2">
-                      <Label>No. Referensi</Label>
+                      <Label className="text-foreground">No. Referensi</Label>
                       <Input
                         value={currentPayment.referenceNumber || ""}
                         onChange={(e) => setCurrentPayment({ ...currentPayment, referenceNumber: e.target.value })}
                         placeholder="No. Ref / Approval Code"
+                        className="bg-background border-input"
                       />
                     </div>
                   )}
@@ -732,20 +786,20 @@ export default function SalesPOSPage() {
 
                   {/* Payment List */}
                   {payments.length > 0 && (
-                    <div className="bg-slate-50 p-3 rounded-md space-y-2 mt-4">
+                    <div className="bg-muted p-3 rounded-md space-y-2 mt-4">
                       {payments.map((p, i) => (
-                        <div key={i} className="flex justify-between text-sm">
+                        <div key={i} className="flex justify-between text-sm text-foreground">
                           <span>{p.paymentMethod}</span>
                           <span>{formatCurrency(p.amount)}</span>
                         </div>
                       ))}
-                      <div className="border-t border-slate-200 pt-2 flex justify-between font-bold">
+                      <div className="border-t border-border pt-2 flex justify-between font-bold text-foreground">
                         <span>Total Dibayar</span>
                         <span>{formatCurrency(totalPaid)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>{changeAmount > 0 ? "Kembalian" : "Kurang Bayar"}</span>
-                        <span className={changeAmount > 0 ? "text-green-600" : "text-red-600"}>
+                        <span className="text-foreground">{changeAmount > 0 ? "Kembalian" : "Kurang Bayar"}</span>
+                        <span className={changeAmount > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>
                           {formatCurrency(changeAmount > 0 ? changeAmount : outstandingAmount)}
                         </span>
                       </div>
@@ -788,7 +842,7 @@ export default function SalesPOSPage() {
               </Button>
             ))}
             {variantsForSelection?.length === 0 && (
-              <p className="text-center text-slate-500 py-4">Tidak ada varian tersedia</p>
+              <p className="text-center text-muted-foreground py-4">Tidak ada varian tersedia</p>
             )}
           </div>
         </DialogContent>

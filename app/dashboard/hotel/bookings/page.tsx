@@ -74,13 +74,13 @@ export default function HotelBookingsPage() {
   // Filter logic based on Tab
   const filteredBookings = bookings?.filter((booking) => {
     const matchesSearch = booking.bookingNumber.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     if (!matchesSearch) return false;
 
     if (activeTab === "active") return booking.status === "CheckedIn";
     if (activeTab === "upcoming") return booking.status === "Reserved";
     if (activeTab === "history") return booking.status === "CheckedOut" || booking.status === "Cancelled";
-    
+
     return true;
   });
 
@@ -99,7 +99,7 @@ export default function HotelBookingsPage() {
       CheckedOut: "outline",
       Cancelled: "destructive",
     };
-    
+
     const labels: Record<string, string> = {
       Reserved: "Dipesan",
       CheckedIn: "Check-in",
@@ -132,44 +132,44 @@ export default function HotelBookingsPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="bg-blue-50 border-blue-200">
+        <Card className="bg-blue-500/10 border-blue-500/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-800">Tamu Aktif</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300">Tamu Aktif</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{stats.activeGuests}</div>
-            <p className="text-xs text-blue-600 mt-1">Sedang menginap</p>
+            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.activeGuests}</div>
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">Sedang menginap</p>
           </CardContent>
         </Card>
-        <Card className="bg-green-50 border-green-200">
+        <Card className="bg-green-500/10 border-green-500/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">Check-in Hari Ini</CardTitle>
-            <LogIn className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300">Check-in Hari Ini</CardTitle>
+            <LogIn className="h-4 w-4 text-green-600 dark:text-green-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-900">{stats.checkInsToday}</div>
-            <p className="text-xs text-green-600 mt-1">Jadwal masuk hari ini</p>
+            <div className="text-2xl font-bold text-green-900 dark:text-green-100">{stats.checkInsToday}</div>
+            <p className="text-xs text-green-600 dark:text-green-400 mt-1">Jadwal masuk hari ini</p>
           </CardContent>
         </Card>
-        <Card className="bg-orange-50 border-orange-200">
+        <Card className="bg-orange-500/10 border-orange-500/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-orange-800">Check-out Hari Ini</CardTitle>
-            <LogOut className="h-4 w-4 text-orange-600" />
+            <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-300">Check-out Hari Ini</CardTitle>
+            <LogOut className="h-4 w-4 text-orange-600 dark:text-orange-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-900">{stats.checkOutsToday}</div>
-            <p className="text-xs text-orange-600 mt-1">Jadwal keluar hari ini</p>
+            <div className="text-2xl font-bold text-orange-900 dark:text-orange-100">{stats.checkOutsToday}</div>
+            <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">Jadwal keluar hari ini</p>
           </CardContent>
         </Card>
-        <Card className="bg-purple-50 border-purple-200">
+        <Card className="bg-purple-500/10 border-purple-500/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-purple-800">Reservasi Mendatang</CardTitle>
-            <Calendar className="h-4 w-4 text-purple-600" />
+            <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-300">Reservasi Mendatang</CardTitle>
+            <Calendar className="h-4 w-4 text-purple-600 dark:text-purple-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-900">{stats.upcoming}</div>
-            <p className="text-xs text-purple-600 mt-1">Booking belum check-in</p>
+            <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">{stats.upcoming}</div>
+            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">Booking belum check-in</p>
           </CardContent>
         </Card>
       </div>
@@ -285,8 +285,8 @@ export default function HotelBookingsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="font-medium">{formatCurrency(booking.totalAmount)}</div>
-                      <div className={`text-xs ${booking.outstandingAmount > 0 ? "text-red-500" : "text-green-600"}`}>
-                        {booking.outstandingAmount > 0 
+                      <div className={`text-xs ${booking.outstandingAmount > 0 ? "text-destructive" : "text-green-600"}`}>
+                        {booking.outstandingAmount > 0
                           ? `Sisa: ${formatCurrency(booking.outstandingAmount)}`
                           : "Lunas"}
                       </div>
@@ -314,7 +314,7 @@ export default function HotelBookingsPage() {
                             </DropdownMenuItem>
                           )}
                           {booking.status === "Reserved" && (
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem className="text-destructive">
                               <XCircle className="mr-2 h-4 w-4" /> Batalkan
                             </DropdownMenuItem>
                           )}

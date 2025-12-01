@@ -7,7 +7,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <ErrorBoundary>
-      <div className="flex h-screen bg-slate-50">
+      <div className="flex h-screen bg-muted/50">
         <AppSidebar />
         {/* Main Content */}
         <main id="main-content" className="flex-1 overflow-y-auto pt-16 lg:pt-0" role="main">

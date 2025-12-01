@@ -177,7 +177,7 @@ export default function SuppliersPage() {
             key={star}
             className={`h-4 w-4 ${star <= rating
               ? "fill-yellow-400 text-yellow-400"
-              : "fill-slate-200 text-slate-200"
+              : "fill-muted text-muted"
               }`}
           />
         ))}
@@ -188,15 +188,15 @@ export default function SuppliersPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Supplier</h1>
-        <p className="text-slate-500 mt-1">Kelola data supplier/pemasok produk</p>
+        <h1 className="text-3xl font-bold text-foreground">Supplier</h1>
+        <p className="text-muted-foreground mt-1">Kelola data supplier/pemasok produk</p>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
+      <div className="bg-card rounded-lg border border-border shadow-sm">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 max-w-sm relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Cari supplier..."
                 value={searchQuery}
@@ -227,13 +227,13 @@ export default function SuppliersPage() {
           <TableBody>
             {!filteredSuppliers ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   Memuat data...
                 </TableCell>
               </TableRow>
             ) : filteredSuppliers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   Belum ada data supplier
                 </TableCell>
               </TableRow>
@@ -242,11 +242,11 @@ export default function SuppliersPage() {
                 <TableRow key={supplier._id}>
                   <TableCell className="font-medium">{supplier.code}</TableCell>
                   <TableCell>{supplier.name}</TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="text-muted-foreground">
                     {supplier.contactPerson || "-"}
-                    <div className="text-sm text-slate-500">{supplier.phone}</div>
+                    <div className="text-sm text-muted-foreground">{supplier.phone}</div>
                   </TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="text-muted-foreground">
                     {supplier.city || "-"}
                   </TableCell>
                   <TableCell>
@@ -272,7 +272,7 @@ export default function SuppliersPage() {
                         size="sm"
                         onClick={() => handleDelete(supplier._id)}
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </TableCell>
@@ -460,7 +460,7 @@ export default function SuppliersPage() {
                         <Star
                           className={`h-6 w-6 cursor-pointer transition-colors ${star <= supplierForm.values.rating
                             ? "fill-yellow-400 text-yellow-400"
-                            : "fill-slate-200 text-slate-200 hover:fill-yellow-200 hover:text-yellow-200"
+                            : "fill-muted text-muted hover:fill-yellow-200 hover:text-yellow-200"
                             }`}
                         />
                       </button>

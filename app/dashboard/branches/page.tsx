@@ -153,15 +153,15 @@ export default function BranchesPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Cabang Toko</h1>
-        <p className="text-slate-500 mt-1">Kelola data cabang/lokasi toko</p>
+        <h1 className="text-3xl font-bold text-foreground">Cabang Toko</h1>
+        <p className="text-muted-foreground mt-1">Kelola data cabang/lokasi toko</p>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
+      <div className="bg-card rounded-lg border border-border shadow-sm">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 max-w-sm relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Cari cabang..."
                 value={searchQuery}
@@ -190,13 +190,13 @@ export default function BranchesPage() {
           <TableBody>
             {!filteredBranches ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Memuat data...
                 </TableCell>
               </TableRow>
             ) : filteredBranches.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Belum ada data cabang
                 </TableCell>
               </TableRow>
@@ -205,15 +205,15 @@ export default function BranchesPage() {
                 <TableRow key={branch._id}>
                   <TableCell className="font-medium">{branch.code}</TableCell>
                   <TableCell>{branch.name}</TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="text-muted-foreground">
                     {branch.city && branch.province
                       ? `${branch.city}, ${branch.province}`
                       : branch.city || branch.province || "-"}
                   </TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="text-muted-foreground">
                     {branch.phone || "-"}
                     {branch.email && (
-                      <div className="text-sm text-slate-500">{branch.email}</div>
+                      <div className="text-sm text-muted-foreground">{branch.email}</div>
                     )}
                   </TableCell>
                   <TableCell>
@@ -235,7 +235,7 @@ export default function BranchesPage() {
                         size="sm"
                         onClick={() => handleDelete(branch._id)}
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </TableCell>
@@ -263,7 +263,7 @@ export default function BranchesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="code">
-                    Kode Cabang <span className="text-red-500">*</span>
+                    Kode Cabang <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="code"
@@ -277,7 +277,7 @@ export default function BranchesPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="name">
-                    Nama Cabang <span className="text-red-500">*</span>
+                    Nama Cabang <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="name"

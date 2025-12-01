@@ -44,6 +44,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { LocaleSwitcher } from "@/components/ui/LocaleSwitcher";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
     Tooltip,
     TooltipContent,
@@ -171,7 +172,7 @@ export function AppSidebar() {
     return (
         <>
             {/* Mobile Header */}
-            <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+            <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                         <SheetTrigger asChild>
@@ -188,7 +189,7 @@ export function AppSidebar() {
                             />
                         </SheetContent>
                     </Sheet>
-                    <h1 className="text-xl font-bold text-blue-600">🐾 Petshop</h1>
+                    <h1 className="text-xl font-bold text-sidebar-primary">🐾 Petshop</h1>
                 </div>
                 <LocaleSwitcher />
             </div>
@@ -196,16 +197,16 @@ export function AppSidebar() {
             {/* Desktop Sidebar */}
             <aside
                 className={cn(
-                    "hidden lg:flex flex-col bg-white border-r border-slate-200 h-screen sticky top-0 transition-all duration-300 ease-in-out z-40",
+                    "hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border h-screen sticky top-0 transition-all duration-300 ease-in-out z-40",
                     isCollapsed ? "w-20" : "w-64"
                 )}
             >
                 {/* Header */}
-                <div className={cn("flex items-center h-16 border-b border-slate-200", isCollapsed ? "justify-center px-0" : "justify-between px-4")}>
+                <div className={cn("flex items-center h-16 border-b border-sidebar-border", isCollapsed ? "justify-center px-0" : "justify-between px-4")}>
                     {!isCollapsed && (
                         <div className="flex flex-col">
-                            <h1 className="text-xl font-bold text-blue-600 truncate">🐾 Petshop</h1>
-                            <p className="text-xs text-slate-500 truncate">Management System</p>
+                            <h1 className="text-xl font-bold text-sidebar-primary truncate">🐾 Petshop</h1>
+                            <p className="text-xs text-sidebar-foreground/70 truncate">Management System</p>
                         </div>
                     )}
                     {isCollapsed && <span className="text-2xl">🐾</span>}
@@ -213,7 +214,7 @@ export function AppSidebar() {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className={cn("h-8 w-8 text-slate-500", isCollapsed ? "hidden group-hover:flex absolute -right-4 top-6 bg-white border shadow-sm rounded-full" : "")}
+                        className={cn("h-8 w-8 text-sidebar-foreground/70", isCollapsed ? "hidden group-hover:flex absolute -right-4 top-6 bg-sidebar border shadow-sm rounded-full" : "")}
                         onClick={toggleCollapse}
                     >
                         {/* This button logic is a bit tricky for the collapsed state if we want it to float. 
@@ -228,7 +229,7 @@ export function AppSidebar() {
                     <Button
                         variant="outline"
                         size="icon"
-                        className="h-6 w-6 rounded-full bg-white shadow-md border-slate-200 hover:bg-slate-100"
+                        className="h-6 w-6 rounded-full bg-sidebar shadow-md border-sidebar-border hover:bg-sidebar-accent"
                         onClick={toggleCollapse}
                     >
                         {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
@@ -250,15 +251,18 @@ export function AppSidebar() {
                 </ScrollArea>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-slate-200 space-y-2">
-                    {!isCollapsed && <LocaleSwitcher />}
+                <div className="p-4 border-t border-sidebar-border space-y-2">
+                    <div className={cn("flex items-center gap-2", isCollapsed ? "justify-center flex-col" : "justify-between")}>
+                        {!isCollapsed && <LocaleSwitcher />}
+                        <ThemeToggle />
+                    </div>
                     <TooltipProvider delayDuration={0}>
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button
                                     variant="ghost"
                                     className={cn(
-                                        "w-full gap-2 text-slate-600 hover:text-red-600 hover:bg-red-50",
+                                        "w-full gap-2 text-sidebar-foreground hover:text-red-600 hover:bg-red-50",
                                         isCollapsed ? "justify-center px-0" : "justify-start"
                                     )}
                                     onClick={() => signOut()}
@@ -310,16 +314,16 @@ function NavItem({
                                 variant="ghost"
                                 className={cn(
                                     "w-full justify-center p-2 h-10 mb-1",
-                                    isChildActive ? "bg-blue-50 text-blue-600" : "text-slate-600 hover:bg-slate-100"
+                                    isChildActive ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent"
                                 )}
                             >
                                 <item.icon className="h-5 w-5" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent side="right" className="flex flex-col gap-1 p-2 min-w-[180px]">
-                            <p className="font-semibold text-xs px-2 py-1 text-slate-500">{item.name}</p>
+                            <p className="font-semibold text-xs px-2 py-1 text-sidebar-foreground/70">{item.name}</p>
                             {item.children.map(child => (
-                                <Link key={child.href} href={child.href} className={cn("text-sm px-2 py-1 rounded hover:bg-slate-100 block", pathname === child.href && "text-blue-600 font-medium bg-blue-50")}>
+                                <Link key={child.href} href={child.href} className={cn("text-sm px-2 py-1 rounded hover:bg-sidebar-accent block", pathname === child.href && "text-sidebar-primary font-medium bg-sidebar-accent")}>
                                     {child.name}
                                 </Link>
                             ))}
@@ -338,8 +342,8 @@ function NavItem({
                             className={cn(
                                 "flex items-center justify-center h-10 w-full rounded-md mb-1 transition-colors",
                                 isActive
-                                    ? "bg-blue-600 text-white shadow-md"
-                                    : "text-slate-600 hover:bg-slate-100"
+                                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                                    : "text-sidebar-foreground hover:bg-sidebar-accent"
                             )}
                         >
                             <item.icon className="h-5 w-5" />
@@ -358,8 +362,8 @@ function NavItem({
                 <Button
                     variant="ghost"
                     className={cn(
-                        "w-full justify-between hover:bg-slate-100",
-                        isChildActive ? "text-blue-600 font-medium" : "text-slate-600"
+                        "w-full justify-between hover:bg-sidebar-accent",
+                        isChildActive ? "text-sidebar-primary font-medium" : "text-sidebar-foreground"
                     )}
                     onClick={() => setIsOpen(!isOpen)}
                 >
@@ -372,7 +376,7 @@ function NavItem({
                     />
                 </Button>
                 {isOpen && (
-                    <div className="ml-4 mt-1 space-y-1 border-l border-slate-200 pl-2">
+                    <div className="ml-4 mt-1 space-y-1 border-l border-sidebar-border pl-2">
                         {item.children.map((child) => {
                             const isChildActive = pathname === child.href;
                             return (
@@ -382,8 +386,8 @@ function NavItem({
                                     className={cn(
                                         "flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors",
                                         isChildActive
-                                            ? "bg-blue-50 text-blue-600 font-medium"
-                                            : "text-slate-600 hover:bg-slate-100"
+                                            ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                                            : "text-sidebar-foreground hover:bg-sidebar-accent"
                                     )}
                                 >
                                     <child.icon className="h-4 w-4" />
@@ -403,8 +407,8 @@ function NavItem({
             className={cn(
                 "flex items-center gap-2 px-3 py-2 text-sm rounded-md mb-1 transition-colors",
                 isActive
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-600 hover:bg-slate-100"
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent"
             )}
         >
             <item.icon className="h-5 w-5" />
@@ -425,10 +429,10 @@ function MobileNav({
     onClose: () => void;
 }) {
     return (
-        <div className="flex flex-col h-full bg-white">
-            <div className="p-6 border-b border-slate-200">
-                <h1 className="text-2xl font-bold text-blue-600">🐾 Petshop</h1>
-                <p className="text-sm text-slate-500 mt-1">Management System</p>
+        <div className="flex flex-col h-full bg-sidebar">
+            <div className="p-6 border-b border-sidebar-border">
+                <h1 className="text-2xl font-bold text-sidebar-primary">🐾 Petshop</h1>
+                <p className="text-sm text-sidebar-foreground/70 mt-1">Management System</p>
             </div>
 
             <ScrollArea className="flex-1 p-4">
@@ -437,11 +441,11 @@ function MobileNav({
                         if (item.children) {
                             return (
                                 <div key={item.name} className="space-y-1 mb-2">
-                                    <div className="px-3 py-2 text-sm font-medium text-slate-900 flex items-center gap-2">
-                                        <item.icon className="h-5 w-5 text-slate-500" />
+                                    <div className="px-3 py-2 text-sm font-medium text-sidebar-foreground flex items-center gap-2">
+                                        <item.icon className="h-5 w-5 text-sidebar-foreground/70" />
                                         {item.name}
                                     </div>
-                                    <div className="ml-4 space-y-1 border-l border-slate-200 pl-2">
+                                    <div className="ml-4 space-y-1 border-l border-sidebar-border pl-2">
                                         {item.children.map((child) => {
                                             const isActive = pathname === child.href;
                                             return (
@@ -452,8 +456,8 @@ function MobileNav({
                                                     className={cn(
                                                         "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors",
                                                         isActive
-                                                            ? "bg-blue-50 text-blue-600 font-medium"
-                                                            : "text-slate-600 hover:bg-slate-100"
+                                                            ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                                                            : "text-sidebar-foreground hover:bg-sidebar-accent"
                                                     )}
                                                 >
                                                     <child.icon className="h-4 w-4" />
@@ -475,8 +479,8 @@ function MobileNav({
                                 className={cn(
                                     "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors mb-1",
                                     isActive
-                                        ? "bg-blue-50 text-blue-600 font-medium"
-                                        : "text-slate-600 hover:bg-slate-100"
+                                        ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                                        : "text-sidebar-foreground hover:bg-sidebar-accent"
                                 )}
                             >
                                 <item.icon className="h-5 w-5" />
@@ -487,10 +491,10 @@ function MobileNav({
                 </nav>
             </ScrollArea>
 
-            <div className="p-4 border-t border-slate-200">
+            <div className="p-4 border-t border-sidebar-border">
                 <Button
                     variant="ghost"
-                    className="w-full justify-start gap-2 text-slate-600 hover:text-red-600 hover:bg-red-50"
+                    className="w-full justify-start gap-2 text-sidebar-foreground hover:text-red-600 hover:bg-red-50"
                     onClick={() => {
                         signOut();
                         onClose();

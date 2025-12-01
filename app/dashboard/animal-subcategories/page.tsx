@@ -144,16 +144,16 @@ export default function AnimalSubcategoriesPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Sub-Kategori Hewan</h1>
-        <p className="text-slate-500 mt-1">Kelola sub-kategori/ras jenis hewan peliharaan</p>
+        <h1 className="text-3xl font-bold text-foreground">Sub-Kategori Hewan</h1>
+        <p className="text-muted-foreground mt-1">Kelola sub-kategori/ras jenis hewan peliharaan</p>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
+      <div className="bg-card rounded-lg border border-border shadow-sm">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4 flex-1">
               <div className="flex-1 max-w-sm relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Cari sub-kategori..."
                   value={searchQuery}
@@ -200,13 +200,13 @@ export default function AnimalSubcategoriesPage() {
           <TableBody>
             {!filteredSubcategories ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   Memuat data...
                 </TableCell>
               </TableRow>
             ) : filteredSubcategories.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   Belum ada data sub-kategori
                 </TableCell>
               </TableRow>
@@ -217,7 +217,7 @@ export default function AnimalSubcategoriesPage() {
                     {getCategoryName(subcategory.categoryId)}
                   </TableCell>
                   <TableCell>{subcategory.name}</TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="text-muted-foreground">
                     {subcategory.description || "-"}
                   </TableCell>
                   <TableCell>
@@ -239,7 +239,7 @@ export default function AnimalSubcategoriesPage() {
                         size="sm"
                         onClick={() => handleDelete(subcategory._id)}
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </TableCell>
@@ -266,7 +266,7 @@ export default function AnimalSubcategoriesPage() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="categoryId">
-                  Kategori Hewan <span className="text-red-500">*</span>
+                  Kategori Hewan <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={formData.categoryId}
@@ -289,7 +289,7 @@ export default function AnimalSubcategoriesPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="name">
-                  Nama Sub-Kategori <span className="text-red-500">*</span>
+                  Nama Sub-Kategori <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -300,7 +300,7 @@ export default function AnimalSubcategoriesPage() {
                   placeholder="Contoh: Golden Retriever, Persian, Murai Batu"
                   required
                 />
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   Isi dengan ras atau jenis spesifik dari kategori hewan
                 </p>
               </div>

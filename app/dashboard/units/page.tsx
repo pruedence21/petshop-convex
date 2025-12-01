@@ -128,15 +128,15 @@ export default function UnitsPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Satuan Produk</h1>
-        <p className="text-slate-500 mt-1">Kelola satuan produk (pcs, kg, liter, box, dll)</p>
+        <h1 className="text-3xl font-bold text-foreground">Satuan Produk</h1>
+        <p className="text-muted-foreground mt-1">Kelola satuan produk (pcs, kg, liter, box, dll)</p>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
+      <div className="bg-card rounded-lg border border-border shadow-sm">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 max-w-sm relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Cari satuan..."
                 value={searchQuery}
@@ -165,13 +165,13 @@ export default function UnitsPage() {
           <TableBody>
             {!filteredUnits ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Memuat data...
                 </TableCell>
               </TableRow>
             ) : filteredUnits.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Belum ada data satuan
                 </TableCell>
               </TableRow>
@@ -180,7 +180,7 @@ export default function UnitsPage() {
                 <TableRow key={unit._id}>
                   <TableCell className="font-medium">{unit.code}</TableCell>
                   <TableCell>{unit.name}</TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="text-muted-foreground">
                     {unit.description || "-"}
                   </TableCell>
                   <TableCell>
@@ -207,7 +207,7 @@ export default function UnitsPage() {
                         size="sm"
                         onClick={() => handleDelete(unit._id)}
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </TableCell>
@@ -235,7 +235,7 @@ export default function UnitsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="code">
-                    Kode Satuan <span className="text-red-500">*</span>
+                    Kode Satuan <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="code"
@@ -249,7 +249,7 @@ export default function UnitsPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="name">
-                    Nama Satuan <span className="text-red-500">*</span>
+                    Nama Satuan <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="name"
@@ -288,7 +288,7 @@ export default function UnitsPage() {
                   Satuan Dasar (pcs, kg, liter, dll)
                 </Label>
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-muted-foreground">
                 * Satuan dasar tidak bisa dikonversi ke satuan lain. Satuan turunan (box, pack) bisa dikonversi ke satuan dasar.
               </p>
             </div>

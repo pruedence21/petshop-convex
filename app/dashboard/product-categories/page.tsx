@@ -124,15 +124,15 @@ export default function ProductCategoriesPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Kategori Produk</h1>
-        <p className="text-slate-500 mt-1">Kelola kategori produk petshop (Makanan, Mainan, Aksesoris, dll)</p>
+        <h1 className="text-3xl font-bold text-foreground">Kategori Produk</h1>
+        <p className="text-muted-foreground mt-1">Kelola kategori produk petshop (Makanan, Mainan, Aksesoris, dll)</p>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
+      <div className="bg-card rounded-lg border border-border shadow-sm">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 max-w-sm relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Cari kategori..."
                 value={searchQuery}
@@ -161,13 +161,13 @@ export default function ProductCategoriesPage() {
           <TableBody>
             {!filteredCategories ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Memuat data...
                 </TableCell>
               </TableRow>
             ) : filteredCategories.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Belum ada data kategori
                 </TableCell>
               </TableRow>
@@ -177,11 +177,11 @@ export default function ProductCategoriesPage() {
                   <TableCell className="font-medium">{category.code}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Package className="h-4 w-4 text-slate-400" />
+                      <Package className="h-4 w-4 text-muted-foreground" />
                       {category.name}
                     </div>
                   </TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="text-muted-foreground">
                     {category.description || "-"}
                   </TableCell>
                   <TableCell>
@@ -288,8 +288,8 @@ export default function ProductCategoriesPage() {
                   rows={3}
                 />
               </div>
-              <div className="bg-slate-50 p-3 rounded-lg">
-                <p className="text-sm text-slate-600">
+              <div className="bg-muted/50 p-3 rounded-lg">
+                <p className="text-sm text-muted-foreground">
                   <strong>Contoh Kategori:</strong><br />
                   • Makanan & Minuman<br />
                   • Mainan & Permainan<br />

@@ -155,16 +155,16 @@ export default function StockPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Manajemen Stok</h1>
-        <p className="text-slate-500 mt-1">Kelola stok produk per cabang</p>
+        <h1 className="text-3xl font-bold text-foreground">Manajemen Stok</h1>
+        <p className="text-muted-foreground mt-1">Kelola stok produk per cabang</p>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
+      <div className="bg-card rounded-lg border border-border shadow-sm">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-4 flex-1">
               <div className="flex-1 max-w-sm relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Cari produk..."
                   value={searchQuery}
@@ -203,7 +203,7 @@ export default function StockPage() {
           </div>
 
           {!selectedBranch && (
-            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg">
+            <div className="bg-primary/10 border border-primary/20 text-primary px-4 py-3 rounded-lg">
               <p className="text-sm">Pilih cabang untuk melihat stok</p>
             </div>
           )}
@@ -227,13 +227,13 @@ export default function StockPage() {
             <TableBody>
               {!filteredStocks ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     Memuat data...
                   </TableCell>
                 </TableRow>
               ) : filteredStocks.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     Belum ada data stok
                   </TableCell>
                 </TableRow>
@@ -242,14 +242,14 @@ export default function StockPage() {
                   <TableRow key={stock._id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4 text-slate-400" />
+                        <Package className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">{stock.product?.name || "-"}</span>
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-sm">
                       {stock.variant?.sku || stock.product?.sku || "-"}
                     </TableCell>
-                    <TableCell className="text-slate-600">
+                    <TableCell className="text-muted-foreground">
                       {stock.variant
                         ? `${stock.variant.variantName}: ${stock.variant.variantValue}`
                         : "-"}
@@ -257,10 +257,10 @@ export default function StockPage() {
                     <TableCell className="text-right font-semibold">
                       {stock.quantity}
                     </TableCell>
-                    <TableCell className="text-right text-slate-600">
+                    <TableCell className="text-right text-muted-foreground">
                       {formatCurrency(stock.averageCost)}
                     </TableCell>
-                    <TableCell className="text-right text-xs text-slate-500">
+                    <TableCell className="text-right text-xs text-muted-foreground">
                       {stock.product?.minStock} / {stock.product?.maxStock}
                     </TableCell>
                     <TableCell>
@@ -273,7 +273,7 @@ export default function StockPage() {
                         <Badge variant="default">Normal</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm text-slate-600">
+                    <TableCell className="text-sm text-muted-foreground">
                       {formatDateTime(stock.lastUpdated)}
                     </TableCell>
                     <TableCell className="text-right">
@@ -324,7 +324,7 @@ export default function StockPage() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="quantity">
-                  Jumlah Penyesuaian <span className="text-red-500">*</span>
+                  Jumlah Penyesuaian <span className="text-destructive">*</span>
                 </Label>
                 <div className="flex items-center gap-2">
                   <Button
@@ -355,7 +355,7 @@ export default function StockPage() {
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   Positif untuk menambah, negatif untuk mengurangi stok
                 </p>
               </div>
@@ -364,7 +364,7 @@ export default function StockPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="batchNumber">
-                      Nomor Batch <span className="text-red-500">*</span>
+                      Nomor Batch <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="batchNumber"
@@ -378,7 +378,7 @@ export default function StockPage() {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="expiredDate">
-                      Tanggal Kadaluarsa <span className="text-red-500">*</span>
+                      Tanggal Kadaluarsa <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="expiredDate"
@@ -433,7 +433,7 @@ export default function StockPage() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="toBranchId">
-                  Cabang Tujuan <span className="text-red-500">*</span>
+                  Cabang Tujuan <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={transferForm.toBranchId}
@@ -458,7 +458,7 @@ export default function StockPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="transferQty">
-                  Jumlah Transfer <span className="text-red-500">*</span>
+                  Jumlah Transfer <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="transferQty"

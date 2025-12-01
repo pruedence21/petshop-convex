@@ -61,7 +61,7 @@ export default function ChartOfAccountsPage() {
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading chart of accounts...</p>
+          <p className="text-muted-foreground">Loading chart of accounts...</p>
         </div>
       </div>
     );
@@ -173,7 +173,7 @@ export default function ChartOfAccountsPage() {
       REVENUE: "bg-emerald-100 text-emerald-800",
       EXPENSE: "bg-orange-100 text-orange-800",
     };
-    return colors[type] || "bg-slate-100 text-slate-800";
+    return colors[type] || "bg-muted text-muted-foreground";
   };
 
   const renderAccountNode = (account: any, level: number = 0) => {
@@ -184,7 +184,7 @@ export default function ChartOfAccountsPage() {
     return (
       <div key={account._id}>
         <div
-          className={`flex items-center gap-2 py-2 px-3 hover:bg-slate-50 rounded-lg group ${level > 0 ? "ml-" + level * 6 : ""
+          className={`flex items-center gap-2 py-2 px-3 hover:bg-muted/50 rounded-lg group ${level > 0 ? "ml-" + level * 6 : ""
             }`}
           style={{ paddingLeft: `${level * 24 + 12}px` }}
         >
@@ -193,7 +193,7 @@ export default function ChartOfAccountsPage() {
             {hasChildren ? (
               <button
                 onClick={() => toggleNode(account._id)}
-                className="hover:bg-slate-200 rounded p-0.5"
+                className="hover:bg-muted rounded p-0.5"
               >
                 {isExpanded ? (
                   <ChevronDown className="w-4 h-4" />
@@ -202,18 +202,18 @@ export default function ChartOfAccountsPage() {
                 )}
               </button>
             ) : (
-              <div className="w-1 h-1 rounded-full bg-slate-300" />
+              <div className="w-1 h-1 rounded-full bg-muted-foreground/30" />
             )}
           </div>
 
           {/* Account Code */}
-          <span className="text-sm font-mono text-slate-600 w-20">
+          <span className="text-sm font-mono text-muted-foreground w-20">
             {account.accountCode}
           </span>
 
           {/* Account Name */}
           <span
-            className={`flex-1 text-sm ${account.isHeader ? "font-semibold text-slate-900" : "text-slate-700"
+            className={`flex-1 text-sm ${account.isHeader ? "font-semibold text-foreground" : "text-foreground/80"
               }`}
           >
             {account.accountName}
@@ -225,7 +225,7 @@ export default function ChartOfAccountsPage() {
           </Badge>
 
           {/* Normal Balance */}
-          <span className="text-xs text-slate-500 w-16">
+          <span className="text-xs text-muted-foreground w-16">
             {account.normalBalance}
           </span>
 
@@ -285,8 +285,8 @@ export default function ChartOfAccountsPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Bagan Akun (CoA)</h1>
-          <p className="text-slate-600 mt-1">
+          <h1 className="text-3xl font-bold text-foreground">Bagan Akun (CoA)</h1>
+          <p className="text-muted-foreground mt-1">
             Daftar akun keuangan untuk sistem pembukuan
           </p>
         </div>
@@ -301,7 +301,7 @@ export default function ChartOfAccountsPage() {
         <CardContent className="pt-6">
           <div className="flex gap-4 items-center">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 placeholder="Cari kode atau nama akun..."
                 value={searchQuery}
@@ -337,7 +337,7 @@ export default function ChartOfAccountsPage() {
               <div key={type}>
                 {accounts.length > 0 && (
                   <>
-                    <h3 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
                       <Badge className={getAccountTypeColor(type)}>{type}</Badge>
                     </h3>
                     <div className="space-y-1">
@@ -350,7 +350,7 @@ export default function ChartOfAccountsPage() {
           </div>
 
           {filteredAccounts.length === 0 && (
-            <div className="text-center py-12 text-slate-500">
+            <div className="text-center py-12 text-muted-foreground">
               <FolderTree className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>Tidak ada akun yang ditemukan</p>
             </div>
@@ -515,7 +515,7 @@ export default function ChartOfAccountsPage() {
                   setFormData({ ...formData, isHeader: e.target.checked })
                 }
                 disabled={!!editingAccount}
-                className="rounded border-slate-300"
+                className="rounded border-input"
               />
               <Label htmlFor="isHeader" className="cursor-pointer">
                 Akun Header (Grup/Kategori)

@@ -107,7 +107,7 @@ function ExpenseContent() {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { className: string; label: string; icon: any }> = {
-      DRAFT: { className: "bg-slate-100 text-slate-800", label: "Draft", icon: Clock },
+      DRAFT: { className: "bg-muted text-muted-foreground", label: "Draft", icon: Clock },
       PENDING_APPROVAL: {
         className: "bg-amber-100 text-amber-800",
         label: "Pending",
@@ -211,10 +211,10 @@ function ExpenseContent() {
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
           <div className="space-y-2">
-            <div className="h-8 w-64 bg-slate-200 animate-pulse rounded" />
-            <div className="h-4 w-96 bg-slate-200 animate-pulse rounded" />
+            <div className="h-8 w-64 bg-muted animate-pulse rounded" />
+            <div className="h-4 w-96 bg-muted animate-pulse rounded" />
           </div>
-          <div className="h-10 w-40 bg-slate-200 animate-pulse rounded" />
+          <div className="h-10 w-40 bg-muted animate-pulse rounded" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {[...Array(5)].map((_, i) => (
@@ -246,8 +246,8 @@ function ExpenseContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Manajemen Expense</h1>
-          <p className="text-slate-600 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Manajemen Expense</h1>
+          <p className="text-muted-foreground mt-1">
             Kelola pengeluaran dengan approval workflow
           </p>
         </div>
@@ -262,11 +262,11 @@ function ExpenseContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Expense</CardTitle>
-            <Receipt className="h-4 w-4 text-slate-600" />
+            <Receipt className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-slate-600 mt-1">Semua transaksi</p>
+            <p className="text-xs text-muted-foreground mt-1">Semua transaksi</p>
           </CardContent>
         </Card>
 
@@ -277,7 +277,7 @@ function ExpenseContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">{stats.pending}</div>
-            <p className="text-xs text-slate-600 mt-1">Menunggu approval</p>
+            <p className="text-xs text-muted-foreground mt-1">Menunggu approval</p>
           </CardContent>
         </Card>
 
@@ -288,7 +288,7 @@ function ExpenseContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
-            <p className="text-xs text-slate-600 mt-1">Siap dibayar</p>
+            <p className="text-xs text-muted-foreground mt-1">Siap dibayar</p>
           </CardContent>
         </Card>
 
@@ -299,18 +299,18 @@ function ExpenseContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.paid}</div>
-            <p className="text-xs text-slate-600 mt-1">Sudah dibayar</p>
+            <p className="text-xs text-muted-foreground mt-1">Sudah dibayar</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Amount</CardTitle>
-            <Receipt className="h-4 w-4 text-slate-600" />
+            <Receipt className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-xl font-bold">{formatCurrency(stats.totalAmount)}</div>
-            <p className="text-xs text-slate-600 mt-1">Semua expense</p>
+            <p className="text-xs text-muted-foreground mt-1">Semua expense</p>
           </CardContent>
         </Card>
       </div>
@@ -320,7 +320,7 @@ function ExpenseContent() {
         <CardContent className="pt-6">
           <div className="flex gap-4 items-center">
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-slate-600" />
+              <Filter className="w-4 h-4 text-muted-foreground" />
               <Label>Status:</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-48">
@@ -361,7 +361,7 @@ function ExpenseContent() {
             <TableBody>
               {filteredExpenses.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-slate-500">
+                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                     <Receipt className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>Belum ada expense</p>
                   </TableCell>
@@ -375,7 +375,7 @@ function ExpenseContent() {
                     <TableCell>{formatDate(expense.expenseDate)}</TableCell>
                     <TableCell>{expense.vendor || "-"}</TableCell>
                     <TableCell>
-                      <span className="text-sm text-slate-600">
+                      <span className="text-sm text-muted-foreground">
                         {/* Category name would need to be fetched */}
                         Category
                       </span>
@@ -542,9 +542,9 @@ function ExpenseContent() {
 
             <div className="space-y-2">
               <Label htmlFor="receipt">Upload Receipt (Coming Soon)</Label>
-              <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
-                <Upload className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-                <p className="text-sm text-slate-500">
+              <div className="border-2 border-dashed border-input rounded-lg p-6 text-center">
+                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
                   File upload akan segera tersedia
                 </p>
               </div>
@@ -571,21 +571,21 @@ function ExpenseContent() {
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-slate-600">Nomor Expense</Label>
+                  <Label className="text-muted-foreground">Nomor Expense</Label>
                   <p className="font-mono font-semibold">
                     {selectedExpense.expenseNumber}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-slate-600">Status</Label>
+                  <Label className="text-muted-foreground">Status</Label>
                   <div className="mt-1">{getStatusBadge(selectedExpense.status)}</div>
                 </div>
                 <div>
-                  <Label className="text-slate-600">Tanggal</Label>
+                  <Label className="text-muted-foreground">Tanggal</Label>
                   <p>{formatDate(selectedExpense.expenseDate)}</p>
                 </div>
                 <div>
-                  <Label className="text-slate-600">Jumlah</Label>
+                  <Label className="text-muted-foreground">Jumlah</Label>
                   <p className="font-semibold text-lg">
                     {formatCurrency(selectedExpense.amount)}
                   </p>
@@ -593,12 +593,12 @@ function ExpenseContent() {
               </div>
 
               <div>
-                <Label className="text-slate-600">Vendor</Label>
+                <Label className="text-muted-foreground">Vendor</Label>
                 <p>{selectedExpense.vendor || "-"}</p>
               </div>
 
               <div>
-                <Label className="text-slate-600">Deskripsi</Label>
+                <Label className="text-muted-foreground">Deskripsi</Label>
                 <p>{selectedExpense.description}</p>
               </div>
 

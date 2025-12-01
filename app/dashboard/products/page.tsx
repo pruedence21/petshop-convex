@@ -389,16 +389,16 @@ export default function ProductsPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Katalog Produk</h1>
-        <p className="text-slate-500 mt-1">Kelola katalog produk petshop</p>
+        <h1 className="text-3xl font-bold text-foreground">Katalog Produk</h1>
+        <p className="text-muted-foreground mt-1">Kelola katalog produk petshop</p>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
+      <div className="bg-card rounded-lg border border-border shadow-sm">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4 flex-1">
               <div className="flex-1 max-w-sm relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Cari produk..."
                   value={searchQuery}
@@ -461,13 +461,13 @@ export default function ProductsPage() {
           <TableBody>
             {!filteredProducts ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   Memuat data...
                 </TableCell>
               </TableRow>
             ) : filteredProducts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   Belum ada data produk
                 </TableCell>
               </TableRow>
@@ -477,23 +477,23 @@ export default function ProductsPage() {
                   <TableCell className="font-medium">{product.sku}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Package className="h-4 w-4 text-slate-400" />
+                      <Package className="h-4 w-4 text-muted-foreground" />
                       {product.name}
                     </div>
                   </TableCell>
                   <TableCell>
                     {getTypeBadge((product as any).type)}
                   </TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="text-muted-foreground">
                     {getCategoryName(product.categoryId)}
                   </TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="text-muted-foreground">
                     {getBrandName(product.brandId)}
                   </TableCell>
                   <TableCell className="font-medium text-green-600">
                     {formatCurrency(product.sellingPrice)}
                   </TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="text-muted-foreground">
                     {getUnitName(product.unitId)}
                   </TableCell>
                   <TableCell>
@@ -558,47 +558,47 @@ export default function ProductsPage() {
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4 mt-6">
                 <div
-                  className="border rounded-xl p-6 hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all group"
+                  className="border rounded-xl p-6 hover:border-blue-500 hover:bg-blue-50/50 cursor-pointer transition-all group"
                   onClick={() => handleTypeSelection("product")}
                 >
                   <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mb-4 group-hover:bg-blue-200">
                     <Box className="h-6 w-6 text-blue-600" />
                   </div>
                   <h3 className="font-semibold text-lg mb-1">Produk Fisik</h3>
-                  <p className="text-sm text-slate-500">Barang fisik dengan stok (makanan, aksesoris, mainan)</p>
+                  <p className="text-sm text-muted-foreground">Barang fisik dengan stok (makanan, aksesoris, mainan)</p>
                 </div>
 
                 <div
-                  className="border rounded-xl p-6 hover:border-green-500 hover:bg-green-50 cursor-pointer transition-all group"
+                  className="border rounded-xl p-6 hover:border-green-500 hover:bg-green-50/50 cursor-pointer transition-all group"
                   onClick={() => handleTypeSelection("medicine")}
                 >
                   <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4 group-hover:bg-green-200">
                     <Syringe className="h-6 w-6 text-green-600" />
                   </div>
                   <h3 className="font-semibold text-lg mb-1">Obat & Vaksin</h3>
-                  <p className="text-sm text-slate-500">Obat-obatan dan vaksin untuk keperluan medis</p>
+                  <p className="text-sm text-muted-foreground">Obat-obatan dan vaksin untuk keperluan medis</p>
                 </div>
 
                 <div
-                  className="border rounded-xl p-6 hover:border-purple-500 hover:bg-purple-50 cursor-pointer transition-all group"
+                  className="border rounded-xl p-6 hover:border-purple-500 hover:bg-purple-50/50 cursor-pointer transition-all group"
                   onClick={() => handleTypeSelection("service")}
                 >
                   <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center mb-4 group-hover:bg-purple-200">
                     <Sparkles className="h-6 w-6 text-purple-600" />
                   </div>
                   <h3 className="font-semibold text-lg mb-1">Layanan</h3>
-                  <p className="text-sm text-slate-500">Jasa grooming, penitipan, dan layanan non-medis</p>
+                  <p className="text-sm text-muted-foreground">Jasa grooming, penitipan, dan layanan non-medis</p>
                 </div>
 
                 <div
-                  className="border rounded-xl p-6 hover:border-rose-500 hover:bg-rose-50 cursor-pointer transition-all group"
+                  className="border rounded-xl p-6 hover:border-rose-500 hover:bg-rose-50/50 cursor-pointer transition-all group"
                   onClick={() => handleTypeSelection("procedure")}
                 >
                   <div className="h-12 w-12 rounded-full bg-rose-100 flex items-center justify-center mb-4 group-hover:bg-rose-200">
                     <Stethoscope className="h-6 w-6 text-rose-600" />
                   </div>
                   <h3 className="font-semibold text-lg mb-1">Tindakan Medis</h3>
-                  <p className="text-sm text-slate-500">Pemeriksaan, operasi, dan tindakan dokter hewan</p>
+                  <p className="text-sm text-muted-foreground">Pemeriksaan, operasi, dan tindakan dokter hewan</p>
                 </div>
               </div>
             </div>
@@ -643,7 +643,7 @@ export default function ProductsPage() {
                         }}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <Label htmlFor="autoSku" className="text-sm text-slate-600 font-normal">
+                      <Label htmlFor="autoSku" className="text-sm text-muted-foreground font-normal">
                         Generate SKU Otomatis
                       </Label>
                     </div>

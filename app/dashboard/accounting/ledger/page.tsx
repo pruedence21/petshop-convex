@@ -87,8 +87,8 @@ export default function GeneralLedgerPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">General Ledger</h1>
-          <p className="text-slate-600 mt-1">
+          <h1 className="text-3xl font-bold text-foreground">General Ledger</h1>
+          <p className="text-muted-foreground mt-1">
             Buku besar dan neraca saldo
           </p>
         </div>
@@ -180,7 +180,7 @@ export default function GeneralLedgerPage() {
             <CardTitle className="text-center text-xl">
               NERACA SALDO (TRIAL BALANCE)
             </CardTitle>
-            <p className="text-center text-slate-600">
+            <p className="text-center text-muted-foreground">
               Per {formatDate(new Date(endDate).getTime())}
             </p>
           </CardHeader>
@@ -213,7 +213,7 @@ export default function GeneralLedgerPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-                <TableRow className="font-bold bg-slate-50">
+                <TableRow className="font-bold bg-muted/50">
                   <TableCell colSpan={2}>TOTAL</TableCell>
                   <TableCell className="text-right font-mono">
                     {formatCurrency(trialBalance.totalDebit || 0)}
@@ -249,7 +249,7 @@ export default function GeneralLedgerPage() {
               Buku Besar: {accountLedger.account?.accountCode} -{" "}
               {accountLedger.account?.accountName}
             </CardTitle>
-            <p className="text-slate-600">
+            <p className="text-muted-foreground">
               Periode {formatDate(new Date(startDate).getTime())} -{" "}
               {formatDate(new Date(endDate).getTime())}
             </p>
@@ -257,7 +257,7 @@ export default function GeneralLedgerPage() {
           <CardContent>
             <div className="space-y-4">
               {/* Opening Balance */}
-              <div className="flex justify-between items-center p-3 bg-slate-50 rounded">
+              <div className="flex justify-between items-center p-3 bg-muted/50 rounded">
                 <span className="font-semibold">Saldo Awal</span>
                 <span className="font-mono font-semibold">
                   {formatCurrency(accountLedger.openingBalance || 0)}
@@ -281,7 +281,7 @@ export default function GeneralLedgerPage() {
                     <TableRow>
                       <TableCell
                         colSpan={6}
-                        className="text-center py-8 text-slate-500"
+                        className="text-center py-8 text-muted-foreground"
                       >
                         Tidak ada transaksi dalam periode ini
                       </TableCell>
@@ -318,13 +318,13 @@ export default function GeneralLedgerPage() {
               {/* Summary */}
               <div className="grid grid-cols-2 gap-4 mt-6">
                 <div className="p-4 bg-blue-50 rounded">
-                  <p className="text-sm text-slate-600 mb-1">Total Debit</p>
+                  <p className="text-sm text-muted-foreground mb-1">Total Debit</p>
                   <p className="text-xl font-bold font-mono">
                     {formatCurrency(accountLedger.totalDebit || 0)}
                   </p>
                 </div>
                 <div className="p-4 bg-red-50 rounded">
-                  <p className="text-sm text-slate-600 mb-1">Total Credit</p>
+                  <p className="text-sm text-muted-foreground mb-1">Total Credit</p>
                   <p className="text-xl font-bold font-mono">
                     {formatCurrency(accountLedger.totalCredit || 0)}
                   </p>
@@ -349,7 +349,7 @@ export default function GeneralLedgerPage() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-slate-600">Memuat data...</p>
+              <p className="text-muted-foreground">Memuat data...</p>
             </div>
           </div>
         )}
@@ -358,7 +358,7 @@ export default function GeneralLedgerPage() {
       {viewType === "ledger" && selectedAccountId === "all" && (
         <Card>
           <CardContent className="py-12">
-            <div className="text-center text-slate-500">
+            <div className="text-center text-muted-foreground">
               <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
               <p>Silakan pilih akun untuk melihat buku besar</p>
             </div>

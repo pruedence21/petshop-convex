@@ -240,7 +240,7 @@ export default function PurchaseOrdersPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "Draft": return <Badge variant="secondary" className="bg-slate-200 text-slate-700">Draft</Badge>;
+      case "Draft": return <Badge variant="secondary" className="bg-muted text-muted-foreground">Draft</Badge>;
       case "Submitted": return <Badge className="bg-blue-500 hover:bg-blue-600">Submitted</Badge>;
       case "Received": return <Badge className="bg-green-500 hover:bg-green-600">Received</Badge>;
       case "Cancelled": return <Badge variant="destructive">Cancelled</Badge>;
@@ -251,11 +251,11 @@ export default function PurchaseOrdersPage() {
   // -- RENDER: LIST VIEW --
   if (viewMode === "list") {
     return (
-      <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+      <div className="p-8 space-y-8 bg-muted/50 min-h-screen">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Purchase Orders</h1>
-            <p className="text-slate-500 mt-1">Kelola pengadaan barang dari supplier</p>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight">Purchase Orders</h1>
+            <p className="text-muted-foreground mt-1">Kelola pengadaan barang dari supplier</p>
           </div>
           <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700 shadow-sm">
             <Plus className="h-4 w-4 mr-2" />
@@ -263,16 +263,16 @@ export default function PurchaseOrdersPage() {
           </Button>
         </div>
 
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="border-b border-slate-100 bg-white pb-4">
+        <Card className="border-border shadow-sm">
+          <CardHeader className="border-b border-border bg-card pb-4">
             <div className="flex items-center gap-4">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Cari No. PO atau Supplier..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 bg-slate-50 border-slate-200"
+                  className="pl-9 bg-muted/50 border-border"
                 />
               </div>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
@@ -302,7 +302,7 @@ export default function PurchaseOrdersPage() {
           </CardHeader>
           <CardContent className="p-0">
             <Table>
-              <TableHeader className="bg-slate-50">
+              <TableHeader className="bg-muted/50">
                 <TableRow>
                   <TableHead className="font-semibold">No. PO</TableHead>
                   <TableHead className="font-semibold">Tanggal</TableHead>
@@ -316,11 +316,11 @@ export default function PurchaseOrdersPage() {
               <TableBody>
                 {!filteredPOs ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-slate-500">Memuat data...</TableCell>
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">Memuat data...</TableCell>
                   </TableRow>
                 ) : filteredPOs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center text-slate-500">
+                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <FileText className="h-8 w-8 opacity-20" />
                         <p>Tidak ada purchase order ditemukan</p>
@@ -329,12 +329,12 @@ export default function PurchaseOrdersPage() {
                   </TableRow>
                 ) : (
                   filteredPOs.map((po) => (
-                    <TableRow key={po._id} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="font-medium text-slate-900">{po.poNumber}</TableCell>
-                      <TableCell className="text-slate-500">{formatDate(po.orderDate)}</TableCell>
+                    <TableRow key={po._id} className="hover:bg-muted/50 transition-colors">
+                      <TableCell className="font-medium text-foreground">{po.poNumber}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDate(po.orderDate)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Building2 className="h-3 w-3 text-slate-400" />
+                          <Building2 className="h-3 w-3 text-muted-foreground" />
                           {po.supplier?.name}
                         </div>
                       </TableCell>
@@ -343,7 +343,7 @@ export default function PurchaseOrdersPage() {
                       <TableCell>{getStatusBadge(po.status)}</TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm" onClick={() => router.push(`/dashboard/purchase-orders/${po._id}`)}>
-                          <Eye className="h-4 w-4 text-slate-500" />
+                          <Eye className="h-4 w-4 text-muted-foreground" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -359,22 +359,22 @@ export default function PurchaseOrdersPage() {
 
   // -- RENDER: CREATE VIEW --
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-slate-50">
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-muted/50">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between flex-shrink-0 shadow-sm z-10">
+      <div className="bg-card border-b border-border px-6 py-4 flex items-center justify-between flex-shrink-0 shadow-sm z-10">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => setViewMode("list")}>
-            <ArrowLeft className="h-5 w-5 text-slate-500" />
+            <ArrowLeft className="h-5 w-5 text-muted-foreground" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Buat Purchase Order</h1>
-            <p className="text-xs text-slate-500">Draft Baru</p>
+            <h1 className="text-xl font-bold text-foreground">Buat Purchase Order</h1>
+            <p className="text-xs text-muted-foreground">Draft Baru</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right mr-4">
-            <p className="text-xs text-slate-500">Total Estimasi</p>
-            <p className="text-lg font-bold text-slate-900">{formatCurrency(totals.total)}</p>
+            <p className="text-xs text-muted-foreground">Total Estimasi</p>
+            <p className="text-lg font-bold text-foreground">{formatCurrency(totals.total)}</p>
           </div>
           <Button variant="outline" onClick={() => handleSubmitOrder(true)} disabled={isSubmitting}>
             <Save className="h-4 w-4 mr-2" />
@@ -389,29 +389,29 @@ export default function PurchaseOrdersPage() {
 
       <div className="flex-1 overflow-hidden flex">
         {/* LEFT: Product Catalog */}
-        <div className="w-[400px] border-r border-slate-200 bg-white flex flex-col">
-          <div className="p-4 border-b border-slate-100">
+        <div className="w-[400px] border-r border-border bg-card flex flex-col">
+          <div className="p-4 border-b border-border">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Cari produk untuk ditambahkan..."
-                className="pl-9 bg-slate-50"
+                className="pl-9 bg-muted/50"
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
               />
             </div>
           </div>
           <ScrollArea className="flex-1">
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-border">
               {filteredProducts?.map(product => (
-                <div key={product._id} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between group">
+                <div key={product._id} className="p-4 hover:bg-muted/50 transition-colors flex items-center justify-between group">
                   <div className="flex-1 min-w-0 mr-3">
                     <h4 className="font-medium text-sm truncate" title={product.name}>{product.name}</h4>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="outline" className="text-[10px] h-5 font-normal text-slate-500">
+                      <Badge variant="outline" className="text-[10px] h-5 font-normal text-muted-foreground">
                         {product.sku}
                       </Badge>
-                      <span className="text-xs text-slate-400">Min Stock: {product.minStock || 0}</span>
+                      <span className="text-xs text-muted-foreground">Min Stock: {product.minStock || 0}</span>
                     </div>
                     <p className="text-xs font-medium text-blue-600 mt-1">
                       Beli: {formatCurrency(product.purchasePrice)}
@@ -423,7 +423,7 @@ export default function PurchaseOrdersPage() {
                 </div>
               ))}
               {filteredProducts?.length === 0 && (
-                <div className="p-8 text-center text-slate-400">
+                <div className="p-8 text-center text-muted-foreground">
                   <Package className="h-12 w-12 mx-auto mb-2 opacity-20" />
                   <p>Produk tidak ditemukan</p>
                 </div>
@@ -433,22 +433,22 @@ export default function PurchaseOrdersPage() {
         </div>
 
         {/* RIGHT: Order Details */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
+        <div className="flex-1 flex flex-col overflow-hidden bg-muted/50">
           <ScrollArea className="flex-1">
             <div className="p-6 max-w-5xl mx-auto space-y-6">
 
               {/* Order Info Card */}
-              <Card className="border-slate-200 shadow-sm">
-                <CardHeader className="pb-3 border-b border-slate-100 bg-white rounded-t-lg">
+              <Card className="border-border shadow-sm">
+                <CardHeader className="pb-3 border-b border-border bg-card rounded-t-lg">
                   <CardTitle className="text-base flex items-center gap-2">
                     <FileText className="h-4 w-4 text-blue-500" />
                     Informasi Order
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 grid grid-cols-2 gap-6 bg-white rounded-b-lg">
+                <CardContent className="p-4 grid grid-cols-2 gap-6 bg-card rounded-b-lg">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Supplier <span className="text-red-500">*</span></Label>
+                      <Label>Supplier <span className="text-destructive">*</span></Label>
                       <Select value={formData.supplierId} onValueChange={(v) => setFormData({ ...formData, supplierId: v })}>
                         <SelectTrigger>
                           <SelectValue placeholder="Pilih Supplier" />
@@ -461,7 +461,7 @@ export default function PurchaseOrdersPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Cabang Penerima <span className="text-red-500">*</span></Label>
+                      <Label>Cabang Penerima <span className="text-destructive">*</span></Label>
                       <Select value={formData.branchId} onValueChange={(v) => setFormData({ ...formData, branchId: v })}>
                         <SelectTrigger>
                           <SelectValue placeholder="Pilih Cabang" />
@@ -511,17 +511,17 @@ export default function PurchaseOrdersPage() {
               </Card>
 
               {/* Items Table */}
-              <Card className="border-slate-200 shadow-sm min-h-[300px] flex flex-col">
-                <CardHeader className="pb-3 border-b border-slate-100 bg-white rounded-t-lg flex flex-row items-center justify-between">
+              <Card className="border-border shadow-sm min-h-[300px] flex flex-col">
+                <CardHeader className="pb-3 border-b border-border bg-card rounded-t-lg flex flex-row items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
                     <ShoppingCart className="h-4 w-4 text-green-500" />
                     Daftar Barang
                   </CardTitle>
                   <Badge variant="secondary">{items.length} Item</Badge>
                 </CardHeader>
-                <CardContent className="p-0 flex-1 bg-white rounded-b-lg">
+                <CardContent className="p-0 flex-1 bg-card rounded-b-lg">
                   <Table>
-                    <TableHeader className="bg-slate-50">
+                    <TableHeader className="bg-muted/50">
                       <TableRow>
                         <TableHead className="w-[30%]">Produk</TableHead>
                         <TableHead className="w-[12%]">Qty</TableHead>
@@ -535,7 +535,7 @@ export default function PurchaseOrdersPage() {
                     <TableBody>
                       {items.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="h-32 text-center text-slate-400">
+                          <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                             Pilih produk dari panel kiri untuk menambahkan ke order
                           </TableCell>
                         </TableRow>
@@ -544,7 +544,7 @@ export default function PurchaseOrdersPage() {
                           <TableRow key={`${item.productId}-${index}`}>
                             <TableCell>
                               <div className="font-medium text-sm">{item.name}</div>
-                              {item.variantName && <div className="text-xs text-slate-500">{item.variantName}</div>}
+                              {item.variantName && <div className="text-xs text-muted-foreground">{item.variantName}</div>}
                             </TableCell>
                             <TableCell>
                               <Input
@@ -582,7 +582,7 @@ export default function PurchaseOrdersPage() {
                               {formatCurrency((item.quantity * item.unitPrice) - (item.discount || 0) + (item.tax || 0))}
                             </TableCell>
                             <TableCell>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={() => handleRemoveItem(index)}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveItem(index)}>
                                 <X className="h-4 w-4" />
                               </Button>
                             </TableCell>
@@ -596,17 +596,17 @@ export default function PurchaseOrdersPage() {
 
               {/* Summary Footer */}
               <div className="flex justify-end">
-                <div className="w-80 bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-2">
+                <div className="w-80 bg-card p-4 rounded-lg border border-border shadow-sm space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Subtotal</span>
+                    <span className="text-muted-foreground">Subtotal</span>
                     <span>{formatCurrency(totals.subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Total Diskon</span>
-                    <span className="text-red-500">-{formatCurrency(totals.discount)}</span>
+                    <span className="text-muted-foreground">Total Diskon</span>
+                    <span className="text-destructive">-{formatCurrency(totals.discount)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Total Pajak</span>
+                    <span className="text-muted-foreground">Total Pajak</span>
                     <span>{formatCurrency(totals.tax)}</span>
                   </div>
                   <Separator className="my-2" />

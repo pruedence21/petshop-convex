@@ -184,18 +184,18 @@ export default function ClinicStaffPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Staff Klinik</h1>
-        <p className="text-slate-500 mt-1">
+        <h1 className="text-3xl font-bold text-foreground">Staff Klinik</h1>
+        <p className="text-muted-foreground mt-1">
           Kelola dokter hewan, groomer, dan staff klinik
         </p>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
+      <div className="bg-card rounded-lg border border-border shadow-sm">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4 flex-1">
               <div className="flex-1 max-w-sm relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Cari staff..."
                   value={searchQuery}
@@ -262,7 +262,7 @@ export default function ClinicStaffPage() {
               </TableRow>
             ) : filteredStaff.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   Tidak ada data staff
                 </TableCell>
               </TableRow>
@@ -318,7 +318,7 @@ export default function ClinicStaffPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="code">
-                    Kode <span className="text-red-500">*</span>
+                    Kode <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="code"
@@ -332,7 +332,7 @@ export default function ClinicStaffPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="name">
-                    Nama <span className="text-red-500">*</span>
+                    Nama <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="name"
@@ -346,7 +346,7 @@ export default function ClinicStaffPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="role">
-                    Role <span className="text-red-500">*</span>
+                    Role <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={formData.role}
@@ -379,7 +379,7 @@ export default function ClinicStaffPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="branch">
-                    Cabang <span className="text-red-500">*</span>
+                    Cabang <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={formData.branchId}

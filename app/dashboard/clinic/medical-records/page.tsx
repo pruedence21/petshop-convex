@@ -67,15 +67,15 @@ export default function MedicalRecordsPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Rekam Medis</h1>
-        <p className="text-slate-500 mt-1">Riwayat kesehatan dan pemeriksaan hewan</p>
+        <h1 className="text-3xl font-bold text-foreground">Rekam Medis</h1>
+        <p className="text-muted-foreground mt-1">Riwayat kesehatan dan pemeriksaan hewan</p>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200">
+      <div className="bg-card rounded-lg border border-border shadow-sm">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center gap-4">
             <div className="flex-1 max-w-sm relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Cari nama hewan, pemilik, diagnosis..."
                 value={searchQuery}
@@ -119,13 +119,13 @@ export default function MedicalRecordsPage() {
           <TableBody>
             {!filteredRecords ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   Memuat data...
                 </TableCell>
               </TableRow>
             ) : filteredRecords.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   Belum ada rekam medis
                 </TableCell>
               </TableRow>
@@ -137,10 +137,10 @@ export default function MedicalRecordsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-slate-400" />
+                      <User className="h-4 w-4 text-muted-foreground" />
                       <div>
                         <p className="font-medium">{record.pet?.name}</p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-muted-foreground">
                           {record.pet?.species} - {record.pet?.breed}
                         </p>
                       </div>
@@ -151,16 +151,16 @@ export default function MedicalRecordsPage() {
                     {record.diagnosis ? (
                       <span className="text-sm">{record.diagnosis}</span>
                     ) : (
-                      <span className="text-slate-400">-</span>
+                      <span className="text-muted-foreground">-</span>
                     )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Stethoscope className="h-4 w-4 text-slate-400" />
+                      <Stethoscope className="h-4 w-4 text-muted-foreground" />
                       {record.veterinarian || "-"}
                     </div>
                   </TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="text-muted-foreground">
                     {record.clinic || "-"}
                   </TableCell>
                   <TableCell className="text-right">
@@ -202,21 +202,21 @@ export default function MedicalRecordsPage() {
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-slate-500">Nama Hewan</p>
+                      <p className="text-muted-foreground">Nama Hewan</p>
                       <p className="font-medium">{selectedRecord.pet?.name}</p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Pemilik</p>
+                      <p className="text-muted-foreground">Pemilik</p>
                       <p className="font-medium">{selectedRecord.customer?.name}</p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Spesies/Ras</p>
+                      <p className="text-muted-foreground">Spesies/Ras</p>
                       <p className="font-medium">
                         {selectedRecord.pet?.species} - {selectedRecord.pet?.breed}
                       </p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Usia</p>
+                      <p className="text-muted-foreground">Usia</p>
                       <p className="font-medium">{selectedRecord.pet?.age || "-"}</p>
                     </div>
                   </div>
@@ -231,7 +231,7 @@ export default function MedicalRecordsPage() {
                 <CardContent className="space-y-4">
                   {selectedRecord.diagnosis && (
                     <div>
-                      <p className="text-sm font-medium text-slate-700 mb-1">
+                      <p className="text-sm font-medium text-foreground mb-1">
                         Diagnosis
                       </p>
                       <Badge className="bg-red-500">{selectedRecord.diagnosis}</Badge>
@@ -240,20 +240,20 @@ export default function MedicalRecordsPage() {
 
                   {selectedRecord.treatment && (
                     <div>
-                      <p className="text-sm font-medium text-slate-700 mb-1">
+                      <p className="text-sm font-medium text-foreground mb-1">
                         Tindakan/Treatment
                       </p>
-                      <p className="text-sm text-slate-600">{selectedRecord.treatment}</p>
+                      <p className="text-sm text-muted-foreground">{selectedRecord.treatment}</p>
                     </div>
                   )}
 
                   {selectedRecord.prescription && (
                     <div>
-                      <p className="text-sm font-medium text-slate-700 mb-1">
+                      <p className="text-sm font-medium text-foreground mb-1">
                         Resep/Prescription
                       </p>
-                      <div className="bg-slate-50 p-3 rounded border border-slate-200">
-                        <pre className="text-xs whitespace-pre-wrap text-slate-700">
+                      <div className="bg-muted/50 p-3 rounded border border-border">
+                        <pre className="text-xs whitespace-pre-wrap text-foreground">
                           {selectedRecord.prescription}
                         </pre>
                       </div>
@@ -262,11 +262,11 @@ export default function MedicalRecordsPage() {
 
                   {selectedRecord.notes && (
                     <div>
-                      <p className="text-sm font-medium text-slate-700 mb-1">
+                      <p className="text-sm font-medium text-foreground mb-1">
                         Catatan Lengkap
                       </p>
-                      <div className="bg-slate-50 p-4 rounded border border-slate-200">
-                        <pre className="text-sm whitespace-pre-wrap text-slate-700">
+                      <div className="bg-muted/50 p-4 rounded border border-border">
+                        <pre className="text-sm whitespace-pre-wrap text-foreground">
                           {selectedRecord.notes}
                         </pre>
                       </div>
@@ -283,18 +283,18 @@ export default function MedicalRecordsPage() {
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-slate-500">Dokter Hewan</p>
+                      <p className="text-muted-foreground">Dokter Hewan</p>
                       <p className="font-medium flex items-center gap-2">
                         <Stethoscope className="h-4 w-4" />
                         {selectedRecord.veterinarian}
                       </p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Klinik</p>
+                      <p className="text-muted-foreground">Klinik</p>
                       <p className="font-medium">{selectedRecord.clinic}</p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Tanggal Pemeriksaan</p>
+                      <p className="text-muted-foreground">Tanggal Pemeriksaan</p>
                       <p className="font-medium flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         {formatDate(selectedRecord.recordDate)}
