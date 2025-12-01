@@ -20,7 +20,7 @@ RUN npm ci --legacy-peer-deps
 # ============================================================================
 # Stage 2: Builder - Build the Next.js application
 # ============================================================================
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
