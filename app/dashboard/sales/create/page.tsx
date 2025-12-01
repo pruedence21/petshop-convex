@@ -35,8 +35,18 @@ import {
   Package,
   ArrowLeft,
   ScanBarcode,
-  Keyboard
+  Keyboard,
+  Stethoscope,
+  BedDouble
 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
 import { formatErrorMessage } from "@/lib/error-handling";
@@ -100,7 +110,7 @@ export default function SalesPOSPage() {
 
   // Keyboard Navigation State
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
-  const productGridRef = useRef<HTMLDivElement>(null);
+  const productListRef = useRef<HTMLDivElement>(null);
 
   // -- Queries --
   const branches = useQuery(api.master_data.branches.list, { includeInactive: false });
@@ -224,13 +234,13 @@ export default function SalesPOSPage() {
   }, [searchQuery, selectedCategory]);
 
   const scrollSelectedIntoView = (index: number) => {
-    const element = document.getElementById(`product-card-${index}`);
+    const element = document.getElementById(`product-row-${index}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   };
 
-  // Keyboard Navigation for Product Grid
+  // Keyboard Navigation for Product List
   useHotkeys('down', (e) => {
     e.preventDefault();
     setSelectedIndex(prev => {
@@ -241,24 +251,6 @@ export default function SalesPOSPage() {
   }, { enableOnFormTags: true }, [filteredProducts]);
 
   useHotkeys('up', (e) => {
-    e.preventDefault();
-    setSelectedIndex(prev => {
-      const next = Math.max(prev - 1, 0);
-      scrollSelectedIntoView(next);
-      return next;
-    });
-  }, { enableOnFormTags: true }, [filteredProducts]);
-
-  useHotkeys('right', (e) => {
-    e.preventDefault();
-    setSelectedIndex(prev => {
-      const next = Math.min(prev + 1, filteredProducts.length - 1);
-      scrollSelectedIntoView(next);
-      return next;
-    });
-  }, { enableOnFormTags: true }, [filteredProducts]);
-
-  useHotkeys('left', (e) => {
     e.preventDefault();
     setSelectedIndex(prev => {
       const next = Math.max(prev - 1, 0);
@@ -319,6 +311,17 @@ export default function SalesPOSPage() {
       setCurrentPayment(prev => ({ ...prev, amount: grandTotal }));
     }
   }, { enableOnFormTags: true });
+
+  // Module Shortcuts
+  useHotkeys('f8', (e) => {
+    e.preventDefault();
+    router.push('/dashboard/clinic/appointments');
+  });
+
+  useHotkeys('f9', (e) => {
+    e.preventDefault();
+    router.push('/dashboard/hotel/bookings');
+  });
 
   // Initialize from existing sale
   useEffect(() => {
@@ -476,9 +479,9 @@ export default function SalesPOSPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] lg:h-screen flex flex-col md:flex-row bg-muted/40 overflow-hidden max-w-[1400px] mx-auto border-x border-border shadow-sm">
+    <div className="h-[calc(100vh-4rem)] lg:h-screen flex flex-col md:flex-row bg-muted/40 overflow-hidden w-full border-x border-border shadow-sm">
       {/* LEFT SIDE: Product Catalog */}
-      <div className="flex-1 flex flex-col border-r border-border h-full">
+      <div className="flex-1 flex flex-col border-r border-border h-full min-w-0">
         {/* Header / Filter Bar */}
         <div className="p-4 bg-card border-b border-border space-y-4">
           <div className="flex gap-4 items-center">
@@ -511,6 +514,14 @@ export default function SalesPOSPage() {
                 ))}
               </SelectContent>
             </Select>
+            <div className="flex gap-2">
+              <Button variant="outline" size="icon" title="Klinik (F8)" onClick={() => router.push('/dashboard/clinic/appointments')}>
+                <Stethoscope className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" title="Hotel (F9)" onClick={() => router.push('/dashboard/hotel/bookings')}>
+                <BedDouble className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           <ScrollArea className="w-full whitespace-nowrap pb-2">
@@ -538,51 +549,61 @@ export default function SalesPOSPage() {
           </ScrollArea>
         </div>
 
-        {/* Product Grid */}
-        <ScrollArea className="flex-1 p-4">
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2 lg:gap-3 pb-20" ref={productGridRef}>
-            {filteredProducts.map((product, index) => (
-              <Card
-                key={product._id}
-                id={`product-card-${index}`}
-                className={`cursor-pointer hover:shadow-md transition-all active:scale-95 overflow-hidden group flex flex-col ${selectedIndex === index ? "ring-2 ring-primary shadow-md scale-[1.02]" : "border-border"
-                  }`}
-                onClick={() => handleProductClick(product)}
-              >
-                <div className="h-28 lg:h-36 bg-muted flex items-center justify-center relative">
-                  {/* Placeholder for image */}
-                  <Package className="h-10 w-10 text-muted-foreground/50" />
-                  {product.hasVariants && (
-                    <Badge className="absolute top-2 right-2 bg-primary hover:bg-primary/90 text-[10px] px-1.5 h-5 text-primary-foreground">
-                      Varian
-                    </Badge>
-                  )}
-                </div>
-                <div className="p-2 lg:p-2.5 flex flex-col flex-1 bg-card">
-                  <h3 className="font-medium text-xs lg:text-sm line-clamp-2 leading-tight mb-auto min-h-[2.5em] text-card-foreground">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="font-bold text-primary text-sm">
-                      {formatCurrency(product.sellingPrice)}
-                    </span>
-                    <Button size="icon" variant="ghost" className={`h-6 w-6 rounded-full bg-primary/10 text-primary transition-opacity ${selectedIndex === index ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                      }`}>
-                      <Plus className="h-3 w-3" />
+        {/* Product List */}
+        <div className="flex-1 overflow-auto bg-background" ref={productListRef}>
+          <Table>
+            <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
+              <TableRow>
+                <TableHead className="w-[50%]">Nama Produk</TableHead>
+                <TableHead>SKU</TableHead>
+                <TableHead className="text-right">Harga</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProducts.map((product, index) => (
+                <TableRow
+                  key={product._id}
+                  id={`product-row-${index}`}
+                  className={`cursor-pointer hover:bg-muted/50 transition-colors ${selectedIndex === index ? "bg-muted border-l-4 border-l-primary" : ""
+                    }`}
+                  onClick={() => handleProductClick(product)}
+                >
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {product.name}
+                      {product.hasVariants && (
+                        <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                          Varian
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{product.sku}</TableCell>
+                  <TableCell className="text-right font-bold text-primary">
+                    {formatCurrency(product.sellingPrice)}
+                  </TableCell>
+                  <TableCell>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-primary opacity-0 group-hover:opacity-100">
+                      <Plus className="h-4 w-4" />
                     </Button>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-1 truncate">
-                    SKU: {product.sku}
-                  </p>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </ScrollArea>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredProducts.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                    Tidak ada produk ditemukan.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* RIGHT SIDE: Cart / Transaction */}
-      <div className="w-full md:w-[340px] lg:w-[380px] xl:w-[420px] bg-card flex flex-col h-full shadow-xl z-10 border-l border-border">
+      <div className="w-full md:w-[340px] lg:w-[380px] xl:w-[420px] bg-card flex flex-col h-full shadow-xl z-20 border-l border-border">
         {/* Customer Selector */}
         <div className="p-4 border-b border-border bg-muted/30">
           <div className="flex items-center justify-between mb-2">
