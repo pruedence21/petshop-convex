@@ -38,7 +38,8 @@ import {
   Keyboard
 } from "lucide-react";
 import { toast } from "sonner";
-import { formatCurrency, parseErrorMessage } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
+import { formatErrorMessage } from "@/lib/error-handling";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AddCustomerDialog } from "@/components/dialogs/AddCustomerDialog";
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -414,7 +415,7 @@ export default function SalesPOSPage() {
       }
 
     } catch (error: any) {
-      toast.error(parseErrorMessage(error));
+      toast.error(formatErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
