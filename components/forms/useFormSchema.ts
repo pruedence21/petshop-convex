@@ -3,16 +3,16 @@ import { useCallback, useMemo, useRef, useState } from "react";
 // Lightweight schema-driven form hook. Intentionally minimal; can be swapped with Zod later.
 // Schema describes fields, validation rules, and optional transform logic.
 
-export type FieldSchema<T> = {
+export type FieldSchema<T, Shape = any> = {
   label: string;
   required?: boolean;
   parse?: (raw: any) => T;
-  validate?: (value: T) => string | null; // return error message or null
+  validate?: (value: T, values: Shape) => string | null; // return error message or null
   defaultValue?: T;
 };
 
 export type SchemaDefinition<Shape> = {
-  [K in keyof Shape]: FieldSchema<Shape[K]>;
+  [K in keyof Shape]: FieldSchema<Shape[K], Shape>;
 };
 
 export type FormState<Shape> = {
@@ -47,7 +47,7 @@ export function useFormSchema<Shape extends Record<string, any>>(
   const submittingRef = useRef(false);
 
   const validateField = useCallback(
-    (field: keyof Shape, value: any): string | null => {
+    (field: keyof Shape, value: any, allValues: Shape): string | null => {
       const def = schema[field];
       if (!def) return null;
       let parsed = value;
@@ -62,7 +62,7 @@ export function useFormSchema<Shape extends Record<string, any>>(
         return "Wajib diisi";
       }
       if (def.validate) {
-        return def.validate(parsed);
+        return def.validate(parsed, allValues);
       }
       return null;
     },
@@ -73,7 +73,7 @@ export function useFormSchema<Shape extends Record<string, any>>(
     (nextValues: Shape) => {
       const newErrors: Partial<Record<keyof Shape, string>> = {};
       for (const key in schema) {
-        const err = validateField(key as keyof Shape, (nextValues as any)[key]);
+        const err = validateField(key as keyof Shape, (nextValues as any)[key], nextValues);
         if (err) newErrors[key as keyof Shape] = err;
       }
       setErrors(newErrors);
@@ -87,7 +87,7 @@ export function useFormSchema<Shape extends Record<string, any>>(
       setValues((prev) => {
         const next = { ...prev, [field]: raw };
         if (validateOnChange) {
-          const err = validateField(field, raw);
+          const err = validateField(field, raw, next);
           setErrors((prevErrors) => ({ ...prevErrors, [field]: err || undefined }));
         }
         return next;
@@ -100,7 +100,7 @@ export function useFormSchema<Shape extends Record<string, any>>(
     (field: keyof Shape) => {
       setTouched((t) => ({ ...t, [field]: true }));
       if (validateOnBlur) {
-        const err = validateField(field, (values as any)[field]);
+        const err = validateField(field, (values as any)[field], values);
         setErrors((prevErrors) => ({ ...prevErrors, [field]: err || undefined }));
       }
     },

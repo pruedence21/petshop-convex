@@ -45,6 +45,7 @@ import { AddUnitDialog } from "@/components/dialogs/AddUnitDialog";
 type Product = {
   _id: Id<"products">;
   sku: string;
+  barcode?: string;
   name: string;
   description?: string;
   categoryId: Id<"productCategories">;
@@ -87,7 +88,9 @@ export default function ProductsPage() {
   const [isAddUnitOpen, setIsAddUnitOpen] = useState(false);
   const productForm = useFormSchema({
     schema: {
-      sku: { label: "SKU", required: true, parse: (v) => String(v).toUpperCase(), validate: (v) => (String(v).length < 3 ? "Minimal 3 karakter" : null), defaultValue: "" },
+      sku: { label: "SKU", required: false, parse: (v) => String(v).toUpperCase(), validate: (v, values) => (!values.autoSku && String(v).length < 3 ? "Minimal 3 karakter" : null), defaultValue: "" },
+      autoSku: { label: "Auto SKU", defaultValue: true },
+      barcode: { label: "Barcode", defaultValue: "" },
       name: { label: "Nama Produk", required: true, validate: (v) => (String(v).length < 3 ? "Nama terlalu pendek" : null), defaultValue: "" },
       description: { label: "Deskripsi", defaultValue: "" },
       categoryId: { label: "Kategori", required: true, defaultValue: "" },
@@ -110,6 +113,7 @@ export default function ProductsPage() {
           await updateProduct({
             id: editingProduct._id,
             sku: values.sku,
+            barcode: values.barcode || undefined,
             name: values.name,
             description: values.description || undefined,
             categoryId: values.categoryId as any,
@@ -128,7 +132,8 @@ export default function ProductsPage() {
           toast.success("Produk berhasil diperbarui");
         } else {
           await createProduct({
-            sku: values.sku,
+            sku: values.autoSku ? undefined : values.sku,
+            barcode: values.barcode || undefined,
             name: values.name,
             description: values.description || undefined,
             categoryId: values.categoryId as any,
@@ -258,6 +263,8 @@ export default function ProductsPage() {
       setCreationStep("form"); // Direct to form for editing
       productForm.reset();
       productForm.setField("sku", product.sku);
+      productForm.setField("autoSku", false);
+      productForm.setField("barcode", product.barcode || "");
       productForm.setField("name", product.name);
       productForm.setField("description", product.description || "");
       productForm.setField("categoryId", product.categoryId as any);
@@ -620,7 +627,34 @@ export default function ProductsPage() {
                       value={productForm.values.sku as any}
                       onChange={(e) => productForm.setField("sku", e.target.value)}
                       onBlur={() => productForm.handleBlur("sku")}
-                      placeholder="PRD-001"
+                      placeholder={productForm.values.autoSku ? "Otomatis" : "PRD-001"}
+                      disabled={productForm.values.autoSku as boolean}
+                    />
+                    <div className="flex items-center gap-2 mt-2">
+                      <input
+                        type="checkbox"
+                        id="autoSku"
+                        checked={productForm.values.autoSku as boolean}
+                        onChange={(e) => {
+                          productForm.setField("autoSku", e.target.checked);
+                          if (e.target.checked) {
+                            productForm.setField("sku", "");
+                          }
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <Label htmlFor="autoSku" className="text-sm text-slate-600 font-normal">
+                        Generate SKU Otomatis
+                      </Label>
+                    </div>
+                  </FormField>
+                  <FormField label="Barcode" error={productForm.errors.barcode || null}>
+                    <Input
+                      id="barcode"
+                      value={productForm.values.barcode as any}
+                      onChange={(e) => productForm.setField("barcode", e.target.value)}
+                      onBlur={() => productForm.handleBlur("barcode")}
+                      placeholder="Scan barcode..."
                     />
                   </FormField>
                   <FormField label="Nama Item" required error={productForm.errors.name || null}>

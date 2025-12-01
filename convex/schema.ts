@@ -174,6 +174,7 @@ export default defineSchema({
   // 5. Katalog Produk (Product Catalog)
   products: defineTable({
     sku: v.string(),
+    barcode: v.optional(v.string()), // Barcode from supplier
     name: v.string(),
     description: v.optional(v.string()),
     categoryId: v.id("productCategories"),
@@ -194,6 +195,7 @@ export default defineSchema({
     deletedAt: v.optional(v.number()),
   })
     .index("by_sku", ["sku"])
+    .index("by_barcode", ["barcode"])
     .index("by_name", ["name"])
     .index("by_category", ["categoryId"])
     .index("by_brand", ["brandId"])

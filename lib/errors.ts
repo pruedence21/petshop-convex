@@ -12,7 +12,8 @@ export type DomainErrorCode =
   | "PAYMENT_EXCEEDS_TOTAL"
   | "INSUFFICIENT_STOCK"
   | "DUPLICATE_ENTRY"
-  | "INVALID_ITEM_TYPE";
+  | "INVALID_ITEM_TYPE"
+  | "BARCODE_EXISTS";
 
 export interface DomainErrorShape {
   code: DomainErrorCode;
@@ -25,6 +26,8 @@ export function toUserMessage(code: DomainErrorCode): string {
   switch (code) {
     case "SKU_EXISTS":
       return "SKU sudah digunakan";
+    case "BARCODE_EXISTS":
+      return "Barcode sudah digunakan";
     case "INVALID_QUANTITY":
       return "Jumlah tidak valid";
     case "NOT_FOUND":

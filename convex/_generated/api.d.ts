@@ -25,6 +25,7 @@ import type * as clinic_clinicServices from "../clinic/clinicServices.js";
 import type * as clinic_clinicStaff from "../clinic/clinicStaff.js";
 import type * as clinic_petMedicalRecords from "../clinic/petMedicalRecords.js";
 import type * as clinic_pharmacy from "../clinic/pharmacy.js";
+import type * as dashboard from "../dashboard.js";
 import type * as finance_accountingHelpers from "../finance/accountingHelpers.js";
 import type * as finance_accountingPeriods from "../finance/accountingPeriods.js";
 import type * as finance_accountingSeed from "../finance/accountingSeed.js";
@@ -102,6 +103,7 @@ declare const fullApi: ApiFromModules<{
   "clinic/clinicStaff": typeof clinic_clinicStaff;
   "clinic/petMedicalRecords": typeof clinic_petMedicalRecords;
   "clinic/pharmacy": typeof clinic_pharmacy;
+  dashboard: typeof dashboard;
   "finance/accountingHelpers": typeof finance_accountingHelpers;
   "finance/accountingPeriods": typeof finance_accountingPeriods;
   "finance/accountingSeed": typeof finance_accountingSeed;

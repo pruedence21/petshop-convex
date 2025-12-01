@@ -3,9 +3,11 @@ import { v } from "convex/values";
 import { buildError } from "../../lib/errors";
 
 // Create product
+// Create product
 export const create = mutation({
   args: {
-    sku: v.string(),
+    sku: v.optional(v.string()), // Optional, auto-generated if empty
+    barcode: v.optional(v.string()),
     name: v.string(),
     description: v.optional(v.string()),
     categoryId: v.id("productCategories"),
@@ -22,17 +24,62 @@ export const create = mutation({
     serviceDuration: v.optional(v.number()), // For services
   },
   handler: async (ctx, args) => {
+    let sku = args.sku;
+
+    // Auto-generate SKU if not provided
+    if (!sku) {
+      const type = args.type || "product";
+      let prefix = "PRD";
+      if (type === "medicine") prefix = "MED";
+      else if (type === "procedure") prefix = "PRC";
+      else if (type === "service") prefix = "SVC";
+
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      const fullPrefix = `${prefix}-${dateStr}-`;
+
+      // Find last SKU with this prefix
+      const lastProduct = await ctx.db
+        .query("products")
+        .withIndex("by_sku")
+        .filter((q) => q.gte(q.field("sku"), fullPrefix) && q.lt(q.field("sku"), fullPrefix + "\uffff"))
+        .order("desc")
+        .first();
+
+      let nextNum = 1;
+      if (lastProduct && lastProduct.sku.startsWith(fullPrefix)) {
+        const parts = lastProduct.sku.split("-");
+        if (parts.length === 3) {
+          nextNum = parseInt(parts[2], 10) + 1;
+        }
+      }
+
+      sku = `${fullPrefix}${String(nextNum).padStart(3, "0")}`;
+    }
+
     // Uniqueness check for SKU using index
     const existing = await ctx.db
       .query("products")
-      .withIndex("by_sku", (q) => q.eq("sku", args.sku))
+      .withIndex("by_sku", (q) => q.eq("sku", sku!))
       .unique();
     if (existing) {
       // Throw structured error code for UI mapping
       throw new Error(JSON.stringify(buildError({ code: "SKU_EXISTS", message: "SKU already exists" })));
     }
+
+    // Check barcode uniqueness if provided
+    if (args.barcode) {
+      const existingBarcode = await ctx.db
+        .query("products")
+        .withIndex("by_barcode", (q) => q.eq("barcode", args.barcode!))
+        .unique();
+      if (existingBarcode) {
+        throw new Error(JSON.stringify(buildError({ code: "BARCODE_EXISTS", message: "Barcode already exists" })));
+      }
+    }
+
     const productId = await ctx.db.insert("products", {
-      sku: args.sku,
+      sku: sku!,
+      barcode: args.barcode,
       name: args.name,
       description: args.description,
       categoryId: args.categoryId,
@@ -127,6 +174,7 @@ export const update = mutation({
   args: {
     id: v.id("products"),
     sku: v.optional(v.string()),
+    barcode: v.optional(v.string()),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     categoryId: v.optional(v.id("productCategories")),
