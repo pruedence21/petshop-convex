@@ -24,12 +24,15 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  NODE_ENV: production
+  SETUP_SCRIPT_RAN: 1
 
 jobs:
   # Job 1: Deploy Convex Backend
   deploy-convex:
     name: Deploy Convex Backend
     runs-on: ubuntu-latest
+    environment: production
     
     steps:
       - name: Checkout code
@@ -65,6 +68,7 @@ jobs:
   build-and-push:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
+    environment: production
     needs: deploy-convex
     permissions:
       contents: read
