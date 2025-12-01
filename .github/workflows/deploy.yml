@@ -54,7 +54,7 @@ jobs:
         env:
           CONVEX_DEPLOYMENT: ${{ secrets.CONVEX_DEPLOYMENT }}
         run: |
-          npx convex deploy --cmd 'npm run build' --prod
+          npx convex deploy --cmd 'npm run build' 
           
       - name: Verify Convex deployment
         run: |
