@@ -36,6 +36,7 @@ import {
     Receipt,
     LucideIcon,
     ChevronDown,
+    AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -74,7 +75,14 @@ const navigation: NavigationItem[] = [
     },
     { name: "Produk", href: "/dashboard/products", icon: Package },
     { name: "Pembelian", href: "/dashboard/purchase-orders", icon: ShoppingCart },
-    { name: "Stok", href: "/dashboard/stock", icon: PackageSearch },
+    {
+        name: "Stok",
+        icon: PackageSearch,
+        children: [
+            { name: "Manajemen Stok", href: "/dashboard/stock", icon: PackageSearch },
+            { name: "Monitoring Kadaluarsa", href: "/dashboard/expiry", icon: AlertTriangle },
+        ],
+    },
     { name: "Hewan", href: "/dashboard/pets", icon: Heart },
     { name: "Pelanggan", href: "/dashboard/customers", icon: Users },
     { name: "Supplier", href: "/dashboard/suppliers", icon: TruckIcon },

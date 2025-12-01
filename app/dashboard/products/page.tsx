@@ -57,6 +57,7 @@ type Product = {
   maxStock: number;
   hasVariants: boolean;
   isActive: boolean;
+  hasExpiry?: boolean;
 };
 
 type ProductVariant = {
@@ -98,6 +99,7 @@ export default function ProductsPage() {
       minStock: { label: "Stok Minimum", required: true, parse: (v) => Number(v), validate: (v) => (v < 0 ? "Tidak boleh negatif" : null), defaultValue: 10 },
       maxStock: { label: "Stok Maximum", required: true, parse: (v) => Number(v), validate: (v) => (v < 0 ? "Tidak boleh negatif" : null), defaultValue: 100 },
       hasVariants: { label: "Memiliki Varian", parse: (v) => Boolean(v), defaultValue: false },
+      hasExpiry: { label: "Ada Tanggal Kadaluarsa", parse: (v) => Boolean(v), defaultValue: false },
       type: { label: "Tipe Produk", required: true, defaultValue: "product" },
       serviceDuration: { label: "Durasi (Menit)", parse: (v) => (v ? Number(v) : 0), defaultValue: 0 },
     },
@@ -119,6 +121,7 @@ export default function ProductsPage() {
             minStock: values.minStock as any,
             maxStock: values.maxStock as any,
             hasVariants: values.hasVariants as any,
+            hasExpiry: values.hasExpiry as any,
             type: values.type as any,
             serviceDuration: values.serviceDuration ? (values.serviceDuration as any) : undefined,
           });
@@ -137,6 +140,7 @@ export default function ProductsPage() {
             minStock: values.minStock as any,
             maxStock: values.maxStock as any,
             hasVariants: values.hasVariants as any,
+            hasExpiry: values.hasExpiry as any,
             type: values.type as any,
             serviceDuration: values.serviceDuration ? (values.serviceDuration as any) : undefined,
           });
@@ -265,6 +269,7 @@ export default function ProductsPage() {
       productForm.setField("minStock", product.minStock as any);
       productForm.setField("maxStock", product.maxStock as any);
       productForm.setField("hasVariants", product.hasVariants as any);
+      productForm.setField("hasExpiry", product.hasExpiry as any);
       productForm.setField("type", ((product as any).type || "product") as any);
       productForm.setField("serviceDuration", ((product as any).serviceDuration || "") as any);
     } else {
@@ -283,9 +288,16 @@ export default function ProductsPage() {
       productForm.setField("minStock", 0);
       productForm.setField("maxStock", 0);
       productForm.setField("hasVariants", false);
+      productForm.setField("hasExpiry", false);
     } else {
       productForm.setField("minStock", 10);
       productForm.setField("maxStock", 100);
+      // Default expiry for medicine
+      if (type === "medicine") {
+        productForm.setField("hasExpiry", true);
+      } else {
+        productForm.setField("hasExpiry", false);
+      }
     }
 
     setCreationStep("form");
@@ -792,6 +804,20 @@ export default function ProductsPage() {
                         />
                         <Label htmlFor="hasVariants" className="cursor-pointer">
                           Memiliki Varian
+                        </Label>
+                      </div>
+                    </FormField>
+                    <FormField label="Ada Kadaluarsa" error={productForm.errors.hasExpiry || null}>
+                      <div className="flex items-center gap-2 h-10">
+                        <input
+                          type="checkbox"
+                          id="hasExpiry"
+                          checked={productForm.values.hasExpiry as any}
+                          onChange={(e) => productForm.setField("hasExpiry", e.target.checked)}
+                          className="w-4 h-4"
+                        />
+                        <Label htmlFor="hasExpiry" className="cursor-pointer">
+                          Ada Kadaluarsa
                         </Label>
                       </div>
                     </FormField>

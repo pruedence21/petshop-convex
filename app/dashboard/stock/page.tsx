@@ -48,6 +48,8 @@ export default function StockPage() {
   const [adjustForm, setAdjustForm] = useState({
     quantity: 0,
     notes: "",
+    batchNumber: "",
+    expiredDate: "",
   });
 
   const [transferForm, setTransferForm] = useState({
@@ -75,7 +77,7 @@ export default function StockPage() {
 
   const handleOpenAdjustDialog = (stock: any) => {
     setSelectedStock(stock);
-    setAdjustForm({ quantity: 0, notes: "" });
+    setAdjustForm({ quantity: 0, notes: "", batchNumber: "", expiredDate: "" });
     setDialogType("adjust");
   };
 
@@ -107,6 +109,8 @@ export default function StockPage() {
         variantId: selectedStock.variantId,
         quantity: adjustForm.quantity,
         notes: adjustForm.notes || undefined,
+        batchNumber: adjustForm.batchNumber || undefined,
+        expiredDate: adjustForm.expiredDate ? new Date(adjustForm.expiredDate).getTime() : undefined,
       });
 
       toast.success("Stok berhasil disesuaikan");
@@ -355,6 +359,39 @@ export default function StockPage() {
                   Positif untuk menambah, negatif untuk mengurangi stok
                 </p>
               </div>
+
+              {selectedStock?.product?.hasExpiry && adjustForm.quantity > 0 && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="batchNumber">
+                      Nomor Batch <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="batchNumber"
+                      value={adjustForm.batchNumber}
+                      onChange={(e) =>
+                        setAdjustForm({ ...adjustForm, batchNumber: e.target.value })
+                      }
+                      placeholder="BATCH-001"
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="expiredDate">
+                      Tanggal Kadaluarsa <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="expiredDate"
+                      type="date"
+                      value={adjustForm.expiredDate}
+                      onChange={(e) =>
+                        setAdjustForm({ ...adjustForm, expiredDate: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+              )}
               <div className="grid gap-2">
                 <Label htmlFor="notes">Catatan</Label>
                 <Textarea

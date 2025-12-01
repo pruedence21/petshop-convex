@@ -34,18 +34,26 @@ import Link from "next/link";
 type ReceiveItem = {
   itemId: Id<"purchaseOrderItems">;
   receivedQuantity: number;
+  batchNumber?: string;
+  expiredDate?: number;
 };
 
-export default function PurchaseOrderDetailPage({ 
-  params 
-}: { 
-  params: Promise<{ id: string }> 
+type ReceivingItemState = {
+  quantity: number;
+  batchNumber: string;
+  expiredDate: string;
+};
+
+export default function PurchaseOrderDetailPage({
+  params
+}: {
+  params: Promise<{ id: string }>
 }) {
   const router = useRouter();
   const [poId, setPoId] = useState<Id<"purchaseOrders"> | null>(null);
-  
+
   const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false);
-  const [receivingItems, setReceivingItems] = useState<Record<string, number>>({});
+  const [receivingItems, setReceivingItems] = useState<Record<string, ReceivingItemState>>({});
 
   // Resolve params Promise
   useState(() => {
@@ -102,11 +110,15 @@ export default function PurchaseOrderDetailPage({
 
   const handleOpenReceiveDialog = () => {
     // Initialize with remaining quantities
-    const initialReceiving: Record<string, number> = {};
+    const initialReceiving: Record<string, ReceivingItemState> = {};
     po.items.forEach((item: any) => {
       const remaining = item.quantity - item.receivedQuantity;
       if (remaining > 0) {
-        initialReceiving[item._id] = remaining;
+        initialReceiving[item._id] = {
+          quantity: remaining,
+          batchNumber: "",
+          expiredDate: "",
+        };
       }
     });
     setReceivingItems(initialReceiving);
@@ -119,10 +131,12 @@ export default function PurchaseOrderDetailPage({
     if (!poId) return;
 
     const receivedItems: ReceiveItem[] = Object.entries(receivingItems)
-      .filter(([_, qty]) => qty > 0)
-      .map(([itemId, qty]) => ({
+      .filter(([_, state]) => state.quantity > 0)
+      .map(([itemId, state]) => ({
         itemId: itemId as Id<"purchaseOrderItems">,
-        receivedQuantity: qty,
+        receivedQuantity: state.quantity,
+        batchNumber: state.batchNumber || undefined,
+        expiredDate: state.expiredDate ? new Date(state.expiredDate).getTime() : undefined,
       }));
 
     if (receivedItems.length === 0) {
@@ -408,19 +422,58 @@ export default function PurchaseOrderDetailPage({
                             <Badge variant="secondary">{remaining}</Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Input
-                              type="number"
-                              min="0"
-                              max={remaining}
-                              value={receivingItems[item._id] || 0}
-                              onChange={(e) =>
-                                setReceivingItems({
-                                  ...receivingItems,
-                                  [item._id]: parseFloat(e.target.value) || 0,
-                                })
-                              }
-                              className="w-20 text-right"
-                            />
+                            <div className="flex flex-col gap-2 items-end">
+                              <Input
+                                type="number"
+                                min="0"
+                                max={remaining}
+                                value={receivingItems[item._id]?.quantity || 0}
+                                onChange={(e) =>
+                                  setReceivingItems({
+                                    ...receivingItems,
+                                    [item._id]: {
+                                      ...receivingItems[item._id],
+                                      quantity: parseFloat(e.target.value) || 0,
+                                    },
+                                  })
+                                }
+                                className="w-20 text-right"
+                              />
+                              {item.product?.hasExpiry && receivingItems[item._id]?.quantity > 0 && (
+                                <div className="flex flex-col gap-2 mt-1 w-48">
+                                  <Input
+                                    placeholder="Batch No"
+                                    value={receivingItems[item._id]?.batchNumber || ""}
+                                    onChange={(e) =>
+                                      setReceivingItems({
+                                        ...receivingItems,
+                                        [item._id]: {
+                                          ...receivingItems[item._id],
+                                          batchNumber: e.target.value,
+                                        },
+                                      })
+                                    }
+                                    className="text-xs h-8"
+                                    required
+                                  />
+                                  <Input
+                                    type="date"
+                                    value={receivingItems[item._id]?.expiredDate || ""}
+                                    onChange={(e) =>
+                                      setReceivingItems({
+                                        ...receivingItems,
+                                        [item._id]: {
+                                          ...receivingItems[item._id],
+                                          expiredDate: e.target.value,
+                                        },
+                                      })
+                                    }
+                                    className="text-xs h-8"
+                                    required
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       );

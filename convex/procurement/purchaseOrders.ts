@@ -258,6 +258,8 @@ export const receive = mutation({
       v.object({
         itemId: v.id("purchaseOrderItems"),
         receivedQuantity: v.number(),
+        batchNumber: v.optional(v.string()),
+        expiredDate: v.optional(v.number()),
       })
     ),
     isPaid: v.optional(v.boolean()),
@@ -297,6 +299,8 @@ export const receive = mutation({
         quantity: receivedItem.receivedQuantity,
         unitPrice: item.unitPrice,
         purchaseOrderId: args.purchaseOrderId,
+        batchNumber: receivedItem.batchNumber,
+        expiredDate: receivedItem.expiredDate,
       });
 
       // Check if this item is fully received

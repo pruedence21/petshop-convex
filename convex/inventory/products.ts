@@ -17,6 +17,7 @@ export const create = mutation({
     minStock: v.number(),
     maxStock: v.number(),
     hasVariants: v.boolean(),
+    hasExpiry: v.optional(v.boolean()),
     type: v.optional(v.string()), // "product" or "service"
     serviceDuration: v.optional(v.number()), // For services
   },
@@ -43,6 +44,7 @@ export const create = mutation({
       minStock: args.minStock,
       maxStock: args.maxStock,
       hasVariants: args.hasVariants,
+      hasExpiry: args.hasExpiry || false,
       type: args.type || "product",
       serviceDuration: args.serviceDuration,
       isActive: true,
@@ -136,6 +138,7 @@ export const update = mutation({
     minStock: v.optional(v.number()),
     maxStock: v.optional(v.number()),
     hasVariants: v.optional(v.boolean()),
+    hasExpiry: v.optional(v.boolean()),
     type: v.optional(v.string()),
     serviceDuration: v.optional(v.number()),
     isActive: v.optional(v.boolean()),

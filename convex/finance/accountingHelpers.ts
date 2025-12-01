@@ -944,3 +944,94 @@ export async function createStockAdjustmentJournalEntry(
 
   return journalEntryId;
 }
+
+/**
+ * Create journal entry for Prescription Dispensing (COGS Recognition)
+ * 
+ * Entry:
+ * DR COGS (HPP Obat)
+ *   CR Inventory (Persediaan Obat)
+ */
+export async function createPrescriptionJournalEntry(
+  ctx: any,
+  args: {
+    appointmentId: string;
+    appointmentNumber: string;
+    dispenseDate: number;
+    branchId: Id<"branches">;
+    items: Array<{
+      productName: string;
+      cogs: number;
+      category: string;
+    }>;
+  }
+) {
+  const journalNumber = await generateJournalNumber(ctx);
+
+  const lines: Array<{
+    accountId: Id<"accounts">;
+    branchId: Id<"branches">;
+    description: string;
+    debitAmount: number;
+    creditAmount: number;
+  }> = [];
+
+  let totalCogs = 0;
+
+  // Calculate total COGS
+  for (const item of args.items) {
+    totalCogs += item.cogs;
+  }
+
+  if (totalCogs > 0) {
+    // DR COGS (HPP Obat & Vitamin)
+    const cogsAccount = await getAccountByCode(ctx, "5-103");
+    lines.push({
+      accountId: cogsAccount,
+      branchId: args.branchId,
+      description: `HPP Resep ${args.appointmentNumber}`,
+      debitAmount: totalCogs,
+      creditAmount: 0,
+    });
+
+    // CR Inventory (Persediaan Obat & Vitamin)
+    const inventoryAccount = await getAccountByCode(ctx, "1-133");
+    lines.push({
+      accountId: inventoryAccount,
+      branchId: args.branchId,
+      description: `Pengambilan obat resep ${args.appointmentNumber}`,
+      debitAmount: 0,
+      creditAmount: totalCogs,
+    });
+  }
+
+  // Create journal entry
+  const journalEntryId = await ctx.db.insert("journalEntries", {
+    journalNumber,
+    journalDate: args.dispenseDate,
+    description: `Pengambilan Resep ${args.appointmentNumber}`,
+    sourceType: "CLINIC", // Linked to appointment
+    sourceId: args.appointmentId,
+    status: "Posted",
+    totalDebit: totalCogs,
+    totalCredit: totalCogs,
+    postedBy: undefined,
+    postedAt: Date.now(),
+    createdBy: undefined,
+  });
+
+  let sortOrder = 1;
+  for (const line of lines) {
+    await ctx.db.insert("journalEntryLines", {
+      journalEntryId,
+      accountId: line.accountId,
+      branchId: line.branchId,
+      description: line.description,
+      debitAmount: line.debitAmount,
+      creditAmount: line.creditAmount,
+      sortOrder: sortOrder++,
+    });
+  }
+
+  return journalEntryId;
+}

@@ -141,6 +141,8 @@ export const adjustStock = mutation({
     productId: v.id("products"),
     variantId: v.optional(v.id("productVariants")),
     quantity: v.number(), // Positive for IN, negative for OUT
+    batchNumber: v.optional(v.string()),
+    expiredDate: v.optional(v.number()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -160,6 +162,16 @@ export const adjustStock = mutation({
         code: "INVALID_ITEM_TYPE",
         message: `Cannot adjust stock for item type: ${product.type}`
       })));
+    }
+
+    // Validate expiry requirements
+    if (product.hasExpiry) {
+      if (args.quantity > 0 && (!args.batchNumber || !args.expiredDate)) {
+        throw new Error(JSON.stringify(buildError({
+          code: "VALIDATION",
+          message: "Batch number and expiry date are required for this product"
+        })));
+      }
     }
 
     // Find existing stock record
@@ -225,6 +237,47 @@ export const adjustStock = mutation({
         }]
       });
 
+      // Handle Batch Logic
+      if (product.hasExpiry && args.quantity > 0) {
+        await ctx.db.insert("productStockBatches", {
+          branchId: args.branchId,
+          productId: args.productId,
+          variantId: args.variantId,
+          batchNumber: args.batchNumber!,
+          expiredDate: args.expiredDate!,
+          quantity: args.quantity,
+          initialQuantity: args.quantity,
+          receivedDate: now,
+          createdBy: undefined,
+        });
+      } else if (product.hasExpiry && args.quantity < 0) {
+        // FEFO for adjustment OUT
+        let remainingToDeduct = Math.abs(args.quantity);
+
+        const batches = await ctx.db
+          .query("productStockBatches")
+          .withIndex("by_product_expiry", (q) =>
+            q.eq("productId", args.productId)
+          )
+          .filter((q) => q.gt(q.field("quantity"), 0))
+          .collect();
+
+        const branchBatches = batches.filter(b =>
+          b.branchId === args.branchId &&
+          (args.variantId ? b.variantId === args.variantId : !b.variantId)
+        ).sort((a, b) => a.expiredDate - b.expiredDate);
+
+        for (const batch of branchBatches) {
+          if (remainingToDeduct <= 0) break;
+
+          const deduct = Math.min(batch.quantity, remainingToDeduct);
+          await ctx.db.patch(batch._id, {
+            quantity: batch.quantity - deduct
+          });
+          remainingToDeduct -= deduct;
+        }
+      }
+
       return existingStock._id;
     } else {
       // Create new stock record (only if positive adjustment)
@@ -279,6 +332,21 @@ export const adjustStock = mutation({
           cost,
         }]
       });
+
+      // Handle Batch Logic for New Stock
+      if (product.hasExpiry && args.quantity > 0) {
+        await ctx.db.insert("productStockBatches", {
+          branchId: args.branchId,
+          productId: args.productId,
+          variantId: args.variantId,
+          batchNumber: args.batchNumber!,
+          expiredDate: args.expiredDate!,
+          quantity: args.quantity,
+          initialQuantity: args.quantity,
+          receivedDate: now,
+          createdBy: undefined,
+        });
+      }
 
       return stockId;
     }
@@ -435,6 +503,8 @@ export async function updateStockFromPurchaseHelper(
     quantity: number;
     unitPrice: number;
     purchaseOrderId: Id<"purchaseOrders">;
+    batchNumber?: string;
+    expiredDate?: number;
   }
 ) {
   const now = Date.now();
@@ -513,6 +583,24 @@ export async function updateStockFromPurchaseHelper(
     createdBy: undefined,
   });
 
+  // Handle Batch Logic
+  if (product.hasExpiry) {
+    if (args.batchNumber && args.expiredDate) {
+      await ctx.db.insert("productStockBatches", {
+        branchId: args.branchId,
+        productId: args.productId,
+        variantId: args.variantId,
+        batchNumber: args.batchNumber,
+        expiredDate: args.expiredDate,
+        quantity: args.quantity,
+        initialQuantity: args.quantity,
+        purchaseOrderId: args.purchaseOrderId,
+        receivedDate: now,
+        createdBy: undefined,
+      });
+    }
+  }
+
   return stockId;
 }
 
@@ -525,6 +613,8 @@ export const updateStockFromPurchase = mutation({
     quantity: v.number(),
     unitPrice: v.number(),
     purchaseOrderId: v.id("purchaseOrders"),
+    batchNumber: v.optional(v.string()),
+    expiredDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     return await updateStockFromPurchaseHelper(ctx, args);
@@ -615,6 +705,37 @@ export async function reduceStockForSaleHelper(
     createdBy: undefined,
   });
 
+  // Handle Batch Logic (FEFO)
+  if (product.hasExpiry) {
+    let remainingToDeduct = args.quantity;
+
+    const batches = await ctx.db
+      .query("productStockBatches")
+      .withIndex("by_product_expiry", (q: any) =>
+        q.eq("productId", args.productId).gt("quantity", 0)
+      )
+      .collect();
+
+    const branchBatches = batches
+      .filter((b: any) =>
+        b.branchId === args.branchId &&
+        (args.variantId ? b.variantId === args.variantId : !b.variantId)
+      )
+      .sort((a: any, b: any) => a.expiredDate - b.expiredDate);
+
+    for (const batch of branchBatches) {
+      if (remainingToDeduct <= 0) break;
+
+      const deduct = Math.min(batch.quantity, remainingToDeduct);
+
+      await ctx.db.patch(batch._id, {
+        quantity: batch.quantity - deduct
+      });
+
+      remainingToDeduct -= deduct;
+    }
+  }
+
   return { cogs, avgCost };
 }
 
@@ -631,6 +752,3 @@ export const reduceStockForSale = mutation({
     return await reduceStockForSaleHelper(ctx, args);
   },
 });
-
-
-

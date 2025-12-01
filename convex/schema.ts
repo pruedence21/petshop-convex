@@ -9,7 +9,7 @@ export default defineSchema({
   ...authTables,
 
   // ==================== USER MANAGEMENT ====================
-  
+
   // User Profiles (extends authTables users with additional info)
   userProfiles: defineTable({
     userId: v.string(), // Reference to authTables users._id (stored as string)
@@ -54,7 +54,7 @@ export default defineSchema({
   }).index("by_name", ["name"]),
 
   // ==================== MASTER DATA ====================
-  
+
   // 1. Jenis Hewan (Animal Types)
   animalCategories: defineTable({
     name: v.string(), // Anjing, Kucing, Burung, Ikan
@@ -185,6 +185,7 @@ export default defineSchema({
     minStock: v.number(),
     maxStock: v.number(),
     hasVariants: v.boolean(),
+    hasExpiry: v.optional(v.boolean()), // Track expiry date for this product
     type: v.optional(v.string()), // "product" (default), "medicine" (obat), "procedure" (tindakan), "service" (layanan)
     serviceDuration: v.optional(v.number()), // Duration in minutes for services/procedures
     isActive: v.boolean(),
@@ -244,8 +245,25 @@ export default defineSchema({
     .index("by_variant", ["variantId"])
     .index("by_branch_product", ["branchId", "productId"]),
 
+  // Product Stock Batches (for Expiry Date Management)
+  productStockBatches: defineTable({
+    branchId: v.id("branches"),
+    productId: v.id("products"),
+    variantId: v.optional(v.id("productVariants")),
+    batchNumber: v.string(),
+    expiredDate: v.number(),
+    quantity: v.number(), // Current remaining quantity
+    initialQuantity: v.number(),
+    purchaseOrderId: v.optional(v.id("purchaseOrders")),
+    receivedDate: v.number(),
+    createdBy: v.optional(v.id("users")),
+  })
+    .index("by_branch_product", ["branchId", "productId"])
+    .index("by_expiry", ["expiredDate"])
+    .index("by_product_expiry", ["productId", "expiredDate"]), // For FEFO lookup
+
   // ==================== PURCHASE & INVENTORY ====================
-  
+
   // Purchase Orders
   purchaseOrders: defineTable({
     poNumber: v.string(), // PO-YYYYMMDD-001
@@ -464,7 +482,7 @@ export default defineSchema({
     appointmentDate: v.number(), // Date only (timestamp at 00:00)
     appointmentTime: v.string(), // Time slot "09:00", "09:30", etc.
     status: v.string(), // Scheduled, InProgress, Completed, Cancelled
-    
+
     // Clinical Examination Data
     chiefComplaint: v.optional(v.string()), // Keluhan utama
     temperature: v.optional(v.number()), // Suhu tubuh (Celsius)
@@ -476,7 +494,7 @@ export default defineSchema({
     physicalExamination: v.optional(v.string()), // Hasil pemeriksaan fisik
     diagnosis: v.optional(v.string()), // Diagnosis penyakit
     treatmentPlan: v.optional(v.string()), // Rencana pengobatan
-    
+
     // Financial
     subtotal: v.number(), // Sum of service subtotals
     discountAmount: v.number(),
@@ -725,7 +743,7 @@ export default defineSchema({
     .index("by_payment_date", ["paymentDate"]),
 
   // ==================== SALES & TRANSACTIONS ====================
-  
+
   // Sales (Transaction Header)
   sales: defineTable({
     saleNumber: v.string(), // INV-YYYYMMDD-001
@@ -921,7 +939,7 @@ export default defineSchema({
     paymentMethod: v.optional(v.string()), // CASH, BANK, CHECK
     paymentDate: v.optional(v.number()),
     checkNumber: v.optional(v.string()), // For check payments
-    
+
     // Approval workflow
     submittedBy: v.optional(v.id("users")),
     submittedAt: v.optional(v.number()),
@@ -930,7 +948,7 @@ export default defineSchema({
     rejectedBy: v.optional(v.id("users")),
     rejectedAt: v.optional(v.number()),
     rejectionReason: v.optional(v.string()),
-    
+
     journalEntryId: v.optional(v.id("journalEntries")), // Link to auto-generated JE
     notes: v.optional(v.string()),
     createdBy: v.optional(v.id("users")),

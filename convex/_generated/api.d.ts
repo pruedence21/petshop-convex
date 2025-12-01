@@ -24,6 +24,7 @@ import type * as clinic_clinicServiceCategories from "../clinic/clinicServiceCat
 import type * as clinic_clinicServices from "../clinic/clinicServices.js";
 import type * as clinic_clinicStaff from "../clinic/clinicStaff.js";
 import type * as clinic_petMedicalRecords from "../clinic/petMedicalRecords.js";
+import type * as clinic_pharmacy from "../clinic/pharmacy.js";
 import type * as finance_accountingHelpers from "../finance/accountingHelpers.js";
 import type * as finance_accountingPeriods from "../finance/accountingPeriods.js";
 import type * as finance_accountingSeed from "../finance/accountingSeed.js";
@@ -45,6 +46,7 @@ import type * as hotel_hotelPayments from "../hotel/hotelPayments.js";
 import type * as hotel_hotelRooms from "../hotel/hotelRooms.js";
 import type * as http from "../http.js";
 import type * as inventory_brands from "../inventory/brands.js";
+import type * as inventory_expiry from "../inventory/expiry.js";
 import type * as inventory_productCategories from "../inventory/productCategories.js";
 import type * as inventory_productStock from "../inventory/productStock.js";
 import type * as inventory_productSubcategories from "../inventory/productSubcategories.js";
@@ -99,6 +101,7 @@ declare const fullApi: ApiFromModules<{
   "clinic/clinicServices": typeof clinic_clinicServices;
   "clinic/clinicStaff": typeof clinic_clinicStaff;
   "clinic/petMedicalRecords": typeof clinic_petMedicalRecords;
+  "clinic/pharmacy": typeof clinic_pharmacy;
   "finance/accountingHelpers": typeof finance_accountingHelpers;
   "finance/accountingPeriods": typeof finance_accountingPeriods;
   "finance/accountingSeed": typeof finance_accountingSeed;
@@ -120,6 +123,7 @@ declare const fullApi: ApiFromModules<{
   "hotel/hotelRooms": typeof hotel_hotelRooms;
   http: typeof http;
   "inventory/brands": typeof inventory_brands;
+  "inventory/expiry": typeof inventory_expiry;
   "inventory/productCategories": typeof inventory_productCategories;
   "inventory/productStock": typeof inventory_productStock;
   "inventory/productSubcategories": typeof inventory_productSubcategories;
