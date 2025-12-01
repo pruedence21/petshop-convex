@@ -73,12 +73,14 @@ export async function requireUserProfile(ctx: QueryCtx | MutationCtx) {
   if (!userProfile) {
     // Bootstrap assistance: if there are zero profiles in the system, provide
     // specific onboarding instructions for creating the first (super admin) profile.
+    // specific onboarding instructions for creating the first (super admin) profile.
     const anyExistingProfile = await ctx.db.query("userProfiles").take(1);
     if (anyExistingProfile.length === 0) {
       throw new Error(
         `Bootstrap required: No user profiles exist yet. Create the first super admin profile by calling internal.adminSeed.createSuperAdminProfile with { userId: "${identity.subject}", email: "<your_email>", name: "Super Administrator" }. See RBAC_SETUP_GUIDE.md.`
       );
     }
+    console.log("DEBUG: User profile not found for identity:", JSON.stringify(identity, null, 2));
     throw new Error("User profile not found. Please contact administrator.");
   }
 
