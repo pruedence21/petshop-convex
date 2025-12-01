@@ -771,6 +771,9 @@ export default function SalesPOSPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Pilih Varian: {selectedProductForVariantSelection?.name}</DialogTitle>
+            <DialogDescription>
+              Pilih varian produk yang ingin ditambahkan ke keranjang.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
             {variantsForSelection?.map((variant: any) => (

@@ -229,7 +229,7 @@ export default function AccountingDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Laporan Laba Rugi</span>
-              <Link href="/dashboard/accounting/reports/income-statement">
+              <Link href="/dashboard/accounting/reports?type=income-statement">
                 <Button variant="ghost" size="sm">
                   Lihat Detail
                   <ArrowRight className="w-4 h-4 ml-1" />
@@ -279,7 +279,7 @@ export default function AccountingDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Neraca</span>
-              <Link href="/dashboard/accounting/reports/balance-sheet">
+              <Link href="/dashboard/accounting/reports?type=balance-sheet">
                 <Button variant="ghost" size="sm">
                   Lihat Detail
                   <ArrowRight className="w-4 h-4 ml-1" />
@@ -349,7 +349,7 @@ export default function AccountingDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Umur Piutang</span>
-              <Link href="/dashboard/accounting/receivables">
+              <Link href="/dashboard/accounting/ar-aging">
                 <Button variant="ghost" size="sm">
                   Lihat Semua
                   <ArrowRight className="w-4 h-4 ml-1" />
@@ -410,7 +410,7 @@ export default function AccountingDashboard() {
                 Jurnal Umum
               </Button>
             </Link>
-            <Link href="/dashboard/accounting/bank-accounts">
+            <Link href="/dashboard/accounting/bank">
               <Button variant="outline" className="w-full justify-start">
                 <Wallet className="w-4 h-4 mr-2" />
                 Bank
