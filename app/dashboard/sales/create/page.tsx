@@ -491,7 +491,7 @@ export default function SalesPOSPage() {
 
         {/* Product Grid */}
         <ScrollArea className="flex-1 p-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 lg:gap-3 pb-20">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2 lg:gap-3 pb-20">
             {filteredProducts.map(product => (
               <Card
                 key={product._id}
