@@ -4,7 +4,7 @@
 # ============================================================================
 # Stage 1: Dependencies - Install all dependencies
 # ============================================================================
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 
 # Install dependencies required for native modules
 RUN apk add --no-cache libc6-compat
@@ -42,7 +42,7 @@ RUN npm run build
 # ============================================================================
 # Stage 3: Runner - Production runtime
 # ============================================================================
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
@@ -82,7 +82,7 @@ CMD ["node", "server.js"]
 # ============================================================================
 # Stage 4: Development - For local development with hot reload
 # ============================================================================
-FROM node:20-alpine AS development
+FROM node:22-alpine AS development
 
 WORKDIR /app
 
