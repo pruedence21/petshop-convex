@@ -6,6 +6,7 @@ import ConvexClientProvider from "@/components/ConvexClientProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/components/theme-provider";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +47,13 @@ export default function RootLayout({
               >
                 {children}
                 <Toaster />
+                {process.env.NODE_ENV === "development" && (
+                  <Script
+                    src="//unpkg.com/react-grab/dist/index.global.js"
+                    crossOrigin="anonymous"
+                    strategy="beforeInteractive"
+                  />
+                )}
               </ThemeProvider>
             </I18nProvider>
           </ConvexClientProvider>
